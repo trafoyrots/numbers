@@ -108,6 +108,42 @@ details.raw pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:8
 }
 .toast.show{opacity:1}
 
+/* 페이지 탭 */
+.tabs{display:flex;gap:6px;margin-bottom:18px;background:#e9edf2;padding:4px;border-radius:12px;width:fit-content;max-width:100%}
+.tabs button{background:transparent;color:#5b636d;padding:10px 18px;border-radius:9px;font-size:15px}
+.tabs button.on{background:#fff;color:#20242a;box-shadow:0 1px 5px rgba(0,0,0,.12)}
+.tab-count{display:inline-block;min-width:20px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#d9363e;color:#fff;font-size:11px}
+.tab-count:empty{display:none}
+.page[hidden]{display:none}
+
+/* 패턴 분석 */
+.an-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.an-chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 4px}
+.an-chip{background:#f4f6f9;border-radius:10px;padding:8px 12px;font-size:13px;color:#4a5568}
+.an-chip b{color:#20242a;font-size:15px}
+.an-group{border:1px solid #e4e8ed;border-radius:13px;margin-top:14px;overflow:hidden}
+.an-group > h3{margin:0;padding:11px 14px;font-size:15px;background:#f7f8fa;border-bottom:1px solid #e4e8ed;display:flex;align-items:center;gap:8px}
+.an-group.hot > h3{background:#fff8e6;color:#9a6200;border-color:#ffe0b2}
+.an-group.hot{border-color:#ffe0b2}
+.an-group.run > h3{background:#eef4ff;color:#2453b8;border-color:#d4e1fb}
+.an-group.run{border-color:#d4e1fb}
+.an-group > h3 small{font-weight:normal;color:#7b838d;font-size:12px}
+.an-group .empty{padding:12px 14px}
+.an-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 14px;border-top:1px solid #f0f2f5;cursor:pointer}
+.an-row:first-of-type{border-top:0}
+.an-row:hover{background:#fafbfc}
+.an-idx{width:42px;font-weight:bold;color:#7b838d;font-size:13px}
+.an-meta{font-size:11px;background:#eef2f7;color:#4a5568;padding:3px 6px;border-radius:4px;font-weight:bold;white-space:nowrap}
+.an-mode{font-size:11px;font-weight:bold;padding:3px 6px;border-radius:4px}
+.an-mode.auto{background:#e8f0fe;color:#2f6fed}.an-mode.manual{background:#fdecec;color:#d9363e}.an-mode.semi{background:#e6f6ec;color:#2a8a57}
+.an-row .ball{width:34px;height:34px;font-size:14px}
+.ball.hit{box-shadow:0 0 0 2px #fff,0 0 0 4px #20242a}
+.an-tags{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
+.an-tag{font-size:11px;font-weight:bold;padding:3px 7px;border-radius:5px;background:#f0f2f5;color:#4a5568;white-space:nowrap}
+.an-tag.hot{background:#fff0d9;color:#9a6200}.an-tag.run{background:#e3ecff;color:#2453b8}
+.row.flash{animation:flash 1.6s}
+@keyframes flash{0%,40%{box-shadow:0 0 0 3px #2f6fed}100%{box-shadow:none}}
+
 .special-box{
   background:#fff8e6;border:1px solid #ffe0b2;border-radius:13px;padding:16px;grid-column:1/-1;
 }
@@ -161,6 +197,12 @@ body.print-preview-mode .print-only{display:block}
   <h1>🎱 로또 번호 분석기</h1>
   <div class="subtitle">1~45번 로또 번호를 입력하거나 이미지에서 숫자를 OCR로 읽어 통계를 분석합니다.</div>
 
+  <div class="tabs" id="tabs">
+    <button type="button" data-page="input" class="on">✏️ 입력 · 인쇄</button>
+    <button type="button" data-page="analysis">📊 패턴 분석<span id="tabCount" class="tab-count"></span></button>
+  </div>
+
+  <div id="pageInput" class="page">
   <div class="card">
     <h2>① 번호 직접 입력</h2>
     <div style="margin-bottom:14px; background:#f7f9fa; padding:10px 14px; border-radius:10px;">
@@ -185,10 +227,10 @@ body.print-preview-mode .print-only{display:block}
       <button class="blue" onclick="focusNewRow()">+ 1행 추가</button>
       <button class="secondary" onclick="addRows(5)">+ 5행 추가</button>
       <button class="secondary" onclick="clearAll()">전체 지우기</button>
-      <button onclick="analyze()">통계 분석</button>
+      <button onclick="showPage('analysis')">📊 패턴 분석 보기</button>
       <button class="blue" onclick="saveDataFile()">💾 입력 정보 저장</button>
       <button class="secondary" onclick="loadDataFile()">📂 저장 정보 불러오기</button>
-      <button class="blue" onclick="printA4()">🖨️ A5 용지 단위 인쇄</button>
+      <button class="blue" onclick="printA4()">🖨️ 입력 순서대로 A5 인쇄</button>
     </div>
     <div class="input-guide" style="font-size:12px;color:#59636e;background:#f4f7fb;border-radius:9px;padding:9px 11px;margin-bottom:10px;line-height:1.9;">
       <b>번호만 치면 됩니다.</b> 두 자리를 치면 다음 칸으로 넘어가고(5~9는 한 자리로 바로 이동), 6번째 번호 뒤에는 다음 행이 자동으로 생깁니다.
@@ -233,18 +275,25 @@ body.print-preview-mode .print-only{display:block}
     </div>
   </div>
 
-  <div class="card" id="statistics">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
-      <h2 style="margin:0;">③ 통계 결과</h2>
-      <button class="blue" onclick="printA4()">🖨️ A5 용지 단위 인쇄</button>
+  </div><!-- /pageInput -->
+
+  <div id="pageAnalysis" class="page" hidden>
+  <div class="card">
+    <div class="an-head">
+      <h2 style="margin:0;">📊 패턴 분석</h2>
+      <span style="flex:1"></span>
+      <label class="meta-label" for="anRound" style="font-size:13px;">회차</label>
+      <select id="anRound" class="meta-input" style="width:auto" onchange="analyze()"><option value="">전체</option></select>
+      <button class="secondary" onclick="showPage('input')">✏️ 입력으로 돌아가기</button>
     </div>
+    <div class="note">입력한 순서는 그대로 두고, 여기서만 패턴별로 모아서 보여줍니다. 행을 누르면 입력 화면의 해당 행으로 이동합니다.</div>
+    <div id="anChips" class="an-chips"></div>
+    <div id="anGroups"></div>
+  </div>
+
+  <div class="card" id="statistics">
+    <h2>🔢 번호 통계</h2>
     <div class="summary">
-      <div class="special-box">
-        <h3>🔥 끝자리 동일 수가 3개 이상인 행 (상단 모음)</h3>
-        <div id="sameDigitRows">
-          <div class="empty">분석 실행 시 한 행 내 끝자리가 3개 이상 동일한 번호 조합이 표시됩니다.</div>
-        </div>
-      </div>
       <div class="stat-box">
         <h3>가장 많이 나온 번호 TOP 6</h3>
         <div id="top6" class="balls"><div class="empty">아직 분석하지 않았습니다.</div></div>
@@ -263,6 +312,7 @@ body.print-preview-mode .print-only{display:block}
       <tbody id="countBody"></tbody>
     </table>
   </div>
+  </div><!-- /pageAnalysis -->
 </div>
 
 <div id="toast" class="toast"></div>
@@ -643,11 +693,7 @@ function clearAll(){
   if(mainRows().some(r => !isEmptyRow(r)) && !confirm('입력한 번호를 모두 지울까요?')) return;
   $('rows').innerHTML = '';
   addRow();
-  $('sameDigitRows').innerHTML='<div class="empty">분석 실행 시 한 행 내 끝자리가 3개 이상 동일한 번호 조합이 표시됩니다.</div>';
-  $('top6').innerHTML='<div class="empty">아직 분석하지 않았습니다.</div>';
-  $('zero').innerHTML='<div class="empty">아직 분석하지 않았습니다.</div>';
-  $('countBody').innerHTML='';
-  $('info').textContent='-';
+  analyze();
   focusFirstEmpty();
 }
 function ballClass(n){
@@ -664,72 +710,136 @@ function getRows(){
     if(vals.length){
       const date = normalizeDate(metaVal(row,'date'));
       result.push({numbers: vals, round: metaVal(row,'round'), date, day: metaVal(row,'day') || weekdayFromDate(date),
-                   col: metaVal(row,'col'), mode: MODE_LABEL[row.dataset.mode] || ''});
+                   col: metaVal(row,'col'), mode: MODE_LABEL[row.dataset.mode] || '', modeKey: row.dataset.mode, el: row});
     }
   });
   return result;
 }
 
-// 한 행 내 끝자리(일의 자리) 동일 수 3개 이상 체크
-function has3SameLastDigits(row){
-  if(!row || row.length < 3) return false;
-  const counts = {};
-  for(const n of row){
-    const last = n % 10;
-    counts[last] = (counts[last] || 0) + 1;
-    if(counts[last] >= 3) return true;
+// 끝수(일의 자리)가 같은 번호가 3개 이상인 묶음
+function lastDigitGroups(nums){
+  const m = {};
+  nums.forEach(n => (m[n % 10] = m[n % 10] || []).push(n));
+  return Object.entries(m).filter(([,a]) => a.length >= 3)
+    .map(([d,a]) => ({digit: +d, nums: a})).sort((x,y) => y.nums.length - x.nums.length || x.digit - y.digit);
+}
+// 3개 이상 이어지는 연속번호
+function consecutiveRuns(nums){
+  const s = [...new Set(nums)].sort((a,b) => a - b), runs = [];
+  let cur = [s[0]];
+  for(let i = 1; i < s.length; i++){
+    if(s[i] === s[i-1] + 1) cur.push(s[i]);
+    else { if(cur.length >= 3) runs.push(cur); cur = [s[i]]; }
   }
-  return false;
+  if(cur.length >= 3) runs.push(cur);
+  return runs;
 }
 
 let analyzeTimer = null;
+let analysisRows = [];
 function scheduleAnalyze(){ clearTimeout(analyzeTimer); analyzeTimer = setTimeout(analyze, 350); }
 
+function showPage(page){
+  const an = page === 'analysis';
+  $('pageInput').hidden = an;
+  $('pageAnalysis').hidden = !an;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.page === page));
+  try{ history.replaceState(null, '', an ? '#analysis' : location.pathname + location.search); }catch(e){}
+  if(an) analyze();
+  window.scrollTo({top:0});
+}
+document.addEventListener('click', e => { const t = e.target.closest('#tabs button'); if(t) showPage(t.dataset.page); });
+
+function goToRow(i){
+  const item = analysisRows[i];
+  if(!item || !item.el.isConnected) return;
+  showPage('input');
+  item.el.scrollIntoView({block:'center'});
+  item.el.classList.remove('flash'); void item.el.offsetWidth; item.el.classList.add('flash');
+  focusCell(cellsOf(item.el)[0]);
+}
+
+function analysisRowHtml(item, i){
+  const hot = lastDigitGroups(item.numbers), runs = consecutiveRuns(item.numbers);
+  const hit = new Set([...hot.flatMap(g => g.nums), ...runs.flat()]);
+  const odd = item.numbers.filter(n => n % 2).length;
+  const sum = item.numbers.reduce((a,b) => a + b, 0);
+  const tags = [
+    ...hot.map(g => `<span class="an-tag hot">끝수 ${g.digit} ×${g.nums.length}</span>`),
+    ...runs.map(r => `<span class="an-tag run">연속 ${r[0]}~${r[r.length-1]}</span>`),
+    `<span class="an-tag">홀짝 ${odd}:${item.numbers.length - odd}</span>`,
+    `<span class="an-tag">합 ${sum}</span>`
+  ].join('');
+  const meta = item.round ? `${escapeHtml(item.round)}회 ${escapeHtml(item.col)}` : escapeHtml(item.col || '');
+  return `<div class="an-row" onclick="goToRow(${i})" title="입력 화면에서 이 행 보기">
+    <span class="an-idx">${item.index}행</span>
+    ${meta ? `<span class="an-meta">${meta}</span>` : ''}
+    <span class="an-mode ${item.modeKey}">${item.mode}</span>
+    <div class="balls">${item.numbers.map(n => `<div class="ball ${ballClass(n)}${hit.has(n) ? ' hit' : ''}">${n}</div>`).join('')}</div>
+    <div class="an-tags">${tags}</div>
+  </div>`;
+}
+
 function analyze(){
-  const rows=getRows();
-  const counts=Array(46).fill(0);
-  let total=0;
-  const mc={};
-  rows.forEach(item=>{ mc[item.mode]=(mc[item.mode]||0)+1; item.numbers.forEach(n=>{counts[n]++;total++;}); });
-  const ranked=Array.from({length:45},(_,i)=>i+1).sort((a,b)=>counts[b]-counts[a]||a-b);
-  const top=ranked.slice(0,6);
-  const max=counts[top[0]]||0;
-  const zeros=Array.from({length:45},(_,i)=>i+1).filter(n=>counts[n]===0);
+  const allRows = getRows().map((r,i) => ({...r, index: i + 1}));
 
-  const sameDigitRows = [];
-  rows.forEach((item, idx) => { if(has3SameLastDigits(item.numbers)) sameDigitRows.push({ rowIndex: idx + 1, ...item }); });
+  // 회차 필터 목록 유지
+  const sel = $('anRound'), cur = sel.value;
+  const rounds = [...new Set(allRows.map(r => r.round).filter(Boolean))].sort((a,b) => b - a);
+  sel.innerHTML = '<option value="">전체</option>' + rounds.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}회</option>`).join('');
+  sel.value = rounds.includes(cur) ? cur : '';
+  const rows = sel.value ? allRows.filter(r => r.round === sel.value) : allRows;
+  analysisRows = rows;
 
-  const sameDigitBox = $('sameDigitRows');
-  if(sameDigitRows.length > 0){
-    sameDigitBox.innerHTML = sameDigitRows.map(item => `
-      <div class="special-row-item">
-        <span style="font-weight:bold; width:45px; color:#b78103;">${item.rowIndex}행</span>
-        ${item.round ? `<span style="font-size:11px; background:#f2e3c6; padding:2px 5px; border-radius:4px; font-weight:bold;">${escapeHtml(item.round)}회 ${escapeHtml(item.col)}</span>` : ''}
-        <span style="font-size:11px; font-weight:bold; color:#4a5568;">${item.mode}</span>
-        <div class="balls">
-          ${item.numbers.map(n => `<div class="ball ${ballClass(n)}" style="width:34px;height:34px;font-size:14px;">${n}</div>`).join('')}
-        </div>
-        <span style="font-size:12px; font-weight:bold; color:#d9363e; margin-left:auto;">★ 끝자리 동일 3개+</span>
-      </div>`).join('');
-  } else {
-    sameDigitBox.innerHTML = '<div class="empty">한 행 내 끝자리가 3개 이상 동일한 번호 조합이 없습니다.</div>';
-  }
+  // 패턴별 묶기 (한 행은 가장 먼저 해당하는 묶음에만)
+  const hotRows = [], runRows = [], restRows = [];
+  rows.forEach((r,i) => {
+    const hot = lastDigitGroups(r.numbers);
+    if(hot.length) hotRows.push({i, n: hot[0].nums.length, d: hot[0].digit});
+    else if(consecutiveRuns(r.numbers).length) runRows.push({i});
+    else restRows.push({i});
+  });
+  hotRows.sort((a,b) => b.n - a.n || a.d - b.d || a.i - b.i);
+  const totalHot = allRows.filter(r => lastDigitGroups(r.numbers).length).length;
+  $('tabCount').textContent = totalHot || '';
 
-  $('top6').innerHTML = total ? top.map(n=>
+  const group = (cls, title, desc, list) => `<div class="an-group ${cls}"><h3>${title} <small>${list.length}행 · ${desc}</small></h3>` +
+    (list.length ? list.map(x => analysisRowHtml(rows[x.i], x.i)).join('') : '<div class="empty">해당하는 행이 없습니다.</div>') + `</div>`;
+  $('anGroups').innerHTML = rows.length
+    ? group('hot', '🔥 끝수 3개 이상 동일', '같은 끝수가 많은 순', hotRows) +
+      group('run', '🔗 연속번호 3개 이상', '입력 순서', runRows) +
+      group('', '📄 그 외', '입력 순서', restRows)
+    : '<div class="empty">입력된 번호가 없습니다. 입력 화면에서 번호를 넣어 주세요.</div>';
+
+  // 번호 통계
+  const counts = Array(46).fill(0);
+  let total = 0;
+  const mc = {};
+  rows.forEach(item => { mc[item.mode] = (mc[item.mode] || 0) + 1; item.numbers.forEach(n => { counts[n]++; total++; }); });
+  const ranked = Array.from({length:45}, (_,i) => i+1).sort((a,b) => counts[b] - counts[a] || a - b);
+  const top = ranked.slice(0,6);
+  const max = counts[top[0]] || 0;
+  const zeros = Array.from({length:45}, (_,i) => i+1).filter(n => counts[n] === 0);
+
+  $('anChips').innerHTML = rows.length ? [
+    `분석 행 <b>${rows.length}</b>`,
+    `끝수 3개+ <b>${hotRows.length}</b>`,
+    `연속 3개+ <b>${runRows.length}</b>`,
+    `자동 <b>${mc['자동']||0}</b> · 수동 <b>${mc['수동']||0}</b> · 반자동 <b>${mc['반자동']||0}</b>`
+  ].map(t => `<div class="an-chip">${t}</div>`).join('') : '';
+
+  $('top6').innerHTML = total ? top.map(n =>
     `<div title="${counts[n]}회"><div class="ball ${ballClass(n)}">${n}</div>
     <small style="display:block;text-align:center;margin-top:3px">${counts[n]}회</small></div>`).join('')
     : '<div class="empty">입력된 번호가 없습니다.</div>';
-
-  $('zero').innerHTML=zeros.length
-    ? zeros.map(n=>`<div class="ball gray">${n}</div>`).join('')
+  $('zero').innerHTML = !total ? '<div class="empty">입력된 번호가 없습니다.</div>' : zeros.length
+    ? zeros.map(n => `<div class="ball gray">${n}</div>`).join('')
     : '<div class="empty">모든 번호가 한 번 이상 나왔습니다.</div>';
-
-  $('info').innerHTML=
-    `입력 행: <b>${rows.length}</b>개<br>유효 번호: <b>${total}</b>개<br>최다 출현: <b>${max}회</b><br>` +
+  $('info').innerHTML =
+    `분석 행: <b>${rows.length}</b>개<br>유효 번호: <b>${total}</b>개<br>최다 출현: <b>${max}회</b><br>` +
     `방식: 자동 <b>${mc['자동']||0}</b> · 수동 <b>${mc['수동']||0}</b> · 반자동 <b>${mc['반자동']||0}</b>`;
-
-  $('countBody').innerHTML=Array.from({length:45},(_,i)=>i+1)
-    .map(n=>`<tr><td><div class="ball ${ballClass(n)}" style="width:30px;height:30px;margin:auto">${n}</div></td><td>${counts[n]}회</td></tr>`).join('');
+  $('countBody').innerHTML = Array.from({length:45}, (_,i) => i+1)
+    .map(n => `<tr><td><div class="ball ${ballClass(n)}" style="width:30px;height:30px;margin:auto">${n}</div></td><td>${counts[n]}회</td></tr>`).join('');
 }
 
 /* ============================================================
@@ -756,13 +866,12 @@ function renderChunkTable(chunkRows, chunkNum){
         <tbody>`;
 
   chunkRows.forEach(item => {
-    const bgStyle = item.isSpecial ? 'background:#fff8e6;' : '';
     const numsHtml = item.numbers.map(n => `<span class="print-num">${pad(n)}</span>`).join(' ');
     html += `
-      <tr style="border-bottom:1px solid #eee; ${bgStyle}">
+      <tr style="border-bottom:1px solid #eee;">
         <td class="print-row-num" style="padding:2px;">${escapeHtml(item.col) || '-'}</td>
         <td style="padding:2px; letter-spacing:0.5px;">${numsHtml}</td>
-        <td style="padding:2px;">${item.mode || '-'}${item.isSpecial ? '<br><strong style="color:#d9363e; font-size:7.5pt;">끝자리(3+)</strong>' : ''}</td>
+        <td style="padding:2px;">${item.mode || '-'}</td>
       </tr>`;
   });
 
@@ -785,16 +894,19 @@ function printA4(){
     alert('인쇄할 번호 데이터가 없습니다. 먼저 번호를 입력하거나 OCR로 인식하세요.');
     return;
   }
-  const specialRows = [], normalRows = [];
-  rows.forEach((item, idx) => {
-    const rowObj = { originalIndex: idx + 1, ...item, isSpecial: has3SameLastDigits(item.numbers) };
-    (rowObj.isSpecial ? specialRows : normalRows).push(rowObj);
-  });
-  const sortedRows = [...specialRows, ...normalRows];
-
+  // 입력한 순서 그대로, 5행씩 한 덩어리.
+  // 회차·발행일이 바뀌거나 A행이 다시 시작되면(새 용지) 5행이 안 돼도 새 덩어리로 시작
   const CHUNK_SIZE = 5;
   const chunks = [];
-  for(let i = 0; i < sortedRows.length; i += CHUNK_SIZE) chunks.push(sortedRows.slice(i, i + CHUNK_SIZE));
+  let chunk = [], prevKey = null;
+  rows.forEach(item => {
+    const key = item.round + '|' + item.date;
+    const newTicket = chunk.length && (key !== prevKey || item.col === 'A');
+    if(chunk.length === CHUNK_SIZE || newTicket){ chunks.push(chunk); chunk = []; }
+    chunk.push(item);
+    prevKey = key;
+  });
+  if(chunk.length) chunks.push(chunk);
 
   const CHUNKS_PER_PAGE = 6;
   const totalPages = Math.ceil(chunks.length / CHUNKS_PER_PAGE) || 1;
@@ -812,21 +924,16 @@ function printA4(){
 
     let pageHtml = `
       <div class="print-preview-actions">
-        <button class="back" onclick="exitPrintPreview()">← 입력 화면으로 돌아가기</button>
+        <button class="back" onclick="exitPrintPreview()">← 돌아가기</button>
         <button onclick="window.print()">🖨️ 다시 인쇄</button>
       </div>
       <div style="border-bottom:1.5px solid #20242a; padding-bottom:4px; margin-bottom:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h2 style="margin:0; font-size:12pt; font-weight:bold;">🎱 로또 번호 분석 리포트</h2>
+          <h2 style="margin:0; font-size:12pt; font-weight:bold;">🎱 로또 번호 목록</h2>
           <span style="font-size:8pt; color:#666;">A5 페이지 (${p + 1} / ${totalPages})</span>
         </div>
       </div>`;
 
-    if(p === 0 && specialRows.length > 0){
-      pageHtml += `<div style="font-size:8pt; font-weight:bold; color:#d9363e; margin-bottom:6px; background:#fff0f0; padding:3px 6px; border-radius:4px;">
-        ★ 끝자리 3개 이상 동일 행(${specialRows.length}개) 상단 배치됨
-      </div>`;
-    }
 
     pageHtml += `<div class="print-grid"><div class="print-col">`;
     leftChunks.forEach((chunk, ci) => { pageHtml += renderChunkTable(chunk, p * CHUNKS_PER_PAGE + ci + 1); });
@@ -1349,6 +1456,7 @@ function readDataFile(event){
 /* 시작 */
 initPrintDate();
 addRow();
+if(location.hash === '#analysis') showPage('analysis');
 if(window.matchMedia?.('(pointer:fine)')?.matches) focusCell(document.querySelector('#rows .num-input'));
 </script>
 </body>
