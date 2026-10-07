@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>로또 번호 분석기</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,"Malgun Gothic",sans-serif;
+  background:#f4f6f9;color:#20242a;
+}
+.container{max-width:1100px;margin:0 auto;padding:28px 18px 50px}
+h1{margin:0 0 8px;font-size:30px}
+.subtitle{color:#68707a;margin-bottom:25px}
+.card{
+  background:#fff;border-radius:16px;padding:20px;margin-bottom:18px;
+  box-shadow:0 5px 20px rgba(0,0,0,.07)
+}
+h2{font-size:20px;margin:0 0 15px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap}
+button{
+  border:0;border-radius:10px;padding:11px 16px;cursor:pointer;
+  background:#252a31;color:#fff;font-weight:700;font-family:inherit
+}
+button.secondary{background:#e9edf2;color:#252a31}
+button.danger{background:#d9363e}
+button.blue{background:#2f6fed}
+button:active{transform:translateY(1px)}
+.rows{display:flex;flex-direction:column;gap:9px}
+.row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:9px 8px;background:#fafbfc;border:1px solid #e4e8ed;border-radius:12px}
+.row.done{border-color:#bfe3cd;background:#f7fcf9}
+.row.ticket-break{margin-top:10px}
+.row-num{width:28px;color:#7b838d;font-weight:bold;text-align:right;margin-right:2px}
+.meta-input{height:40px;padding:6px 8px;border:1px solid #d4d9df;border-radius:8px;outline:none;font-size:13px;font-weight:700;background:#fff;font-family:inherit}
+.meta-input:focus{border-color:#2f6fed;box-shadow:0 0 0 3px rgba(47,111,237,.12)}
+.meta-input.filled{background:#eaf7ef;border-color:#35a76d}
+.meta-round{width:70px}.meta-date{width:112px}.meta-day{width:42px;text-align:center}.meta-col{width:52px;text-align:center}
+.meta-label{font-size:11px;color:#69727d;font-weight:700;margin-left:2px}
+.num-input{
+  width:54px;height:44px;text-align:center;font-size:17px;font-weight:700;
+  border:1px solid #d4d9df;border-radius:9px;outline:none;font-family:inherit;background:#fff
+}
+.num-input:focus{border-color:#2f6fed;box-shadow:0 0 0 3px rgba(47,111,237,.15)}
+.num-input.dup{border-color:#d9363e;background:#fff0f0;color:#d9363e}
+.num-input.warn{border-color:#e6b400;background:#fff8e1}
+.remove{padding:9px 11px;background:#edf0f3;color:#555}
+
+/* 자동/수동 칩 */
+.mode-chip{height:40px;min-width:62px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800}
+.mode-chip.auto{background:#e8f0fe;color:#2f6fed}
+.mode-chip.manual{background:#fdecec;color:#d9363e}
+.mode-chip.semi{background:#e6f6ec;color:#2a8a57}
+.mode-chip.uncertain{outline:2px dashed #e6b400;outline-offset:-3px}
+.seg{display:inline-flex;background:#e9edf2;border-radius:10px;padding:3px;gap:3px}
+.seg button{background:transparent;color:#5b636d;padding:7px 11px;border-radius:8px;font-size:13px}
+.seg button.on{background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.seg button.on[data-mode=auto]{color:#2f6fed}
+.seg button.on[data-mode=manual]{color:#d9363e}
+.seg button.on[data-mode=semi]{color:#2a8a57}
+kbd{
+  display:inline-block;min-width:18px;padding:1px 5px;border:1px solid #cfd5dc;border-bottom-width:2px;
+  border-radius:5px;background:#fff;font-size:11px;font-family:inherit;color:#4a5568;line-height:1.4;text-align:center
+}
+.seg kbd{margin-left:4px}
+.badge{font-size:11px;font-weight:bold;padding:3px 7px;border-radius:5px;white-space:nowrap}
+.badge.ok{background:#e6f6ec;color:#2a8a57}
+.badge.warn{background:#fff3cd;color:#9a6b00}
+
+.summary{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px
+}
+.stat-box{background:#f7f8fa;border-radius:13px;padding:16px}
+.stat-box h3{font-size:15px;margin:0 0 12px}
+.balls{display:flex;flex-wrap:wrap;gap:8px}
+.ball{
+  width:42px;height:42px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:800;color:#fff;background:#777;
+}
+.ball.yellow{background:#e6b400}.ball.blue{background:#3679d8}
+.ball.red{background:#e04b4b}.ball.green{background:#35a76d}
+.ball.gray{background:#777}
+.count-table{width:100%;border-collapse:collapse;margin-top:12px}
+.count-table th,.count-table td{padding:8px;border-bottom:1px solid #e8ebef;text-align:center}
+.count-table th{background:#f6f7f9}
+.empty{color:#7c848e;padding:12px 0}
+.image-area{display:grid;grid-template-columns:1fr 1.3fr;gap:18px}
+.drop{
+  border:2px dashed #cbd1d8;border-radius:14px;padding:25px;text-align:center;
+  background:#fafbfc;transition:.15s
+}
+.drop.dragover{border-color:#2f6fed;background:#eef4ff}
+#preview{max-width:100%;max-height:300px;border-radius:10px;margin-top:12px;display:none}
+.ocr-result{
+  background:#f7f8fa;border-radius:12px;padding:15px;min-height:60px;
+  white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.6
+}
+details.raw{margin-top:8px;font-size:12px;color:#68707a;white-space:normal}
+details.raw pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:8px;max-height:180px;overflow:auto;margin:6px 0 0}
+.status{font-size:14px;color:#69727d;margin-top:9px}
+.progress{height:7px;background:#e8ebef;border-radius:10px;overflow:hidden;margin-top:10px}
+.progress i{display:block;width:0;height:100%;background:#2f6fed;transition:.2s}
+.note{font-size:13px;color:#717983;line-height:1.6}
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#252a31;color:#fff;
+  padding:11px 18px;border-radius:10px;font-size:14px;font-weight:bold;opacity:0;transition:.25s;
+  pointer-events:none;z-index:99;max-width:90vw;text-align:center
+}
+.toast.show{opacity:1}
+
+.special-box{
+  background:#fff8e6;border:1px solid #ffe0b2;border-radius:13px;padding:16px;grid-column:1/-1;
+}
+.special-box h3{color:#b78103;margin:0 0 12px;font-size:16px}
+.special-row-item{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;
+  border-radius:10px;border:1px solid #f2e3c6;margin-bottom:6px;flex-wrap:wrap
+}
+
+/* A5 세로(Portrait) 인쇄 전용 스타일 */
+.print-only{display:none}
+body.print-preview-mode{background:#eef1f5}
+body.print-preview-mode .container{display:none}
+body.print-preview-mode .print-only{display:block}
+.print-preview-actions{display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px}
+.print-preview-actions button{padding:8px 12px;border-radius:8px;border:0;background:#252a31;color:#fff;font-weight:700;cursor:pointer}
+.print-preview-actions .back{background:#e9edf2;color:#252a31}
+@media print{
+  @page { size: A5 portrait; margin: 0; }
+  body{background:#fff;color:#000;font-size:9pt;margin:0}
+  .container,.toast{display:none !important}
+  .print-only{display:block !important}
+  .print-preview-actions{display:none !important}
+  .a4-page{
+    width:148mm;min-height:210mm;padding:8mm;margin:0 auto;
+    page-break-after:always;break-after:page;box-sizing:border-box;
+    background:#fff;font-size:9pt;line-height:1.2;
+  }
+  .a4-page:last-child{page-break-after:auto;break-after:auto;}
+  .print-grid{display:flex;gap:6mm;}
+  .print-col{flex:1;}
+  .print-block{margin-bottom:8px;border:1px solid #bcbfc5;border-radius:4px;overflow:hidden;}
+  .print-block-title{
+    background:#e9edf2;font-weight:bold;font-size:8pt;padding:3px 6px;
+    border-bottom:1px solid #bcbfc5;color:#1a202c;
+  }
+  .print-table{width:100%;border-collapse:collapse;text-align:center;}
+  .print-table th,.print-table td{padding:3px 2px !important;font-size:9.5pt !important;}
+  .print-row-num{font-weight:bold !important;font-size:9.5pt !important;color:#111 !important;}
+  .print-num{font-weight:bold !important;font-size:9.5pt !important;color:#111 !important;display:inline-block;margin:0 2px;}
+}
+
+@media(max-width:700px){
+  .image-area{grid-template-columns:1fr}
+  .num-input{width:44px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎱 로또 번호 분석기</h1>
+  <div class="subtitle">1~45번 로또 번호를 입력하거나 이미지에서 숫자를 OCR로 읽어 통계를 분석합니다.</div>
+
+  <div class="card">
+    <h2>① 번호 직접 입력</h2>
+    <div style="margin-bottom:14px; background:#f7f9fa; padding:10px 14px; border-radius:10px;">
+      <div style="font-weight:bold; font-size:13px; color:#333; margin-bottom:8px;">📅 새 행에 기본으로 넣을 값</div>
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+        <input id="defaultRound" type="text" inputmode="numeric" class="meta-input meta-round" placeholder="회차">
+        <span class="meta-label">회</span>
+        <input id="defaultDate" type="text" class="meta-input meta-date" placeholder="2026/10/04">
+        <input id="defaultDay" type="text" class="meta-input meta-day" placeholder="일" tabindex="-1">
+        <span class="meta-label">발행일을 넣으면 요일·회차가 자동 계산됩니다 · 각 행에서 개별 수정 가능</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
+        <span class="meta-label" style="font-size:12px;">새 행 방식</span>
+        <div class="seg" id="modeSeg">
+          <button type="button" data-mode="auto" class="on">자동<kbd>A</kbd></button>
+          <button type="button" data-mode="manual">수동<kbd>S</kbd></button>
+          <button type="button" data-mode="semi">반자동<kbd>D</kbd></button>
+        </div>
+      </div>
+    </div>
+    <div class="toolbar" style="margin-bottom:12px">
+      <button class="blue" onclick="focusNewRow()">+ 1행 추가</button>
+      <button class="secondary" onclick="addRows(5)">+ 5행 추가</button>
+      <button class="secondary" onclick="clearAll()">전체 지우기</button>
+      <button onclick="analyze()">통계 분석</button>
+      <button class="blue" onclick="saveDataFile()">💾 입력 정보 저장</button>
+      <button class="secondary" onclick="loadDataFile()">📂 저장 정보 불러오기</button>
+      <button class="blue" onclick="printA4()">🖨️ A5 용지 단위 인쇄</button>
+    </div>
+    <div class="input-guide" style="font-size:12px;color:#59636e;background:#f4f7fb;border-radius:9px;padding:9px 11px;margin-bottom:10px;line-height:1.9;">
+      <b>번호만 치면 됩니다.</b> 두 자리를 치면 다음 칸으로 넘어가고(5~9는 한 자리로 바로 이동), 6번째 번호 뒤에는 다음 행이 자동으로 생깁니다.
+      1~4 한 자리는 <b>01</b>처럼 치거나 <kbd>Space</kbd>/<kbd>Enter</kbd>.
+      <br><b>자동/수동:</b> 번호 칸에서 <kbd>A</kbd> 자동 · <kbd>S</kbd> 수동 · <kbd>D</kbd> 반자동 (한/영 상관없음, 숫자패드 <kbd>/</kbd> <kbd>*</kbd> <kbd>-</kbd>) — 고른 방식은 다음 행에 이어지고, 칩을 눌러도 바뀝니다.
+      <br><b>이동:</b> <kbd>←</kbd><kbd>→</kbd> 이전·다음 칸, <kbd>↑</kbd><kbd>↓</kbd> 위·아래 행, 빈 칸에서 <kbd>Backspace</kbd> 이전 칸. 행(A~E)은 같은 회차 안에서 자동으로 매겨집니다.
+      <br><b>붙여넣기:</b> "자동 10 24 28 29 39 45" 같은 여러 줄 텍스트를 번호 칸에 붙여넣으면 한 번에 채워집니다.
+    </div>
+    <div id="rows" class="rows entry-grid"></div>
+    <input id="dataFileInput" type="file" accept=".json,application/json" style="display:none" onchange="readDataFile(event)">
+  </div>
+
+  <div class="card">
+    <h2>② 로또용지 이미지에서 자동 인식</h2>
+    <div class="image-area">
+      <div>
+        <div class="drop" id="dropZone">
+          <strong>로또용지 사진을 선택하세요.</strong><br>
+          <span class="note">회차·발행일·요일 + A~E행(자동/수동, 번호)만 가져오고, 발행번호·바코드 숫자 등은 무시합니다.<br>끌어다 놓기나 <kbd>Ctrl</kbd>+<kbd>V</kbd> 붙여넣기도 됩니다.</span><br><br>
+          <input id="imageInput" type="file" accept="image/*" onchange="loadImage(event)">
+          <img id="preview" alt="">
+          <div id="ocrStatus" class="status">이미지를 선택하면 OCR이 시작됩니다. (처음 한 번은 한글 인식 데이터를 내려받습니다)</div>
+          <div class="progress"><i id="progress"></i></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#edf2f7;padding:10px;border-radius:10px;margin-bottom:10px;">
+          <input id="ocrRound" class="meta-input meta-round" type="text" inputmode="numeric" placeholder="회차">
+          <span class="meta-label">회</span>
+          <input id="ocrDate" class="meta-input meta-date" type="text" placeholder="발행일">
+          <input id="ocrDay" class="meta-input meta-day" type="text" placeholder="요일" tabindex="-1">
+        </div>
+        <div class="ocr-result" id="ocrText">OCR 결과가 여기에 표시됩니다.</div>
+        <div id="ocrRows" class="rows entry-grid" style="margin-top:12px"></div>
+        <div class="toolbar" style="margin-top:12px">
+          <button class="blue" onclick="useOCRNumbers()">인식 결과를 입력칸에 추가</button>
+          <button class="secondary" onclick="addOCRBlankRow()">+ 빠진 행 추가</button>
+          <button class="secondary" onclick="copyOCR()">OCR 결과 복사</button>
+        </div>
+        <p class="note">노란 칸은 두 번 판독한 결과가 달랐던 칸, 점선 칩은 자동/수동을 확실히 읽지 못한 행입니다. 용지와 대조해 고친 뒤 입력칸에 추가하세요.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="statistics">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;flex-wrap:wrap;gap:10px;">
+      <h2 style="margin:0;">③ 통계 결과</h2>
+      <button class="blue" onclick="printA4()">🖨️ A5 용지 단위 인쇄</button>
+    </div>
+    <div class="summary">
+      <div class="special-box">
+        <h3>🔥 끝자리 동일 수가 3개 이상인 행 (상단 모음)</h3>
+        <div id="sameDigitRows">
+          <div class="empty">분석 실행 시 한 행 내 끝자리가 3개 이상 동일한 번호 조합이 표시됩니다.</div>
+        </div>
+      </div>
+      <div class="stat-box">
+        <h3>가장 많이 나온 번호 TOP 6</h3>
+        <div id="top6" class="balls"><div class="empty">아직 분석하지 않았습니다.</div></div>
+      </div>
+      <div class="stat-box">
+        <h3>전혀 나오지 않은 번호</h3>
+        <div id="zero" class="balls"><div class="empty">아직 분석하지 않았습니다.</div></div>
+      </div>
+      <div class="stat-box">
+        <h3>입력 정보</h3>
+        <div id="info" class="empty">-</div>
+      </div>
+    </div>
+    <table class="count-table">
+      <thead><tr><th>번호</th><th>출현 횟수</th></tr></thead>
+      <tbody id="countBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<!-- 인쇄 전용 영역 -->
+<div id="printArea" class="print-only"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+/* ============================================================
+   공통
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2,'0');
+const isNum = n => Number.isInteger(n) && n >= 1 && n <= 45;
+function escapeHtml(v){
+  return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const MODE_LABEL = {auto:'자동', manual:'수동', semi:'반자동'};
+const MODE_ORDER = ['auto','manual','semi'];
+const LABEL_TO_MODE = {'자동':'auto','수동':'manual','반자동':'semi'};
+// event.code 기준이라 한/영 상태와 무관 (A=ㅁ, S=ㄴ, D=ㅇ, W=ㅈ, T=ㅅ, Q=ㅂ)
+const MODE_KEYS = {
+  KeyA:'auto', KeyW:'auto', NumpadDivide:'auto',
+  KeyS:'manual', KeyT:'manual', NumpadMultiply:'manual',
+  KeyD:'semi', KeyQ:'semi', NumpadSubtract:'semi'
+};
+const ADVANCE_KEYS = new Set([' ', 'Enter', ',', '.', '+']);
+const COLS = ['A','B','C','D','E'];
+let stickyMode = 'auto';
+
+let toastTimer = null;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ============================================================
+   날짜 · 요일 · 회차 (매주 토요일 추첨, 1245회 = 2026/10/10 기준)
+   발행일이 정해지면 그 주의 회차가 하나로 정해짐
+   ============================================================ */
+const DAYS = ['일','월','화','수','목','금','토'];
+const ANCHOR_ROUND = 1245, ANCHOR_UTC = Date.UTC(2026, 9, 10), DAY_MS = 864e5;
+
+function parseDateUTC(v){
+  const m = String(v||'').match(/(20\d{2})\s*[\/.\-년]\s*(\d{1,2})\s*[\/.\-월]\s*(\d{1,2})/);
+  if(!m) return null;
+  const y = +m[1], mo = +m[2], d = +m[3];
+  if(mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const t = Date.UTC(y, mo-1, d);
+  return new Date(t).getUTCMonth() === mo-1 ? t : null;
+}
+function fmtDate(t){ const d = new Date(t); return `${d.getUTCFullYear()}/${pad(d.getUTCMonth()+1)}/${pad(d.getUTCDate())}`; }
+function normalizeDate(v){ const t = parseDateUTC(v); return t == null ? String(v||'').trim() : fmtDate(t); }
+function weekdayFromDate(v){ const t = parseDateUTC(v); return t == null ? '' : DAYS[new Date(t).getUTCDay()]; }
+function roundFromDate(t){ return ANCHOR_ROUND + Math.ceil((t - ANCHOR_UTC) / DAY_MS / 7); }
+function todayUTC(){ const n = new Date(); return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate()); }
+function plausibleRound(r){ return Number.isInteger(r) && r >= 1 && Math.abs(r - roundFromDate(todayUTC())) <= 600; }
+
+// 날짜 입력칸 → 요일·회차 자동 계산
+function bindDateField(dateEl, dayEl, roundEl, onChange){
+  const apply = () => {
+    const t = parseDateUTC(dateEl.value);
+    if(t == null) return;
+    dateEl.value = fmtDate(t);
+    dayEl.value = DAYS[new Date(t).getUTCDay()];
+    if(roundEl) roundEl.value = roundFromDate(t);
+    onChange && onChange();
+  };
+  dateEl.addEventListener('change', apply);
+  dateEl.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); apply(); } });
+}
+
+function initPrintDate(){
+  const t = todayUTC();
+  ['default','ocr'].forEach(p => {
+    $(p+'Date').value = fmtDate(t);
+    $(p+'Day').value = DAYS[new Date(t).getUTCDay()];
+    $(p+'Round').value = roundFromDate(t);
+  });
+  bindDateField($('defaultDate'), $('defaultDay'), $('defaultRound'), syncEmptyRowsToDefault);
+  bindDateField($('ocrDate'), $('ocrDay'), $('ocrRound'), () => setFilled(false));
+  $('defaultRound').addEventListener('change', syncEmptyRowsToDefault);
+  $('ocrRound').addEventListener('input', () => setFilled(false));
+  ['defaultRound','defaultDate'].forEach(id => $(id).addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); $(id).dispatchEvent(new Event('change')); focusFirstEmpty(); }
+  }));
+}
+function setFilled(on){ ['ocrRound','ocrDate','ocrDay'].forEach(id => $(id).classList.toggle('filled', on)); }
+
+/* ============================================================
+   입력 행
+   ============================================================ */
+const cellsOf = row => [...row.querySelectorAll('.num-input')];
+const rowOf = el => el.closest('.entry-row');
+const isMain = row => !!row.closest('#rows');
+const mainRows = () => [...document.querySelectorAll('#rows .entry-row')];
+function readCells(row){ return cellsOf(row).map(c => { const n = parseInt(c.value,10); return isNum(n) ? n : null; }); }
+function isEmptyRow(row){ return cellsOf(row).every(c => !c.value); }
+function isAscending(v){ return v.every((n,i) => i === 0 || (n != null && v[i-1] != null && n > v[i-1])); }
+function focusCell(c){ if(c){ c.focus(); c.select(); } }
+function metaVal(row, key){ return row.querySelector(`[data-meta="${key}"]`)?.value.trim() || ''; }
+function setMeta(row, key, v){ const el = row.querySelector(`[data-meta="${key}"]`); if(el) el.value = v ?? ''; }
+
+function siblingRow(row, dir){
+  let r = dir < 0 ? row.previousElementSibling : row.nextElementSibling;
+  while(r && !r.classList.contains('entry-row')) r = dir < 0 ? r.previousElementSibling : r.nextElementSibling;
+  return r;
+}
+
+// 같은 회차·발행일의 직전 행 다음 글자 (E 다음은 새 용지 A)
+function nextColumnFor(prevRow, round, date){
+  if(!prevRow) return 'A';
+  if(metaVal(prevRow,'round') !== String(round) || normalizeDate(metaVal(prevRow,'date')) !== normalizeDate(date)) return 'A';
+  const i = COLS.indexOf(metaVal(prevRow,'col'));
+  return i < 0 || i >= 4 ? 'A' : COLS[i+1];
+}
+
+function paintMode(row, mode, uncertain){
+  row.dataset.mode = mode;
+  const chip = row.querySelector('.mode-chip');
+  chip.className = 'mode-chip ' + mode + (uncertain ? ' uncertain' : '');
+  chip.textContent = MODE_LABEL[mode] + (uncertain ? '?' : '');
+  chip.title = '눌러서 변경 · 번호 칸에서 A/S/D 키';
+}
+function setSticky(mode){
+  stickyMode = mode;
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+}
+function setRowMode(row, mode){
+  paintMode(row, mode, false);
+  if(isMain(row)){
+    setSticky(mode);
+    let n = siblingRow(row, 1);   // 아래쪽 빈 행도 같은 방식으로
+    while(n){ if(isEmptyRow(n)) paintMode(n, mode, false); n = siblingRow(n, 1); }
+    scheduleAnalyze();
+  } else updateOcrBadge(row);
+}
+
+function validateRow(row){
+  const cells = cellsOf(row), vals = readCells(row), cnt = {};
+  vals.forEach(v => { if(v) cnt[v] = (cnt[v]||0) + 1; });
+  cells.forEach((c,i) => c.classList.toggle('dup', !!vals[i] && cnt[vals[i]] > 1));
+  const done = vals.every(v => v) && Object.keys(cnt).length === 6;
+  row.classList.toggle('done', done);
+  if(!isMain(row)) updateOcrBadge(row);
+  return done;
+}
+function sortRowIfComplete(row){
+  if(!isMain(row) || !validateRow(row)) return;
+  const vals = readCells(row).sort((a,b) => a-b);
+  cellsOf(row).forEach((c,i) => c.value = pad(vals[i]));
+}
+
+function colSelectHtml(){
+  return `<select class="meta-input meta-col row-meta" data-meta="col" title="행" tabindex="-1"><option value="">행</option>${COLS.map(c=>`<option>${c}</option>`).join('')}</select>`;
+}
+function numCellsHtml(values){
+  return Array.from({length:6}, (_,i) => {
+    const n = parseInt(values?.[i],10);
+    return `<input class="num-input" type="text" inputmode="numeric" autocomplete="off" placeholder="${i+1}" value="${isNum(n) ? pad(n) : ''}">`;
+  }).join('');
+}
+
+function addRow(values=[], meta={}, options={}){
+  const prev = options.after || mainRows().at(-1) || null;
+  const roundVal = meta.round ?? $('defaultRound').value.trim();
+  const dateVal  = normalizeDate(meta.date ?? $('defaultDate').value.trim());
+  const dayVal   = meta.day || weekdayFromDate(dateVal) || $('defaultDay').value.trim();
+  const colVal   = meta.col || nextColumnFor(prev, roundVal, dateVal);
+  const mode     = LABEL_TO_MODE[meta.mode] || meta.mode && MODE_LABEL[meta.mode] && meta.mode || options.mode || stickyMode;
+
+  const row = document.createElement('div');
+  row.className = 'row entry-row';
+  row.innerHTML = `
+    <span class="row-num"></span>
+    <input class="meta-input meta-round row-meta" data-meta="round" type="text" inputmode="numeric" placeholder="회차" value="${escapeHtml(roundVal)}" title="회차">
+    <input class="meta-input meta-date row-meta" data-meta="date" type="text" placeholder="발행일" value="${escapeHtml(dateVal)}" title="발행일">
+    <input class="meta-input meta-day row-meta" data-meta="day" type="text" placeholder="요일" value="${escapeHtml(dayVal)}" title="요일" tabindex="-1">
+    ${colSelectHtml()}
+    <button type="button" class="mode-chip" tabindex="-1"></button>
+    ${numCellsHtml(values)}
+    <button type="button" class="remove" tabindex="-1">삭제</button>`;
+  setMeta(row, 'col', colVal);
+  paintMode(row, mode, false);
+  bindDateField(row.querySelector('[data-meta="date"]'), row.querySelector('[data-meta="day"]'), row.querySelector('[data-meta="round"]'), scheduleAnalyze);
+
+  const grid = $('rows');
+  if(options.after && options.after.nextSibling) grid.insertBefore(row, options.after.nextSibling);
+  else grid.appendChild(row);
+  validateRow(row);
+  renumber();
+  return row;
+}
+function addRows(n){ let first = null; for(let i=0;i<n;i++){ const r = addRow(); first = first || r; } focusCell(cellsOf(first)[0]); }
+function focusNewRow(){ focusCell(cellsOf(addRow())[0]); }
+function focusFirstEmpty(){
+  const c = [...document.querySelectorAll('#rows .num-input')].find(x => !x.value);
+  focusCell(c || cellsOf(addRow())[0]);
+}
+function renumber(){
+  let prevKey = null;
+  mainRows().forEach((r,i) => {
+    r.querySelector('.row-num').textContent = (i+1) + '.';
+    const key = metaVal(r,'round') + '|' + normalizeDate(metaVal(r,'date'));
+    r.classList.toggle('ticket-break', i > 0 && (key !== prevKey || metaVal(r,'col') === 'A'));
+    prevKey = key;
+  });
+}
+// 기본값을 바꾸면 아직 비어 있는 행들도 같이 바뀜
+function syncEmptyRowsToDefault(){
+  let prev = null;
+  mainRows().forEach(r => {
+    if(isEmptyRow(r)){
+      setMeta(r,'round',$('defaultRound').value.trim());
+      setMeta(r,'date',normalizeDate($('defaultDate').value));
+      setMeta(r,'day',$('defaultDay').value.trim());
+      setMeta(r,'col',nextColumnFor(prev, metaVal(r,'round'), metaVal(r,'date')));
+    }
+    prev = r;
+  });
+  renumber();
+}
+
+/* ---------- 번호 칸 키 입력 ---------- */
+function nextCell(cell, create){
+  const row = rowOf(cell), cells = cellsOf(row), i = cells.indexOf(cell);
+  if(i < 5) return cells[i+1];
+  let r = siblingRow(row, 1);
+  if(!r && create && isMain(row)) r = addRow([], {round:metaVal(row,'round'), date:metaVal(row,'date'), day:metaVal(row,'day')}, {mode: row.dataset.mode});
+  return r ? cellsOf(r)[0] : null;
+}
+function prevCell(cell){
+  const row = rowOf(cell), cells = cellsOf(row), i = cells.indexOf(cell);
+  if(i > 0) return cells[i-1];
+  const r = siblingRow(row, -1);
+  return r ? cellsOf(r)[5] : null;
+}
+function onCellInput(cell){
+  const row = rowOf(cell);
+  cell.classList.remove('warn');
+  let v = cell.value.replace(/\D/g, '');
+  if(v !== cell.value) cell.value = v;
+
+  let commit = null, carry = '';
+  if(v.length === 1){
+    if(v >= '5') commit = +v;                         // 5~9: 바로 확정
+  } else if(v.length >= 2){
+    const two = +v.slice(0,2);
+    if(v[0] === '0'){ if(two >= 1){ commit = two; carry = v.slice(2); } else cell.value = '0'; }
+    else if(two <= 45){ commit = two; carry = v.slice(2); }
+    else { commit = +v[0]; carry = v.slice(1); }      // 4 다음 6 → 04 | 06
+  }
+  if(commit !== null){
+    cell.value = pad(commit);
+    validateRow(row);
+    const nx = nextCell(cell, true);
+    if(nx){ focusCell(nx); if(carry){ nx.value = carry; onCellInput(nx); } }
+  } else validateRow(row);
+  if(isMain(row)) scheduleAnalyze();
+}
+function finalizeCell(cell){
+  const n = parseInt(cell.value,10);
+  cell.value = isNum(n) ? pad(n) : '';
+  validateRow(rowOf(cell));
+}
+function onCellKeydown(e){
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const cell = e.target, row = rowOf(cell), i = cellsOf(row).indexOf(cell);
+  const mode = MODE_KEYS[e.code];
+  if(mode){
+    e.preventDefault();
+    setRowMode(row, mode);
+    if(e.isComposing || e.keyCode === 229){   // 한글 조합 상태 정리
+      setTimeout(() => { cell.blur(); cell.value = cell.value.replace(/\D/g,''); focusCell(cell); }, 0);
+    }
+    return;
+  }
+  if(ADVANCE_KEYS.has(e.key)){ e.preventDefault(); finalizeCell(cell); focusCell(nextCell(cell, true)); return; }
+  switch(e.key){
+    case 'Backspace': if(!cell.value){ e.preventDefault(); focusCell(prevCell(cell)); } break;
+    case 'ArrowLeft':  e.preventDefault(); focusCell(prevCell(cell)); break;
+    case 'ArrowRight': e.preventDefault(); focusCell(nextCell(cell, false)); break;
+    case 'ArrowUp': case 'ArrowDown': {
+      e.preventDefault();
+      const r = siblingRow(row, e.key === 'ArrowUp' ? -1 : 1);
+      if(r) focusCell(cellsOf(r)[i]);
+    }
+  }
+}
+
+/* ---------- 텍스트 붙여넣기 ---------- */
+function detectModeText(line){
+  const c = line.replace(/\s/g,'');
+  if(/반자/.test(c)) return 'semi';
+  if(/수동/.test(c)) return 'manual';
+  if(/자동/.test(c)) return 'auto';
+  const m = line.match(/^\s*(?:[A-Ea-e]\s*)?(수|자|반)(?=\s|\d|$)/);
+  return m ? ({'수':'manual','자':'auto','반':'semi'})[m[1]] : null;
+}
+function parseTextGames(text){
+  const out = [];
+  String(text).split(/\r?\n/).forEach(line => {
+    const nums = (line.match(/\d+/g) || []).map(Number).filter(isNum);
+    if(!nums.length) return;
+    const mode = detectModeText(line);
+    for(let i = 0; i < nums.length; i += 6) out.push({numbers: nums.slice(i,i+6), mode});
+  });
+  return out;
+}
+function fillGames(cell, games){
+  let row = rowOf(cell);
+  const main = isMain(row);
+  for(let gi = 0; gi < games.length; gi++){
+    const g = games[gi];
+    if(gi > 0){
+      let r = siblingRow(row, 1);
+      if(main){ if(!r || !isEmptyRow(r)) r = addRow([], {round:metaVal(row,'round'), date:metaVal(row,'date'), day:metaVal(row,'day')}, {mode: g.mode || row.dataset.mode, after: row}); }
+      else if(!r) break;
+      row = r;
+    }
+    const cells = cellsOf(row);
+    const start = (gi === 0 && g.numbers.length < 6) ? cells.indexOf(cell) : 0;
+    cells.forEach((c,k) => { if(k < start) return; const n = g.numbers[k-start]; c.value = isNum(n) ? pad(n) : ''; c.classList.remove('warn'); });
+    if(g.mode) setRowMode(row, g.mode);
+    validateRow(row);
+    sortRowIfComplete(row);
+  }
+  if(main){ renumber(); scheduleAnalyze(); focusCell(cellsOf(siblingRow(row,1) || addRow([], {round:metaVal(row,'round'), date:metaVal(row,'date')}, {mode: row.dataset.mode}))[0]); }
+  toast(`${games.length}개 행을 붙여넣었습니다.`);
+}
+function onPaste(e){
+  const items = [...(e.clipboardData?.items || [])];
+  const img = items.find(it => it.type && it.type.startsWith('image/'));
+  if(img){ const f = img.getAsFile(); if(f){ e.preventDefault(); handleImageFile(f); } return; }
+  const t = e.target;
+  if(!t.matches?.('.entry-grid .num-input')) return;
+  const games = parseTextGames(e.clipboardData.getData('text'));
+  const total = games.reduce((s,g) => s + g.numbers.length, 0);
+  if(total <= 1 && !games.some(g => g.mode)) return;
+  e.preventDefault();
+  fillGames(t, games);
+}
+
+/* ---------- 이벤트 위임 ---------- */
+document.addEventListener('keydown', e => { if(e.target.matches?.('.entry-grid .num-input')) onCellKeydown(e); });
+document.addEventListener('input', e => { if(e.target.matches?.('.entry-grid .num-input')) onCellInput(e.target); });
+document.addEventListener('compositionend', e => { if(e.target.matches?.('.entry-grid .num-input')) e.target.value = e.target.value.replace(/\D/g,''); });
+document.addEventListener('paste', onPaste);
+document.addEventListener('focusin', e => { if(e.target.matches?.('.entry-grid .num-input')){ const c = e.target; setTimeout(() => c.select(), 0); } });
+document.addEventListener('focusout', e => {
+  const c = e.target;
+  if(!c.matches?.('#rows .num-input')) return;
+  const row = rowOf(c);
+  if(!row.contains(e.relatedTarget)) sortRowIfComplete(row);
+});
+document.addEventListener('change', e => { if(e.target.matches?.('#rows .row-meta')){ renumber(); scheduleAnalyze(); } });
+document.addEventListener('click', e => {
+  const chip = e.target.closest('.mode-chip');
+  if(chip){ const row = rowOf(chip); setRowMode(row, MODE_ORDER[(MODE_ORDER.indexOf(row.dataset.mode)+1) % 3]); return; }
+  const rm = e.target.closest('.entry-row .remove');
+  if(rm){ const row = rowOf(rm), main = isMain(row); row.remove(); if(main){ if(!mainRows().length) addRow(); renumber(); scheduleAnalyze(); } return; }
+  const seg = e.target.closest('#modeSeg button');
+  if(seg){
+    setSticky(seg.dataset.mode);
+    mainRows().forEach(r => { if(isEmptyRow(r)) paintMode(r, seg.dataset.mode, false); });
+    focusFirstEmpty();
+  }
+});
+
+/* ============================================================
+   통계
+   ============================================================ */
+function clearAll(){
+  if(mainRows().some(r => !isEmptyRow(r)) && !confirm('입력한 번호를 모두 지울까요?')) return;
+  $('rows').innerHTML = '';
+  addRow();
+  $('sameDigitRows').innerHTML='<div class="empty">분석 실행 시 한 행 내 끝자리가 3개 이상 동일한 번호 조합이 표시됩니다.</div>';
+  $('top6').innerHTML='<div class="empty">아직 분석하지 않았습니다.</div>';
+  $('zero').innerHTML='<div class="empty">아직 분석하지 않았습니다.</div>';
+  $('countBody').innerHTML='';
+  $('info').textContent='-';
+  focusFirstEmpty();
+}
+function ballClass(n){
+  if(n<=10)return 'yellow';
+  if(n<=20)return 'blue';
+  if(n<=30)return 'red';
+  if(n<=40)return 'green';
+  return 'gray';
+}
+function getRows(){
+  const result=[];
+  mainRows().forEach(row=>{
+    const vals = readCells(row).filter(n => n);
+    if(vals.length){
+      const date = normalizeDate(metaVal(row,'date'));
+      result.push({numbers: vals, round: metaVal(row,'round'), date, day: metaVal(row,'day') || weekdayFromDate(date),
+                   col: metaVal(row,'col'), mode: MODE_LABEL[row.dataset.mode] || ''});
+    }
+  });
+  return result;
+}
+
+// 한 행 내 끝자리(일의 자리) 동일 수 3개 이상 체크
+function has3SameLastDigits(row){
+  if(!row || row.length < 3) return false;
+  const counts = {};
+  for(const n of row){
+    const last = n % 10;
+    counts[last] = (counts[last] || 0) + 1;
+    if(counts[last] >= 3) return true;
+  }
+  return false;
+}
+
+let analyzeTimer = null;
+function scheduleAnalyze(){ clearTimeout(analyzeTimer); analyzeTimer = setTimeout(analyze, 350); }
+
+function analyze(){
+  const rows=getRows();
+  const counts=Array(46).fill(0);
+  let total=0;
+  const mc={};
+  rows.forEach(item=>{ mc[item.mode]=(mc[item.mode]||0)+1; item.numbers.forEach(n=>{counts[n]++;total++;}); });
+  const ranked=Array.from({length:45},(_,i)=>i+1).sort((a,b)=>counts[b]-counts[a]||a-b);
+  const top=ranked.slice(0,6);
+  const max=counts[top[0]]||0;
+  const zeros=Array.from({length:45},(_,i)=>i+1).filter(n=>counts[n]===0);
+
+  const sameDigitRows = [];
+  rows.forEach((item, idx) => { if(has3SameLastDigits(item.numbers)) sameDigitRows.push({ rowIndex: idx + 1, ...item }); });
+
+  const sameDigitBox = $('sameDigitRows');
+  if(sameDigitRows.length > 0){
+    sameDigitBox.innerHTML = sameDigitRows.map(item => `
+      <div class="special-row-item">
+        <span style="font-weight:bold; width:45px; color:#b78103;">${item.rowIndex}행</span>
+        ${item.round ? `<span style="font-size:11px; background:#f2e3c6; padding:2px 5px; border-radius:4px; font-weight:bold;">${escapeHtml(item.round)}회 ${escapeHtml(item.col)}</span>` : ''}
+        <span style="font-size:11px; font-weight:bold; color:#4a5568;">${item.mode}</span>
+        <div class="balls">
+          ${item.numbers.map(n => `<div class="ball ${ballClass(n)}" style="width:34px;height:34px;font-size:14px;">${n}</div>`).join('')}
+        </div>
+        <span style="font-size:12px; font-weight:bold; color:#d9363e; margin-left:auto;">★ 끝자리 동일 3개+</span>
+      </div>`).join('');
+  } else {
+    sameDigitBox.innerHTML = '<div class="empty">한 행 내 끝자리가 3개 이상 동일한 번호 조합이 없습니다.</div>';
+  }
+
+  $('top6').innerHTML = total ? top.map(n=>
+    `<div title="${counts[n]}회"><div class="ball ${ballClass(n)}">${n}</div>
+    <small style="display:block;text-align:center;margin-top:3px">${counts[n]}회</small></div>`).join('')
+    : '<div class="empty">입력된 번호가 없습니다.</div>';
+
+  $('zero').innerHTML=zeros.length
+    ? zeros.map(n=>`<div class="ball gray">${n}</div>`).join('')
+    : '<div class="empty">모든 번호가 한 번 이상 나왔습니다.</div>';
+
+  $('info').innerHTML=
+    `입력 행: <b>${rows.length}</b>개<br>유효 번호: <b>${total}</b>개<br>최다 출현: <b>${max}회</b><br>` +
+    `방식: 자동 <b>${mc['자동']||0}</b> · 수동 <b>${mc['수동']||0}</b> · 반자동 <b>${mc['반자동']||0}</b>`;
+
+  $('countBody').innerHTML=Array.from({length:45},(_,i)=>i+1)
+    .map(n=>`<tr><td><div class="ball ${ballClass(n)}" style="width:30px;height:30px;margin:auto">${n}</div></td><td>${counts[n]}회</td></tr>`).join('');
+}
+
+/* ============================================================
+   인쇄
+   ============================================================ */
+function renderChunkTable(chunkRows, chunkNum){
+  const firstItem = chunkRows[0] || {};
+  const roundStr = firstItem.round ? `제 ${escapeHtml(firstItem.round)}회` : '';
+  const dateStr = firstItem.date ? ` ${escapeHtml(firstItem.date)}` : '';
+  const dayStr = firstItem.day ? ` (${escapeHtml(firstItem.day)})` : '';
+  const headerTitle = (roundStr || dateStr) ? `📌 ${roundStr}${dateStr}${dayStr}` : `로또용지 세트 #${chunkNum}`;
+
+  let html = `
+    <div class="print-block">
+      <div class="print-block-title">${headerTitle} (${chunkRows.length}개 조합)</div>
+      <table class="print-table">
+        <thead>
+          <tr style="background:#f0f2f5; border-bottom:1px solid #ccc;">
+            <th style="width:32px;">행</th>
+            <th>로또 번호 (6개)</th>
+            <th style="width:58px;">방식</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  chunkRows.forEach(item => {
+    const bgStyle = item.isSpecial ? 'background:#fff8e6;' : '';
+    const numsHtml = item.numbers.map(n => `<span class="print-num">${pad(n)}</span>`).join(' ');
+    html += `
+      <tr style="border-bottom:1px solid #eee; ${bgStyle}">
+        <td class="print-row-num" style="padding:2px;">${escapeHtml(item.col) || '-'}</td>
+        <td style="padding:2px; letter-spacing:0.5px;">${numsHtml}</td>
+        <td style="padding:2px;">${item.mode || '-'}${item.isSpecial ? '<br><strong style="color:#d9363e; font-size:7.5pt;">끝자리(3+)</strong>' : ''}</td>
+      </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+function exitPrintPreview(){
+  document.body.classList.remove('print-preview-mode');
+  $('printArea').innerHTML='';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+window.addEventListener('afterprint',()=>{
+  if(document.body.classList.contains('print-preview-mode')) exitPrintPreview();
+});
+
+function printA4(){
+  const rows = getRows();
+  if(!rows.length){
+    alert('인쇄할 번호 데이터가 없습니다. 먼저 번호를 입력하거나 OCR로 인식하세요.');
+    return;
+  }
+  const specialRows = [], normalRows = [];
+  rows.forEach((item, idx) => {
+    const rowObj = { originalIndex: idx + 1, ...item, isSpecial: has3SameLastDigits(item.numbers) };
+    (rowObj.isSpecial ? specialRows : normalRows).push(rowObj);
+  });
+  const sortedRows = [...specialRows, ...normalRows];
+
+  const CHUNK_SIZE = 5;
+  const chunks = [];
+  for(let i = 0; i < sortedRows.length; i += CHUNK_SIZE) chunks.push(sortedRows.slice(i, i + CHUNK_SIZE));
+
+  const CHUNKS_PER_PAGE = 6;
+  const totalPages = Math.ceil(chunks.length / CHUNKS_PER_PAGE) || 1;
+  const printArea = $('printArea');
+  printArea.innerHTML = '';
+
+  for(let p = 0; p < totalPages; p++){
+    const pageChunks = chunks.slice(p * CHUNKS_PER_PAGE, (p + 1) * CHUNKS_PER_PAGE);
+    const leftCount = Math.ceil(pageChunks.length / 2);
+    const leftChunks = pageChunks.slice(0, leftCount);
+    const rightChunks = pageChunks.slice(leftCount);
+
+    const pageDiv = document.createElement('div');
+    pageDiv.className = 'a4-page';
+
+    let pageHtml = `
+      <div class="print-preview-actions">
+        <button class="back" onclick="exitPrintPreview()">← 입력 화면으로 돌아가기</button>
+        <button onclick="window.print()">🖨️ 다시 인쇄</button>
+      </div>
+      <div style="border-bottom:1.5px solid #20242a; padding-bottom:4px; margin-bottom:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h2 style="margin:0; font-size:12pt; font-weight:bold;">🎱 로또 번호 분석 리포트</h2>
+          <span style="font-size:8pt; color:#666;">A5 페이지 (${p + 1} / ${totalPages})</span>
+        </div>
+      </div>`;
+
+    if(p === 0 && specialRows.length > 0){
+      pageHtml += `<div style="font-size:8pt; font-weight:bold; color:#d9363e; margin-bottom:6px; background:#fff0f0; padding:3px 6px; border-radius:4px;">
+        ★ 끝자리 3개 이상 동일 행(${specialRows.length}개) 상단 배치됨
+      </div>`;
+    }
+
+    pageHtml += `<div class="print-grid"><div class="print-col">`;
+    leftChunks.forEach((chunk, ci) => { pageHtml += renderChunkTable(chunk, p * CHUNKS_PER_PAGE + ci + 1); });
+    pageHtml += `</div><div class="print-col">`;
+    rightChunks.forEach((chunk, ci) => { pageHtml += renderChunkTable(chunk, p * CHUNKS_PER_PAGE + leftChunks.length + ci + 1); });
+    pageHtml += `</div></div>`;
+
+    pageDiv.innerHTML = pageHtml;
+    printArea.appendChild(pageDiv);
+  }
+
+  document.body.classList.add('print-preview-mode');
+  window.scrollTo({top:0,behavior:'smooth'});
+  setTimeout(()=>window.print(),120);
+}
+
+/* ============================================================
+   이미지 OCR
+   - 이미지를 자르지 않고 전체를 두 번 읽음
+     1차: 한글+영문 → 회차·발행일·A~E·자동/수동
+     2차: 숫자 전용 → 번호 정확도 보강
+   - 게임 줄 판별: "1~45 두 자리 숫자 6개, 오름차순"
+     → 발행번호·바코드·TR번호·시각은 자동으로 걸러짐
+   ============================================================ */
+let workerPromise = null, ocrBusy = false, ocrPhase = {base:0, span:1};
+const STATUS_KO = {
+  'loading tesseract core':'OCR 엔진 불러오는 중...',
+  'initializing tesseract':'OCR 엔진 초기화 중...',
+  'loading language traineddata':'한글·숫자 인식 데이터 준비 중 (최초 1회 다운로드)...',
+  'initializing api':'인식기 준비 중...'
+};
+function getWorker(){
+  if(!workerPromise){
+    workerPromise = Tesseract.createWorker('kor+eng', 1, {
+      logger: m => {
+        const progress = $('progress');
+        if(m.status === 'recognizing text'){
+          progress.style.width = ((ocrPhase.base + (m.progress||0) * ocrPhase.span) * 100).toFixed(0) + '%';
+        } else if(m.status){
+          $('ocrStatus').textContent = STATUS_KO[m.status] || ('OCR: ' + m.status);
+          if(typeof m.progress === 'number') progress.style.width = (m.progress * 100).toFixed(0) + '%';
+        }
+      }
+    }).catch(e => { workerPromise = null; throw e; });
+  }
+  return workerPromise;
+}
+
+function loadImage(event){
+  const file = event.target.files[0];
+  event.target.value = '';
+  if(file) handleImageFile(file);
+}
+function handleImageFile(file){
+  const preview = $('preview');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+  startOCR(file);
+}
+function loadImageElement(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('이미지 로드에 실패했습니다.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// 작은 사진 확대 + 흑백 + 명암 늘리기 (모든 브라우저에서 동작하도록 직접 처리)
+function preprocessImage(img){
+  const scale = Math.min(3, Math.max(1, 1800 / img.naturalWidth));
+  const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d', {willReadFrequently:true});
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, w, h);
+  const d = ctx.getImageData(0, 0, w, h), px = d.data;
+  const hist = new Uint32Array(256), gray = new Uint8Array(w*h);
+  for(let i=0, j=0; i<gray.length; i++, j+=4){
+    const g = (px[j]*299 + px[j+1]*587 + px[j+2]*114) / 1000 | 0;
+    gray[i] = g; hist[g]++;
+  }
+  let lo = 0, hi = 255, acc = 0;
+  const cut = gray.length * 0.02;
+  for(let v=0; v<256; v++){ acc += hist[v]; if(acc > cut){ lo = v; break; } }
+  acc = 0;
+  for(let v=255; v>=0; v--){ acc += hist[v]; if(acc > cut){ hi = v; break; } }
+  const range = Math.max(1, hi - lo);
+  for(let i=0, j=0; i<gray.length; i++, j+=4){
+    const v = Math.max(0, Math.min(255, (gray[i] - lo) * 255 / range));
+    px[j] = px[j+1] = px[j+2] = v; px[j+3] = 255;
+  }
+  ctx.putImageData(d, 0, 0);
+  return c;
+}
+
+function linesWithBox(r){
+  const ls = r?.data?.lines;
+  if(ls && ls.length && ls[0].bbox) return ls.map(l => ({text: (l.text||'').replace(/\n/g,' '), y: (l.bbox.y0 + l.bbox.y1) / 2, h: Math.max(1, l.bbox.y1 - l.bbox.y0)}));
+  return null;
+}
+function textLines(r){ return (r?.data?.text || '').split('\n').map((t,i) => ({text: t, y: i * 1000, h: 1})); }
+const hangulGap = t => String(t || '').replace(/([가-힣])(\d)/g, '$1 $2');
+function parseGameLine(line, fixLetters){
+  let toks = String(line || '').trim().split(/\s+/);
+  if(fixLetters){
+    toks = toks.map(t => (t.length === 2 && /\d/.test(t) && /^[0-9OoDIl|SZ]+$/.test(t))
+      ? t.replace(/[OoD]/g,'0').replace(/[Il|]/g,'1').replace(/S/g,'5').replace(/Z/g,'2') : t);
+  }
+  const nums = toks.filter(t => /^\d{1,2}$/.test(t)).map(Number);
+  if(nums.length < 6) return null;
+  const six = nums.slice(-6);
+  if(!six.every(isNum)) return null;
+  return {numbers: six, ascending: isAscending(six)};
+}
+function partialNumbers(line){
+  return String(line || '').trim().split(/\s+/).filter(t => /^\d{1,2}$/.test(t)).map(Number).filter(isNum).slice(-6);
+}
+function detectOcrMode(line){
+  const head = String(line || '').replace(/\s/g,'').split(/\d/)[0];
+  if(/반/.test(head)) return 'semi';
+  if(/수/.test(head)) return 'manual';
+  if(/[자동]/.test(head)) return 'auto';
+  return null;
+}
+function detectLabel(line){
+  const m = String(line || '').match(/^\W*([A-Ea-e])(?=[\s가-힣]|$)/);
+  return m ? m[1].toUpperCase() : '';
+}
+
+// 한 줄만 잘라 흑백 이진화 (분홍 워터마크 등 옅은 무늬 제거)
+function cropStrip(src, yc, hgt){
+  const y0 = Math.max(0, Math.round(yc - hgt/2)), y1 = Math.min(src.height, Math.round(yc + hgt/2));
+  const h = y1 - y0;
+  if(h < 4) return null;
+  const sc = h < 70 ? 70 / h : 1, padPx = 16;
+  const c = document.createElement('canvas');
+  c.width = Math.round(src.width * sc) + padPx*2; c.height = Math.round(h * sc) + padPx*2;
+  const ctx = c.getContext('2d', {willReadFrequently:true});
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(src, 0, y0, src.width, h, padPx, padPx, c.width - padPx*2, c.height - padPx*2);
+  const d = ctx.getImageData(0, 0, c.width, c.height), px = d.data, hist = new Float64Array(256);
+  for(let j = 0; j < px.length; j += 4) hist[px[j]]++;
+  const total = px.length / 4;
+  let sum = 0; for(let v = 0; v < 256; v++) sum += v * hist[v];
+  let sumB = 0, wB = 0, best = 0, th = 128;
+  for(let v = 0; v < 256; v++){
+    wB += hist[v]; if(!wB) continue;
+    const wF = total - wB; if(!wF) break;
+    sumB += v * hist[v];
+    const mB = sumB / wB, mF = (sum - sumB) / wF, between = wB * wF * (mB - mF) ** 2;
+    if(between > best){ best = between; th = v; }
+  }
+  for(let j = 0; j < px.length; j += 4){ const v = px[j] > th ? 255 : 0; px[j] = px[j+1] = px[j+2] = v; }
+  ctx.putImageData(d, 0, 0);
+  return c;
+}
+
+// 여러 판독 결과를 투표로 합침 (우선순위: 줄 숫자판독 > 전체 숫자판독 > 줄 한글판독 > 전체 한글판독)
+function voteGame(cands){
+  const valid = cands.filter(Boolean);
+  if(!valid.length) return null;
+  const good = valid.filter(c => c.ascending && new Set(c.numbers).size === 6);
+  const pool = good.length ? good : valid;
+  const cnt = {};
+  pool.forEach(c => { const k = c.numbers.join(','); cnt[k] = (cnt[k] || 0) + 1; });
+  const keys = Object.keys(cnt), best = keys.sort((a,b) => cnt[b] - cnt[a])[0];
+  let numbers;
+  if(cnt[best] >= 2 || pool.length === 1) numbers = best.split(',').map(Number);
+  else numbers = [0,1,2,3,4,5].map(k => {
+    const f = {}; let bn = pool[0].numbers[k], bc = 0;
+    pool.forEach(c => { const n = c.numbers[k]; f[n] = (f[n] || 0) + 1; if(f[n] > bc){ bc = f[n]; bn = n; } });
+    return bn;
+  });
+  const warn = new Set(numbers.map((n,k) => pool.some(c => c.numbers[k] !== n) ? k : -1).filter(k => k >= 0));
+  numbers.forEach((n,i) => { if(i > 0 && n <= numbers[i-1]){ warn.add(i-1); warn.add(i); } });
+  return {numbers, warn: [...warn]};
+}
+
+/* 줄 위치(간격) 기준으로 A~E 자리를 정하고, 자리마다 한 줄씩 다시 읽음 */
+async function extractGamesByLine(worker, canvas, L1, L2, onStep){
+  const c1 = [], c2 = [];
+  L1.forEach(l => {
+    const t = hangulGap(l.text), g = parseGameLine(t, true);
+    if(g && (g.ascending || detectLabel(t) || detectOcrMode(t))) c1.push({...g, label: detectLabel(t), mode: detectOcrMode(t), y: l.y, h: l.h, src: 'k'});
+  });
+  L2.forEach(l => {
+    const g = parseGameLine(l.text, false);
+    if(g && g.ascending) c2.push({...g, y: l.y, h: l.h, src: 'd'});
+  });
+  const all = [...c1, ...c2].sort((a,b) => a.y - b.y);
+  if(!all.length) return [];
+
+  const hs = all.map(a => a.h).sort((a,b) => a - b), medH = hs[hs.length >> 1];
+  const clusters = [];
+  all.forEach(a => {
+    const last = clusters[clusters.length - 1];
+    if(last && Math.abs(a.y - last.y) < medH * 0.6){ last.items.push(a); last.y = last.items.reduce((s,i) => s + i.y, 0) / last.items.length; }
+    else clusters.push({y: a.y, items: [a]});
+  });
+
+  let pitch = medH * 1.5;
+  if(clusters.length > 1){
+    const d = clusters.slice(1).map((c,i) => c.y - clusters[i].y), d0 = Math.min(...d);
+    const est = d.map(x => x / Math.max(1, Math.round(x / d0))).sort((a,b) => a - b);
+    pitch = est[est.length >> 1];
+  }
+  const y0 = clusters[0].y, byR = new Map();
+  clusters.forEach(c => {
+    const r = Math.round((c.y - y0) / pitch);
+    if(byR.has(r)) byR.get(r).items.push(...c.items); else byR.set(r, {y: c.y, items: c.items});
+  });
+  const rMax = Math.max(...byR.keys());
+  const yAt = r => {
+    let bk = null;
+    byR.forEach((c,k) => { if(bk === null || Math.abs(k - r) < Math.abs(bk - r)) bk = k; });
+    return byR.get(bk).y + (r - bk) * pitch;
+  };
+
+  let step = 0;
+  const est = Math.min(7, rMax + 3);
+  const readSlot = async r => {
+    onStep && onStep(step++, est);
+    const yc = yAt(r);
+    if(yc < pitch * 0.3 || yc > canvas.height - pitch * 0.3) return null;
+    const strip = cropStrip(canvas, yc, pitch * 0.92);
+    if(!strip) return null;
+    await worker.setParameters({tessedit_char_whitelist:'0123456789 ', tessedit_pageseg_mode:'7'});
+    const td = (await worker.recognize(strip)).data.text || '';
+    await worker.setParameters({tessedit_char_whitelist:'', tessedit_pageseg_mode:'7'});
+    const tk = hangulGap((await worker.recognize(strip)).data.text || '');
+    const cl = byR.get(r);
+    const fd = cl?.items.find(i => i.src === 'd'), fk = cl?.items.find(i => i.src === 'k');
+    const vote = voteGame([parseGameLine(td, false), fd, parseGameLine(tk, true), fk]);
+    const pd = partialNumbers(td), pk = partialNumbers(tk);
+    return {r, vote, partial: pd.length >= pk.length ? pd : pk,
+            mode: detectOcrMode(tk) || fk?.mode || null, label: detectLabel(tk) || fk?.label || ''};
+  };
+  const okProbe = s => s && s.vote && isAscending(s.vote.numbers) && new Set(s.vote.numbers).size === 6;
+
+  const rows = [];
+  for(let r = 0; r <= rMax; r++){
+    const s = await readSlot(r);
+    if(!s) continue;
+    rows.push(s);   // 위아래 줄 사이에 있는 줄은 못 읽어도 빈 행으로 자리 표시
+  }
+  for(let r = rMax + 1; rows.length < 5; r++){ const s = await readSlot(r); if(!okProbe(s)) break; rows.push(s); }
+  for(let r = -1; rows.length < 5; r--){ const s = await readSlot(r); if(!okProbe(s)) break; rows.unshift(s); }
+
+  // A~E: 맨 위 줄 = A. 단, 서로 맞는 행 표시가 2개 이상 읽혔으면 그 기준을 따름
+  const rTop = rows[0].r, rBottom = rows[rows.length - 1].r, votes = {};
+  rows.forEach(s => { const i = COLS.indexOf(s.label); if(i >= 0){ const off = i - (s.r - rTop); votes[off] = (votes[off] || 0) + 1; } });
+  let offset = 0;
+  const bestOff = Object.keys(votes).sort((a,b) => votes[b] - votes[a])[0];
+  if(bestOff !== undefined && votes[bestOff] >= 2 && +bestOff >= 0 && (rBottom - rTop) + (+bestOff) <= 4) offset = +bestOff;
+
+  return rows.map(s => ({
+    numbers: s.vote ? s.vote.numbers : s.partial,
+    warn: s.vote ? s.vote.warn : [0,1,2,3,4,5],
+    failed: !s.vote,
+    mode: s.mode,
+    label: COLS[s.r - rTop + offset] || ''
+  }));
+}
+
+// 줄 위치 정보가 없을 때의 간단한 방식 (순서대로 A~E)
+function extractGamesSimple(l1, l2){
+  const p1 = [], p2 = [];
+  l1.forEach(l => { const t = hangulGap(l.text), g = parseGameLine(t, true); if(g && (g.ascending || detectLabel(t) || detectOcrMode(t))) p1.push({...g, mode: detectOcrMode(t)}); });
+  l2.forEach(l => { const g = parseGameLine(l.text, false); if(g && g.ascending) p2.push(g); });
+  const base = p2.length >= p1.length ? p2 : p1;
+  return base.map((g,i) => {
+    const other = (base === p2 ? p1 : p2)[i];
+    const v = voteGame([g, other]);
+    return {numbers: v.numbers, warn: v.warn, mode: (base === p1 ? g : p1[i])?.mode || null, label: COLS[i] || ''};
+  });
+}
+
+function finishGames(games){
+  const freq = {};
+  games.forEach(o => { if(o.mode) freq[o.mode] = (freq[o.mode] || 0) + 1; });
+  const dominant = Object.keys(freq).sort((a,b) => freq[b] - freq[a])[0] || stickyMode;
+  games.forEach(o => { if(!o.mode){ o.mode = dominant; o.modeUncertain = true; } });
+  return games;
+}
+
+function extractMeta(l1, l2){
+  const text1 = l1.map(l => l.text).join('\n');
+  let ocrRound = null;
+  const m = text1.match(/제\s*(\d{3,4})\s*회/) || text1.match(/(\d{4})\s*회/);
+  if(m && plausibleRound(+m[1])) ocrRound = +m[1];
+  if(!ocrRound){
+    for(const l of l2.slice(0, 5)){
+      const t = l.text.trim().split(/\s+/).find(t => /^\d{3,4}$/.test(t) && plausibleRound(+t));
+      if(t){ ocrRound = +t; break; }
+    }
+  }
+
+  const dates = []; let issueHint = null;
+  const re = /(20\d{2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{1,2})/g;
+  [...l1, ...l2].forEach(l => {
+    for(const mm of l.text.matchAll(re)){
+      const t = parseDateUTC(mm[0]);
+      if(t == null) continue;
+      dates.push(t);
+      if(/발행/.test(l.text) && issueHint == null) issueHint = t;
+    }
+  });
+
+  // 발행일: '발행' 줄의 날짜 → 없으면 회차와 맞는 날짜 → 없으면 가장 이른 날짜
+  let issueT = issueHint;
+  if(issueT == null && ocrRound) issueT = dates.filter(t => roundFromDate(t) === ocrRound).sort((a,b)=>a-b)[0] ?? null;
+  if(issueT == null && dates.length) issueT = Math.min(...dates);
+
+  let round = ocrRound, note = '';
+  if(issueT != null){
+    const calc = roundFromDate(issueT);
+    if(!ocrRound) round = calc;
+    else if(ocrRound !== calc){ round = calc; note = `용지 회차가 ${ocrRound}회로 읽혔지만 발행일 기준으로는 ${calc}회입니다. 확인해 주세요.`; }
+  }
+  if(round == null && issueT == null) return null;
+  return {round: round ?? '', date: issueT != null ? fmtDate(issueT) : '', day: issueT != null ? DAYS[new Date(issueT).getUTCDay()] : '', note};
+}
+
+async function startOCR(file){
+  if(ocrBusy){ toast('이전 이미지를 처리하는 중입니다.'); return; }
+  ocrBusy = true;
+  const status = $('ocrStatus'), text = $('ocrText'), progress = $('progress');
+  $('ocrRows').innerHTML = '';
+  progress.style.width = '0%';
+  setFilled(false);
+  try{
+    status.textContent = '이미지 선명도 최적화 중...';
+    const img = await loadImageElement(file);
+    const canvas = preprocessImage(img);
+    const worker = await getWorker();
+
+    ocrPhase = {base:0, span:.35};
+    status.textContent = '① 회차·발행일·자동/수동 읽는 중...';
+    await worker.setParameters({tessedit_char_whitelist:'', tessedit_pageseg_mode:'6', preserve_interword_spaces:'1'});
+    const r1 = await worker.recognize(canvas);
+
+    ocrPhase = {base:.35, span:.25};
+    status.textContent = '② 번호 위치 찾는 중...';
+    await worker.setParameters({tessedit_char_whitelist:'0123456789/:. ', tessedit_pageseg_mode:'6', preserve_interword_spaces:'1'});
+    const r2 = await worker.recognize(canvas);
+
+    const L1 = linesWithBox(r1), L2 = linesWithBox(r2);
+    const T1 = L1 || textLines(r1), T2 = L2 || textLines(r2);
+    const meta = extractMeta(T1, T2);
+    let games;
+    if(L1 && L2){
+      games = await extractGamesByLine(worker, canvas, L1, L2, (i, t) => {
+        ocrPhase = {base: .6 + .4 * Math.min(i, t-1) / t, span: .4 / t};
+        status.textContent = `③ 줄별 정밀 판독 중 (${Math.min(i+1, t)}/${t})...`;
+      });
+    } else games = extractGamesSimple(T1, T2);
+    finishGames(games);
+    progress.style.width = '100%';
+
+    if(meta){
+      $('ocrRound').value = meta.round; $('ocrDate').value = meta.date; $('ocrDay').value = meta.day;
+      setFilled(true);
+    }
+    if(!games.length) throw new Error('A~E 번호 줄을 찾지 못했습니다. 번호 부분이 잘 보이도록 다시 찍어 주세요.');
+
+    renderOCRRows(games);
+    const mc = {}; games.forEach(g => mc[g.mode] = (mc[g.mode]||0) + 1);
+    const modeSummary = MODE_ORDER.filter(k => mc[k]).map(k => `${MODE_LABEL[k]} ${mc[k]}`).join(' · ');
+    const needCheck = games.filter(g => g.warn.length || g.modeUncertain).length;
+    const labels = games.map(g => g.label).filter(Boolean);
+    const lastIdx = Math.max(...labels.map(l => COLS.indexOf(l)));
+    const missing = COLS.slice(0, lastIdx + 1).filter(c => !labels.includes(c));
+    const failed = games.filter(g => g.failed).map(g => g.label);
+    const head = meta ? `제${meta.round}회 · 발행일 ${meta.date}(${meta.day})` : '회차·발행일을 읽지 못했습니다 — 위 칸에 직접 입력하세요';
+
+    text.innerHTML =
+      `<b>${escapeHtml(head)}</b>\n${games.length}게임 (${modeSummary})` +
+      (meta?.note ? `\n⚠️ ${escapeHtml(meta.note)}` : '') +
+      (failed.length ? `\n⚠️ ${failed.join(', ')}행 번호를 제대로 읽지 못했습니다. 직접 입력해 주세요.` : '') +
+      (missing.length ? `\n⚠️ ${missing.join(', ')}행을 찾지 못했습니다. [+ 빠진 행 추가]로 넣어 주세요.` : '') +
+      (needCheck ? `\n⚠️ ${needCheck}개 행은 확인이 필요합니다.` : '\n✅ 모든 행이 정상적으로 읽혔습니다.') +
+      `<details class="raw"><summary>OCR 원문 보기</summary><pre>${escapeHtml(r1.data.text || '')}</pre></details>`;
+    status.textContent = `인식 완료 — ${games.length}게임. 확인 후 [입력칸에 추가]를 누르세요.`;
+    const firstWarn = document.querySelector('#ocrRows .num-input.warn');
+    if(firstWarn) focusCell(firstWarn);
+  }catch(e){
+    console.error(e);
+    status.textContent = 'OCR 처리 중 문제가 생겼습니다.';
+    text.textContent = '오류: ' + e.message;
+  }finally{
+    ocrBusy = false;
+  }
+}
+
+function makeOcrRow(g){
+  const row = document.createElement('div');
+  row.className = 'row entry-row ocr-row';
+  row.innerHTML = colSelectHtml() + `<button type="button" class="mode-chip" tabindex="-1"></button>` +
+    numCellsHtml(g.numbers) + `<span class="badge"></span><button type="button" class="remove" tabindex="-1">삭제</button>`;
+  setMeta(row, 'col', g.label || '');
+  cellsOf(row).forEach((c,k) => { if((g.warn||[]).includes(k)) c.classList.add('warn'); });
+  paintMode(row, g.mode || stickyMode, g.modeUncertain);
+  if(g.failed) row.dataset.failed = '1';
+  return row;
+}
+function renderOCRRows(games){
+  const box = $('ocrRows');
+  box.innerHTML = '';
+  games.forEach(g => { const r = makeOcrRow(g); box.appendChild(r); validateRow(r); });
+}
+function updateOcrBadge(row){
+  const b = row.querySelector('.badge');
+  if(!b) return;
+  const ok = row.classList.contains('done') && !row.querySelector('.warn') && isAscending(readCells(row))
+    && !row.querySelector('.mode-chip.uncertain');
+  b.className = 'badge ' + (ok ? 'ok' : 'warn');
+  b.textContent = ok ? '정상' : (row.dataset.failed && !row.classList.contains('done') ? '인식 실패 · 직접 입력' : '확인 필요');
+}
+function addOCRBlankRow(){
+  const box = $('ocrRows');
+  const r = makeOcrRow({numbers:[], mode: stickyMode, label: COLS[box.querySelectorAll('.entry-row').length] || ''});
+  box.appendChild(r); validateRow(r);
+  focusCell(cellsOf(r)[0]);
+}
+
+function useOCRNumbers(){
+  const round = $('ocrRound').value.trim();
+  const date = normalizeDate($('ocrDate').value.trim());
+  const day = $('ocrDay').value.trim() || weekdayFromDate(date);
+  const items = [...document.querySelectorAll('#ocrRows .entry-row')]
+    .map(r => ({round, date, day, col: metaVal(r,'col'), mode: r.dataset.mode, numbers: readCells(r).filter(n => n)}))
+    .filter(x => x.numbers.length);
+  if(!items.length){ alert('인식된 번호가 없습니다.'); return; }
+
+  const bad = items.filter(g => g.numbers.length < 6 || new Set(g.numbers).size !== g.numbers.length).length;
+  if(bad && !confirm(`${bad}개 행이 6개 번호가 아니거나 중복이 있습니다. 그래도 추가할까요?`)) return;
+  const key = (r, nums) => r + '|' + [...nums].sort((a,b) => a-b).join(',');
+  const existing = new Set(getRows().map(r => key(r.round, r.numbers)));
+  if(items.every(g => existing.has(key(round, g.numbers))) && !confirm('같은 회차·같은 번호가 이미 입력되어 있습니다. 중복으로 추가할까요?')) return;
+
+  mainRows().forEach(r => { if(isEmptyRow(r)) r.remove(); });   // 빈 행은 정리
+  items.forEach(item => addRow(item.numbers, item, {mode: item.mode}));
+  renumber(); analyze();
+
+  $('ocrRows').innerHTML = '';
+  $('preview').style.display = 'none';
+  $('progress').style.width = '0%';
+  setFilled(false);
+  $('ocrStatus').textContent = `제${round}회 ${items.length}게임 추가 완료 — 다음 용지 사진을 선택하거나 붙여넣으세요.`;
+  toast(`${items.length}게임을 입력칸에 추가했습니다.`);
+}
+
+async function copyOCR(){
+  const rows = [...document.querySelectorAll('#ocrRows .entry-row')];
+  const head = `제${$('ocrRound').value}회 ${$('ocrDate').value}(${$('ocrDay').value})`;
+  const t = rows.length
+    ? [head, ...rows.map(r => `${metaVal(r,'col')} ${MODE_LABEL[r.dataset.mode]} ${readCells(r).map(n => n ? pad(n) : '__').join(' ')}`)].join('\n')
+    : $('ocrText').textContent;
+  try{ await navigator.clipboard.writeText(t); toast('OCR 결과를 복사했습니다.'); }
+  catch(e){ alert('복사하지 못했습니다.'); }
+}
+
+/* 드래그 앤 드롭 */
+(function(){
+  const dz = $('dropZone');
+  ['dragenter','dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+  ['dragleave','drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+  dz.addEventListener('drop', e => {
+    const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith('image/'));
+    if(f) handleImageFile(f);
+  });
+})();
+
+/* ============================================================
+   저장 / 불러오기 (기존 파일 형식 호환)
+   ============================================================ */
+function collectSaveData(){
+  return {
+    version:2, savedAt:new Date().toISOString(),
+    defaultRound:$('defaultRound').value,
+    defaultDate:$('defaultDate').value,
+    defaultDay:$('defaultDay').value,
+    rows:mainRows().map(row=>({
+      numbers:cellsOf(row).map(x=>x.value===''?'':Number(x.value)),
+      round:metaVal(row,'round'), date:metaVal(row,'date'), day:metaVal(row,'day'),
+      col:metaVal(row,'col'), mode:MODE_LABEL[row.dataset.mode]||''
+    }))
+  };
+}
+function saveDataFile(){
+  const blob=new Blob([JSON.stringify(collectSaveData(),null,2)],{type:'application/json;charset=utf-8'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a'),now=new Date();
+  const stamp=now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'_'+pad(now.getHours())+pad(now.getMinutes());
+  a.href=url;a.download=`lotto_data_${stamp}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+}
+function loadDataFile(){$('dataFileInput').click();}
+function readDataFile(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(){
+    try{
+      const data=JSON.parse(reader.result);if(!data||!Array.isArray(data.rows))throw new Error('올바른 저장 파일이 아닙니다.');
+      $('defaultRound').value=data.defaultRound||'';
+      $('defaultDate').value=data.defaultDate||'';
+      $('defaultDay').value=data.defaultDay||weekdayFromDate(data.defaultDate||'');
+      $('rows').innerHTML='';
+      data.rows.forEach(item=>addRow(Array.isArray(item.numbers)?item.numbers:[],
+        {round:item.round||'',date:item.date||'',day:item.day||'',col:item.col||'',mode:item.mode||''},
+        {mode:LABEL_TO_MODE[item.mode]||'auto'}));
+      if(!data.rows.length)addRow();
+      renumber();analyze();toast('저장된 입력 정보를 불러왔습니다.');
+    }catch(err){alert('저장 파일을 불러오지 못했습니다: '+err.message);}
+    finally{event.target.value='';}
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+/* 시작 */
+initPrintDate();
+addRow();
+if(window.matchMedia?.('(pointer:fine)')?.matches) focusCell(document.querySelector('#rows .num-input'));
+</script>
+</body>
+</html>
