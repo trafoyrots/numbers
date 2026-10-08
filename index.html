@@ -163,7 +163,15 @@ details.raw pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:8
 .print-num.picked{border:1.4px solid #000;border-radius:50%;padding:0 2px}
 .print-num.sq{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px}
 /* 사각 패턴 */
-.an-filters[data-type=digit] .only-sq,.an-filters[data-type=sq] .only-digit{display:none !important}
+.an-filters:not([data-type=digit]) .only-digit,.an-filters:not([data-type=sq]) .only-sq,.an-filters:not([data-type=bar]) .only-bar{display:none !important}
+/* 막대 패턴 */
+.an-tag.bar1{background:#4338ca;color:#fff}.an-tag.bar2{background:#e0e7ff;color:#3730a3}
+.an-group.bar{border-color:#c7d2fe}.an-group.bar > h3{background:#eef2ff;color:#3730a3;border-color:#c7d2fe}
+.ball.bar-c{box-shadow:0 0 0 2px #fff,0 0 0 4px #a5b4fc}
+.ball.bar-1{box-shadow:0 0 0 2px #fff,0 0 0 4px #4338ca}
+.row.bar-row{border-color:#c7d2fe;background:#f5f7ff;box-shadow:inset 4px 0 0 #4338ca}
+.row.bar-row::after{content:attr(data-hot);font-size:11px;font-weight:bold;color:#3730a3;background:#e0e7ff;padding:3px 7px;border-radius:5px;white-space:nowrap}
+.num-input.bar-hit{box-shadow:inset 0 0 0 3px #6366f1}
 .an-tag.sq{background:#ccfbf1;color:#0f766e}.an-tag.sqfull{background:#0d9488;color:#fff}
 .an-group.sq{border-color:#99e0d6}.an-group.sq > h3{background:#f0fdfa;color:#0f766e;border-color:#99e0d6}
 .sq-pair{display:flex;flex-direction:column;gap:7px}
@@ -325,6 +333,7 @@ body.print-preview-mode .print-only{display:block}
       <div class="seg" id="anType">
         <button type="button" data-type="digit" class="on">🔥 끝수 패턴</button>
         <button type="button" data-type="sq">▦ 사각 패턴</button>
+        <button type="button" data-type="bar">▮ 막대 패턴</button>
       </div>
       <label class="only-digit">같은 끝수
         <select id="anN" class="meta-input"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select>
@@ -336,6 +345,8 @@ body.print-preview-mode .print-only{display:block}
       <label class="only-digit">정렬
         <select id="anSort" class="meta-input"><option value="count">같은 끝수 많은 순</option><option value="input">입력 순서</option></select></label>
       <label class="only-sq"><input type="checkbox" id="anSqFull"> 완전 사각만</label>
+      <label class="only-bar"><input type="checkbox" id="anBarOne"> 끝수 1개짜리만</label>
+      <span class="only-bar meta-label" style="font-size:12px;">한 용지 A~E 5행 · 같은 자리를 위에서 아래로 본 끝수가 1~2종류</span>
       <span class="only-sq meta-label" style="font-size:12px;">같은 용지 바로 위·아래 행 · 같은 자리 세로 연번 · 근접수 3 이내</span>
       <label>회차 <select id="anRound" class="meta-input"><option value="">전체</option></select></label>
       <label>방식
@@ -899,21 +910,21 @@ function goToRow(i){
 
 /* 분석 설정 (브라우저에 기억) */
 const AN_KEY = 'lotto_analysis_settings';
-let anView = 'group', anType = 'digit', hotList = [], sqList = [], analysisPairs = [];
+let anView = 'group', anType = 'digit', hotList = [], sqList = [], analysisPairs = [], barList = [], analysisBars = [];
 function setAnView(v, silent){
   anView = v === 'list' ? 'list' : 'group';
   document.querySelectorAll('#anView button').forEach(b => b.classList.toggle('on', b.dataset.view === anView));
   if(!silent){ saveAnSettings(); analyze(); }
 }
 function setAnType(t, silent){
-  anType = t === 'sq' ? 'sq' : 'digit';
+  anType = ['sq','bar'].includes(t) ? t : 'digit';
   document.querySelectorAll('#anType button').forEach(b => b.classList.toggle('on', b.dataset.type === anType));
   $('anFilters').dataset.type = anType;
   if(!silent){ saveAnSettings(); analyze(); }
 }
 function saveAnSettings(){
   try{ localStorage.setItem(AN_KEY, JSON.stringify({n: $('anN').value, sort: $('anSort').value, view: anView, type: anType,
-    mark: $('anMark').checked, sqFull: $('anSqFull').checked})); }catch(e){}
+    mark: $('anMark').checked, sqFull: $('anSqFull').checked, barOne: $('anBarOne').checked})); }catch(e){}
 }
 function loadAnSettings(){
   try{
@@ -922,6 +933,7 @@ function loadAnSettings(){
     if(st.sort) $('anSort').value = st.sort;
     if(typeof st.mark === 'boolean') $('anMark').checked = st.mark;
     if(typeof st.sqFull === 'boolean') $('anSqFull').checked = st.sqFull;
+    if(typeof st.barOne === 'boolean') $('anBarOne').checked = st.barOne;
     if(st.view) setAnView(st.view, true);
     if(st.type) setAnType(st.type, true);
   }catch(e){}
@@ -930,7 +942,7 @@ document.addEventListener('click', e => {
   const v = e.target.closest('#anView button'); if(v) return setAnView(v.dataset.view);
   const t = e.target.closest('#anType button'); if(t) return setAnType(t.dataset.type);
 });
-['anN','anSort','anMark','anMode','anRound','anSqFull'].forEach(id => $(id).addEventListener('change', () => { saveAnSettings(); analyze(); }));
+['anN','anSort','anMark','anMode','anRound','anSqFull','anBarOne'].forEach(id => $(id).addEventListener('change', () => { saveAnSettings(); analyze(); }));
 
 /* ---------- 사각 패턴 ----------
    같은 용지의 바로 위·아래 행(A-B, B-C, C-D, D-E)에서
@@ -1008,6 +1020,89 @@ function goToSquare(id){
   [p.top.el, p.bot.el].forEach(el => { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); });
 }
 
+/* ---------- 막대 패턴 ----------
+   한 용지(같은 회차·발행일, A~E 5행)에서 같은 자리(k번째) 번호 5개를 위에서 아래로 보고
+   끝수 종류가 1개(예: 5,15,25,35,45) 또는 2개(예: 1,11,22,31,42)면 막대 */
+function ticketsOf(allRows){
+  const out = []; let cur = [];
+  allRows.forEach(r => {
+    const prev = cur[cur.length - 1];
+    if(prev && (r.col === 'A' || r.round !== prev.round || r.date !== prev.date || COLS.indexOf(r.col) !== COLS.indexOf(prev.col) + 1)){ out.push(cur); cur = []; }
+    cur.push(r);
+  });
+  if(cur.length) out.push(cur);
+  return out;
+}
+function findBars(allRows){
+  const tickets = ticketsOf(allRows).filter(t => t.length === 5 && t.map(r => r.col).join('') === 'ABCDE' && t.every(r => r.numbers.length === 6));
+  const found = [];
+  tickets.forEach(t => {
+    const cols = [];
+    for(let k = 0; k < 6; k++){
+      const digits = [...new Set(t.map(r => r.numbers[k] % 10))].sort((a,b) => a - b);
+      if(digits.length <= 2) cols.push({k, digits});
+    }
+    if(cols.length) found.push({rows: t, cols, single: cols.some(c => c.digits.length === 1)});
+  });
+  return {found, total: tickets.length};
+}
+const barTag = c => `▮ ${c.k + 1}번째 자리 · 끝수 ${c.digits.join('·')}${c.digits.length === 1 ? ' (1개)' : ''}`;
+function barTicketHtml(t, id){
+  const ks = new Map(t.shown.map(c => [c.k, c]));
+  const line = item => `<div class="sq-line">
+      <span class="an-meta">${item.round ? escapeHtml(item.round) + '회 ' : ''}${escapeHtml(item.col)}</span>
+      <span class="an-mode ${item.modeKey}">${item.mode}</span>
+      <div class="balls">${item.numbers.map((x,pos) => {
+        const c = ks.get(pos), pk = item.picks.includes(x);
+        return `<div class="ball ${ballClass(x)}${c ? (c.digits.length === 1 ? ' bar-1' : ' bar-c') : ''}${pk ? ' picked' : ''}"${pk ? ' title="직접 고른 번호"' : ''}>${x}</div>`;
+      }).join('')}</div></div>`;
+  return `<div class="an-row" onclick="goToBar(${id})" title="입력 화면에서 이 용지 보기">
+    <span class="an-idx">${t.rows[0].index}–${t.rows[4].index}행</span>
+    <div class="sq-pair">${t.rows.map(line).join('')}</div>
+    <div class="an-tags">${t.shown.map(c => `<span class="an-tag ${c.digits.length === 1 ? 'bar1' : 'bar2'}">${barTag(c)}</span>`).join('')}</div>
+  </div>`;
+}
+function goToBar(id){
+  const t = analysisBars[id];
+  if(!t || !t.rows[0].el.isConnected) return;
+  showPage('input');
+  t.rows[0].el.scrollIntoView({block:'start'});
+  t.rows.forEach(r => { r.el.classList.remove('flash'); void r.el.offsetWidth; r.el.classList.add('flash'); });
+}
+function analyzeBars(allRows, rows, mark){
+  const inRows = new Set(rows.map(r => r.el));
+  const {found, total} = findBars(allRows);
+  const oneOnly = $('anBarOne').checked;
+  const tickets = found.filter(t => t.rows.some(r => inRows.has(r.el)))
+    .map(t => ({...t, shown: oneOnly ? t.cols.filter(c => c.digits.length === 1) : t.cols}))
+    .filter(t => t.shown.length);
+  analysisBars = tickets;
+  barList = tickets;
+  $('tabCount').textContent = tickets.length || '';
+
+  if(mark) tickets.forEach(t => {
+    const tag = t.shown.map(c => `막대 ${c.k + 1}번째 끝수 ${c.digits.join('·')}`).join(' · ');
+    t.rows.forEach(item => {
+      item.el.classList.add('bar-row');
+      item.el.dataset.hot = tag;
+      const cells = cellsOf(item.el);
+      t.shown.forEach(c => cells[c.k]?.classList.add('bar-hit'));
+    });
+  });
+
+  const ones = [], twos = [];
+  tickets.forEach((t,id) => (t.shown.some(c => c.digits.length === 1) ? ones : twos).push(id));
+  const body = ids => ids.map(id => barTicketHtml(tickets[id], id)).join('');
+  $('anGroups').innerHTML =
+    groupBox('bar', '▮ 끝수 1개 막대', '세로 5개가 모두 같은 끝수', body(ones), `${ones.length}장`) +
+    (oneOnly ? '' : groupBox('bar', '▮▮ 끝수 2개 막대', '세로 5개가 끝수 2종류로만', body(twos), `${twos.length}장`));
+  $('anListTools').hidden = !tickets.length;
+
+  const colCount = tickets.reduce((s,t) => s + t.shown.length, 0);
+  return [`비교한 용지(A~E 5행) <b>${total}</b>장`,
+          `막대 있는 용지 <b>${tickets.length}</b>장 <small>(막대 ${colCount}줄 · 끝수 1개 ${ones.length}장)</small>`];
+}
+
 function analysisRowHtml(item, i, n){
   const hot = lastDigitGroups(item.numbers, n), runs = consecutiveRuns(item.numbers);
   const hit = new Set([...hot.flatMap(g => g.nums), ...runs.flat()]);
@@ -1033,8 +1128,8 @@ function analysisRowHtml(item, i, n){
 }
 
 function clearInputMarks(){
-  document.querySelectorAll('#rows .hot-row, #rows .sq-row').forEach(r => { r.classList.remove('hot-row','sq-row'); delete r.dataset.hot; });
-  document.querySelectorAll('#rows .hit-digit, #rows .sq-hit').forEach(c => c.classList.remove('hit-digit','sq-hit'));
+  document.querySelectorAll('#rows .hot-row, #rows .sq-row, #rows .bar-row').forEach(r => { r.classList.remove('hot-row','sq-row','bar-row'); delete r.dataset.hot; });
+  document.querySelectorAll('#rows .hit-digit, #rows .sq-hit, #rows .bar-hit').forEach(c => c.classList.remove('hit-digit','sq-hit','bar-hit'));
 }
 const groupBox = (cls, title, desc, body, count) =>
   `<div class="an-group ${cls}"><h3>${title} <small>${count}${desc ? ' · ' + desc : ''}</small></h3>` +
@@ -1120,7 +1215,8 @@ function analyze(){
 
   clearInputMarks();
   const mark = $('anMark').checked;
-  const patternChips = anType === 'sq' ? analyzeSquares(allRows, rows, mark) : analyzeDigits(rows, mark);
+  const patternChips = anType === 'sq' ? analyzeSquares(allRows, rows, mark)
+                     : anType === 'bar' ? analyzeBars(allRows, rows, mark) : analyzeDigits(rows, mark);
   if(!rows.length){
     $('anGroups').innerHTML = '<div class="empty">조건에 맞는 입력이 없습니다. 입력 화면에서 번호를 넣거나 회차·방식 필터를 바꿔 보세요.</div>';
     $('anListTools').hidden = true;
@@ -1170,13 +1266,25 @@ function sqListText(){
   sqList.forEach(p => out.push('', lineOf(p.top, ''), lineOf(p.bot, p.squares.map(squareTag).join(', '))));
   return out.join('\n');
 }
+function barListText(){
+  const out = [`# 막대 패턴 — ${barList.length}장   (같은 자리 세로 5개의 끝수가 1~2종류, [ ] = 직접 고른 번호)`];
+  barList.forEach(t => { out.push('', `# ${t.shown.map(barTag).join(', ')}`); t.rows.forEach(r => out.push(lineOf(r, ''))); });
+  return out.join('\n');
+}
 async function copyHotList(){
-  const sq = anType === 'sq', cnt = sq ? sqList.length : hotList.length;
+  const [text, cnt, unit] = anType === 'sq' ? [sqListText(), sqList.length, '쌍']
+    : anType === 'bar' ? [barListText(), barList.length, '장'] : [hotListText(), hotList.length, '행'];
   if(!cnt) return;
-  try{ await navigator.clipboard.writeText(sq ? sqListText() : hotListText()); toast(`${cnt}${sq ? '쌍' : '행'}을 복사했습니다.`); }
+  try{ await navigator.clipboard.writeText(text); toast(`${cnt}${unit}을 복사했습니다.`); }
   catch(e){ alert('복사하지 못했습니다.'); }
 }
 function printHotList(){
+  if(anType === 'bar'){
+    if(!barList.length){ alert('찾은 막대 패턴이 없습니다.'); return; }
+    const rows = barList.flatMap(t => t.rows.map(r => ({...r, sqPos: t.shown.map(c => c.k)})));
+    buildPrint(rows, {title: '막대 패턴', countText: `${barList.length}장`, markLegend: '밑줄 = 막대 패턴 (같은 자리 세로 끝수 1~2종류)'});
+    return;
+  }
   if(anType === 'sq'){
     if(!sqList.length){ alert('찾은 사각 패턴이 없습니다.'); return; }
     const rows = sqList.flatMap(p => [{...p.top, sqPos: [...p.mark.t.keys()]}, {...p.bot, sqPos: [...p.mark.b.keys()]}]);
@@ -1281,13 +1389,13 @@ function buildPrint(rows, opts){
       </div>
       <div style="border-bottom:1.5px solid #20242a; padding-bottom:4px; margin-bottom:8px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h2 style="margin:0; font-size:12pt; font-weight:bold;">🎱 ${opts.list ? escapeHtml(opts.title) + ` (${opts.countText || rows.length + '행'})` : '로또 번호 목록'}</h2>
+          <h2 style="margin:0; font-size:12pt; font-weight:bold;">🎱 ${opts.title ? escapeHtml(opts.title) + ` (${opts.countText || rows.length + '행'})` : '로또 번호 목록'}</h2>
           <span style="font-size:8pt; color:#666;">A5 페이지 (${p + 1} / ${totalPages})</span>
         </div>
       </div>`;
     const legend = [];
     if(pageChunks.some(c => c.some(r => r.picks?.length))) legend.push('○ 표시 = 반자동에서 직접 고른 번호');
-    if(pageChunks.some(c => c.some(r => r.sqPos?.length))) legend.push('밑줄 = 사각 패턴 꼭짓점 (2행씩 위·아래 짝)');
+    if(pageChunks.some(c => c.some(r => r.sqPos?.length))) legend.push(opts.markLegend || '밑줄 = 사각 패턴 꼭짓점 (2행씩 위·아래 짝)');
     if(legend.length) pageHtml += `<div class="print-legend">${legend.join(' · ')}</div>`;
 
 
