@@ -88,9 +88,9 @@ kbd{
   width:42px;height:42px;border-radius:50%;display:flex;align-items:center;
   justify-content:center;font-weight:800;color:#fff;background:#777;
 }
-.ball.yellow{background:#e6b400}.ball.blue{background:#3679d8}
-.ball.red{background:#e04b4b}.ball.green{background:#35a76d}
-.ball.gray{background:#777}
+.ball.yellow{background:#c9a24a}.ball.blue{background:#5f86bf}
+.ball.red{background:#c46e6e}.ball.green{background:#5f9a7e}
+.ball.gray{background:#8c919a}
 .count-table{width:100%;border-collapse:collapse;margin-top:12px}
 .count-table th,.count-table td{padding:8px;border-bottom:1px solid #e8ebef;text-align:center}
 .count-table th{background:#f6f7f9}
@@ -237,6 +237,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   border:.25mm solid transparent;border-radius:50%;font-size:8.5pt;font-weight:bold;color:#111;text-align:center;
   vertical-align:middle;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
 .print-num.picked{background:#dcdcdc;border-color:#8a8a8a}
+.pdf-data{color:#fff;font-size:4pt;line-height:1;font-family:monospace;word-break:break-all;margin-top:2mm;user-select:none}
 .print-num.sq{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:1.2px}
 @media print{
   @page { size: A5 portrait; margin: 0; }
@@ -291,7 +292,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <button class="secondary" onclick="clearAll()">전체 지우기</button>
       <button onclick="showPage('analysis')">📊 패턴 분석 보기</button>
       <button class="blue" onclick="saveDataFile()">💾 입력 정보 저장</button>
-      <button class="secondary" onclick="loadDataFile()">📂 저장 정보 불러오기</button>
+      <button class="secondary" onclick="loadDataFile()" title="저장한 JSON 파일 또는 이 프로그램에서 인쇄해 저장한 PDF">📂 저장 정보 불러오기 (JSON·PDF)</button>
       <button class="blue" onclick="printA4()">🖨️ 입력 순서대로 A5 인쇄</button>
     </div>
     <div class="input-guide" style="font-size:12px;color:#59636e;background:#f4f7fb;border-radius:9px;padding:9px 11px;margin-bottom:10px;line-height:1.9;">
@@ -303,7 +304,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <br><b>붙여넣기:</b> "자동 10 24 28 29 39 45" 같은 여러 줄 텍스트를 번호 칸에 붙여넣으면 한 번에 채워집니다. <b>[12]</b>처럼 대괄호로 감싼 번호는 직접 고른 번호로 표시됩니다.
     </div>
     <div id="rows" class="rows entry-grid"></div>
-    <input id="dataFileInput" type="file" accept=".json,application/json" multiple style="display:none" onchange="readDataFile(event)">
+    <input id="dataFileInput" type="file" accept=".json,application/json,.pdf,application/pdf" multiple style="display:none" onchange="readDataFile(event)">
   </div>
 
   <div class="card">
@@ -1424,6 +1425,8 @@ function buildPrint(rows, opts){
     rightChunks.forEach((chunk, ci) => { pageHtml += renderChunkTable(chunk, p * CHUNKS_PER_PAGE + leftChunks.length + ci + 1, opts); });
     pageHtml += `</div></div>`;
 
+    // PDF로 저장했을 때 다시 불러올 수 있도록 이 페이지의 데이터를 보이지 않는 글자로 넣어 둠
+    pageHtml += `<div class="pdf-data" aria-hidden="true">@@LT1@${encodePrintData(pageChunks.flat())}@@END@</div>`;
     pageDiv.innerHTML = pageHtml;
     printArea.appendChild(pageDiv);
   }
@@ -1916,6 +1919,111 @@ function saveDataFile(){
   a.href=url;a.download=`lotto_data_${stamp}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
 function loadDataFile(){$('dataFileInput').click();}
+
+/* ---------- PDF ↔ 데이터 ----------
+   인쇄 페이지마다 "@@LT1@행_행_...@@END@" 을 흰색 작은 글자로 넣어 둠.
+   한 행 = 회차.발행일(8자리).행.방식(a/m/s).번호12자리.직접고른자리(비트, 36진수) */
+function encodePrintData(rows){
+  return rows.map(r => {
+    const d8 = (normalizeDate(r.date || '').match(/\d/g) || []).join('').slice(0, 8);
+    const m = {auto:'a', manual:'m', semi:'s'}[r.modeKey || LABEL_TO_MODE[r.mode]] || 'a';
+    const mask = r.numbers.reduce((acc, n, i) => acc + ((r.picks || []).includes(n) ? (1 << i) : 0), 0);
+    return [String(r.round || '').replace(/\D/g,''), d8, /^[A-E]$/.test(r.col) ? r.col : '', m,
+            r.numbers.map(pad).join(''), mask.toString(36)].join('.');
+  }).join('_');
+}
+function decodePrintData(seg){
+  return seg.split('_').filter(Boolean).map(r => {
+    const [round = '', d8 = '', col = '', m = 'a', nums = '', mask = '0'] = r.split('.');
+    const numbers = (nums.match(/\d\d/g) || []).map(Number).filter(isNum);
+    const bits = parseInt(mask, 36) || 0;
+    const date = d8.length === 8 ? `${d8.slice(0,4)}/${d8.slice(4,6)}/${d8.slice(6,8)}` : '';
+    return {round, date, day: weekdayFromDate(date), col, mode: {a:'자동', m:'수동', s:'반자동'}[m] || '자동',
+            numbers, picks: numbers.filter((_, i) => bits & (1 << i))};
+  }).filter(r => r.numbers.length === 6);
+}
+let pdfjsPromise = null;
+function loadPdfJs(){
+  if(!pdfjsPromise) pdfjsPromise = new Promise((res, rej) => {
+    if(window.pdfjsLib) return res(window.pdfjsLib);
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    sc.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      res(window.pdfjsLib);
+    };
+    sc.onerror = () => { pdfjsPromise = null; rej(new Error('PDF 읽기 도구를 불러오지 못했습니다. 인터넷 연결을 확인하세요.')); };
+    document.head.appendChild(sc);
+  });
+  return pdfjsPromise;
+}
+async function readPdfData(file){
+  const lib = await loadPdfJs();
+  const doc = await lib.getDocument({data: new Uint8Array(await file.arrayBuffer())}).promise;
+  const pages = [];
+  for(let i = 1; i <= doc.numPages; i++){
+    const page = await doc.getPage(i);
+    const tc = await page.getTextContent();
+    pages.push({items: tc.items.filter(it => typeof it.str === 'string'), width: page.getViewport({scale: 1}).width});
+  }
+  return parsePdfPages(pages, file.name);
+}
+function parsePdfPages(pages, name){
+  // 1) 숨은 데이터가 있으면 그대로 (반자동 표시까지 복원)
+  const raw = pages.map(p => p.items.map(it => it.str).join('')).join('').replace(/\s+/g, '');
+  const segs = [...raw.matchAll(/@@LT1@([0-9A-Za-z._\-]*)@@END@/g)].map(m => m[1]);
+  const embedded = segs.flatMap(decodePrintData);
+  if(embedded.length) return {rows: embedded, fromPdf: true, embedded: true};
+
+  // 2) 예전에 인쇄한 PDF: 인쇄된 글자를 읽어서 복원 (왼쪽 열 → 오른쪽 열, 위 → 아래)
+  const rows = [];
+  pages.forEach(p => {
+    const mid = p.width / 2;
+    [true, false].forEach(left => {
+      const items = p.items.filter(it => it.str.trim() && (it.transform[4] < mid) === left);
+      parsePdfLines(groupPdfLines(items), rows);
+    });
+  });
+  if(!rows.length) throw new Error(`${name}: PDF에서 로또 번호를 찾지 못했습니다. 이 프로그램에서 인쇄해 저장한 PDF인지 확인하세요.`);
+  return {rows, fromPdf: true, embedded: false};
+}
+function groupPdfLines(items){
+  const sorted = [...items].sort((a,b) => b.transform[5] - a.transform[5] || a.transform[4] - b.transform[4]);
+  const lines = [];
+  sorted.forEach(it => {
+    const y = it.transform[5], h = Math.abs(it.transform[3]) || 8;
+    const line = lines.find(l => Math.abs(l.y - y) < Math.max(2, h * 0.4));
+    if(line) line.items.push(it); else lines.push({y, items: [it]});
+  });
+  return lines.sort((a,b) => b.y - a.y)
+    .map(l => l.items.sort((a,b) => a.transform[4] - b.transform[4]).map(it => it.str.trim()).join(' '));
+}
+function parsePdfLines(lines, rows){
+  let meta = {round:'', date:'', day:''}, nextCol = 0;
+  lines.forEach(line => {
+    const t = line.replace(/\s+/g, ' ').trim();
+    const head = t.match(/제\s*(\d{3,4})\s*회/);
+    if(head){                                         // 덩어리 제목: 회차·발행일
+      const dm = t.match(/(20\d{2})\s*[\/.\-]\s*(\d{1,2})\s*[\/.\-]\s*(\d{1,2})/);
+      const date = dm ? normalizeDate(dm[0]) : '';
+      meta = {round: head[1], date, day: (t.match(/\(\s*([일월화수목금토])\s*\)/) || [])[1] || weekdayFromDate(date)};
+      nextCol = 0;
+      return;
+    }
+    if(/세트|#\d/.test(t) && !/(\d{1,2}\s+){5}\d{1,2}/.test(t)){ meta = {round:'', date:'', day:''}; nextCol = 0; return; }
+    const toks = t.split(' ');
+    const nums = toks.filter(x => /^\d{1,2}$/.test(x)).map(Number);
+    if(nums.length < 6) return;
+    const six = nums.slice(-6);
+    if(!six.every(isNum)) return;
+    const letter = toks.find(x => /^[A-E]$/.test(x)) || '';
+    const roundLabel = (toks.find(x => /^\d{3,4}$/.test(x)) || '');
+    const mode = /반자동/.test(t) ? '반자동' : /수동/.test(t) ? '수동' : '자동';
+    const col = letter || COLS[nextCol] || '';
+    nextCol = (letter ? COLS.indexOf(letter) : nextCol) + 1;
+    rows.push({round: roundLabel || meta.round, date: meta.date, day: meta.day, col, mode, numbers: six, picks: []});
+  });
+}
 async function readDataFile(event){
   const files = [...event.target.files];
   event.target.value = '';
@@ -1923,7 +2031,9 @@ async function readDataFile(event){
   const datas = [];
   try{
     for(const f of files){
-      const d = JSON.parse(await f.text());
+      const isPdf = /\.pdf$/i.test(f.name) || f.type === 'application/pdf';
+      if(isPdf) toast(`${f.name} 읽는 중...`);
+      const d = isPdf ? await readPdfData(f) : JSON.parse(await f.text());
       if(!d || !Array.isArray(d.rows)) throw new Error(`${f.name}: 올바른 저장 파일이 아닙니다.`);
       datas.push(d);
     }
@@ -1936,10 +2046,12 @@ async function readDataFile(event){
   }
   if(append) mainRows().forEach(r => { if(isEmptyRow(r)) r.remove(); });
   else {
-    const d0 = datas[0];
+    const d0 = datas.find(d => !d.fromPdf);
+    if(d0){
     $('defaultRound').value = d0.defaultRound || '';
     $('defaultDate').value = d0.defaultDate || '';
     $('defaultDay').value = d0.defaultDay || weekdayFromDate(d0.defaultDate || '');
+    }
     $('rows').innerHTML = '';
   }
 
@@ -1958,9 +2070,12 @@ async function readDataFile(event){
     addRow(item.numbers, {round:item.round||'', date:item.date||'', day:item.day||'', col:item.col||'', mode:item.mode||'', picks},
            {mode: LABEL_TO_MODE[item.mode] || 'auto'});
     added++;
+    d._added = (d._added || 0) + 1;
   }));
   if(!mainRows().length) addRow();
   renumber(); analyze();
+  const oldPdf = datas.filter(d => d.fromPdf && !d.embedded && d._added).length;
+  if(oldPdf) alert(`PDF ${oldPdf}개는 예전 방식으로 인쇄된 파일이라 인쇄된 글자에서 번호를 읽었습니다.\n번호·행·자동/수동은 복원됐지만, 반자동에서 직접 고른 번호(회색 표시)는 PDF에 남아 있지 않아 다시 표시해야 합니다.\n\n불러온 뒤 💾 입력 정보 저장으로 JSON 파일도 만들어 두세요.`);
   toast(`${files.length > 1 ? files.length + '개 파일에서 ' : ''}${added}행을 불러왔습니다` +
         (picked ? ` · 반자동 표시 ${picked}행` : '') + (skipped ? ` · 중복 ${skipped}행 건너뜀` : ''));
 }
