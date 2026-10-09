@@ -43,13 +43,13 @@ button:active{transform:translateY(1px)}
 }
 .num-input:focus{border-color:#2f6fed;box-shadow:0 0 0 3px rgba(47,111,237,.15)}
 .cell{position:relative;display:inline-flex}
-.num-input.picked{background:#6d28d9;border-color:#6d28d9;color:#fff}
-.num-input.picked:focus{box-shadow:0 0 0 3px rgba(109,40,217,.28)}
+.num-input.picked{background:#e5e7eb;border-color:#9ca3af;color:#111827}
+.num-input.picked:focus{box-shadow:0 0 0 3px rgba(107,114,128,.3)}
 .pick{display:none;position:absolute;top:-8px;right:-6px;width:22px;height:22px;padding:0;border-radius:50%;
-  font-size:11px;line-height:20px;background:#fff;border:1px solid #cfd5dc;color:#6d28d9;box-shadow:0 1px 3px rgba(0,0,0,.15);z-index:1}
+  font-size:11px;line-height:20px;background:#fff;border:1px solid #cfd5dc;color:#6b7280;box-shadow:0 1px 3px rgba(0,0,0,.15);z-index:1}
 .row[data-mode=semi] .pick{display:block;opacity:.5}
 .row[data-mode=semi] .pick:hover{opacity:1}
-.num-input.picked + .pick{display:block;opacity:1;border-color:#6d28d9}
+.num-input.picked + .pick{display:block;opacity:1;border-color:#9ca3af;background:#f3f4f6}
 .row.hot-row{border-color:#f0c36d;background:#fffaf0;box-shadow:inset 4px 0 0 #e6a100}
 .row.hot-row::after{content:attr(data-hot);font-size:11px;font-weight:bold;color:#9a6200;background:#fff0d9;padding:3px 7px;border-radius:5px;white-space:nowrap}
 .num-input.hit-digit{box-shadow:inset 0 -4px 0 #e6a100}
@@ -58,7 +58,7 @@ button:active{transform:translateY(1px)}
 .remove{padding:9px 11px;background:#edf0f3;color:#555}
 
 /* 자동/수동 칩 */
-.mode-chip{height:40px;min-width:62px;padding:0 10px;border-radius:8px;font-size:13px;font-weight:800}
+.mode-chip{height:40px;width:84px;padding:0 4px;border-radius:8px;font-size:13px;font-weight:800;white-space:nowrap;flex:none}
 .mode-chip.auto{background:#e8f0fe;color:#2f6fed}
 .mode-chip.manual{background:#fdecec;color:#d9363e}
 .mode-chip.semi{background:#e6f6ec;color:#2a8a57}
@@ -151,17 +151,16 @@ details.raw pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:8
 .ball.hit{box-shadow:0 0 0 2px #fff,0 0 0 4px #20242a}
 .an-tags{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto}
 .an-tag{font-size:11px;font-weight:bold;padding:3px 7px;border-radius:5px;background:#f0f2f5;color:#4a5568;white-space:nowrap}
-.an-tag.hot{background:#fff0d9;color:#9a6200}.an-tag.run{background:#e3ecff;color:#2453b8}.an-tag.pick{background:#ede9fe;color:#6d28d9}
+.an-tag.hot{background:#fff0d9;color:#9a6200}.an-tag.run{background:#e3ecff;color:#2453b8}.an-tag.pick{background:#f3f4f6;color:#4b5563}
 .ball{position:relative}
 .ball.picked::after{content:'✋';position:absolute;top:-7px;right:-8px;width:17px;height:17px;font-size:10px;background:#fff;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px #6d28d9}
+  display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1.5px #9ca3af}
 .an-filters{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;background:#f7f9fa;border-radius:10px;padding:10px 12px;margin:10px 0}
 .an-filters label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:bold;color:#4a5568}
 .an-filters .meta-input{height:36px;width:auto}
 .an-filters .seg button.on{color:#20242a}
 .an-chip small{color:#7b838d}
-.print-num.picked{border:1.4px solid #000;border-radius:50%;padding:0 2px}
-.print-num.sq{text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:2px}
+
 /* 사각 패턴 */
 .an-filters:not([data-type=digit]) .only-digit,.an-filters:not([data-type=sq]) .only-sq,.an-filters:not([data-type=bar]) .only-bar{display:none !important}
 /* 막대 패턴 */
@@ -178,12 +177,21 @@ details.raw pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:8
 .sq-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sq-line .an-meta{width:78px;text-align:center}
 .sq-line .an-mode{width:54px;text-align:center}
-.ball.sq-p{box-shadow:0 0 0 2px #fff,0 0 0 4px #0d9488}
-.ball.sq-n{box-shadow:0 0 0 2px #fff,0 0 0 4px #5eead4}
+.sq-box{display:flex;gap:10px;align-items:flex-start}
+.sq-labels{display:grid;grid-template-rows:34px 34px;row-gap:12px}
+.sq-lab{display:flex;align-items:center;gap:6px}
+.sq-lab .an-meta{width:78px;text-align:center}.sq-lab .an-mode{width:54px;text-align:center}
+.sq-grid{position:relative;display:grid;grid-template-columns:repeat(6,34px);grid-template-rows:34px 34px;gap:12px 8px}
+.sq-grid .ball{width:34px;height:34px;font-size:14px}
+/* 완전 사각: 4칸을 사각형으로 묶음 (칸 크기·간격은 그대로) */
+.sq-rect{position:absolute;pointer-events:none;top:-5px;height:90px;width:86px;left:calc(var(--c) * 42px - 5px);
+  border:3px solid #0d9488;border-radius:12px}
+/* ㄱ자 사각: 사각형으로 못 묶으니 굵은 동그라미 (안쪽 테두리라 크기 변화 없음) */
+.ball.sq-thick{box-shadow:inset 0 0 0 4px #0f766e,inset 0 0 0 6px #fff}
 .row.sq-row{border-color:#99e0d6;background:#f0fdfa;box-shadow:inset 4px 0 0 #0d9488}
 .row.sq-row::after{content:attr(data-hot);font-size:11px;font-weight:bold;color:#0f766e;background:#ccfbf1;padding:3px 7px;border-radius:5px;white-space:nowrap}
 .num-input.sq-hit{box-shadow:inset 0 0 0 3px #0d9488}
-.print-legend{font-size:7.5pt;color:#333;margin:-4px 0 6px}
+
 .row.flash{animation:flash 1.6s}
 @keyframes flash{0%,40%{box-shadow:0 0 0 3px #2f6fed}100%{box-shadow:none}}
 
@@ -196,7 +204,7 @@ details.raw pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:8
   border-radius:10px;border:1px solid #f2e3c6;margin-bottom:6px;flex-wrap:wrap
 }
 
-/* A5 세로(Portrait) 인쇄 전용 스타일 */
+/* A5 세로(Portrait) 인쇄 — 미리보기와 인쇄 공통 (모든 칸 고정 크기) */
 .print-only{display:none}
 body.print-preview-mode{background:#eef1f5}
 body.print-preview-mode .container{display:none}
@@ -204,29 +212,40 @@ body.print-preview-mode .print-only{display:block}
 .print-preview-actions{display:flex;gap:8px;justify-content:flex-end;margin-bottom:10px}
 .print-preview-actions button{padding:8px 12px;border-radius:8px;border:0;background:#252a31;color:#fff;font-weight:700;cursor:pointer}
 .print-preview-actions .back{background:#e9edf2;color:#252a31}
+.a4-page{
+  width:148mm;min-height:210mm;padding:8mm;margin:10px auto;box-sizing:border-box;
+  background:#fff;color:#000;font-size:8.5pt;line-height:1.2;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact
+}
+body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
+.print-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1.5px solid #20242a;padding-bottom:1mm;margin-bottom:2mm}
+.print-head h2{margin:0;font-size:11pt;font-weight:bold}
+.print-head span{font-size:7.5pt;color:#666}
+.print-legend{font-size:7pt;color:#333;margin:0 0 2mm;display:flex;gap:4mm;align-items:center;flex-wrap:wrap}
+.print-legend .print-num{width:4mm;height:4mm;line-height:3.5mm;font-size:6pt}
+.print-grid{display:flex;gap:5mm;align-items:flex-start}
+.print-col{flex:1;min-width:0}
+.print-block{margin-bottom:3mm;border:1px solid #bcbfc5;border-radius:4px;overflow:hidden;break-inside:avoid}
+.print-block-title{background:#e9edf2;font-weight:bold;font-size:7.5pt;height:5mm;line-height:5mm;padding:0 2mm;
+  border-bottom:1px solid #bcbfc5;color:#1a202c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.print-table{width:100%;border-collapse:collapse;text-align:center;table-layout:fixed}
+.print-table th{height:4.5mm;padding:0;font-size:6.5pt;font-weight:bold;color:#4a5568;background:#f0f2f5;border-bottom:1px solid #ccc}
+.print-table td{height:6.4mm;padding:0;vertical-align:middle;border-bottom:1px solid #eee;font-size:7.5pt;white-space:nowrap;overflow:hidden}
+.print-table tr:last-child td{border-bottom:0}
+.print-row-num{font-weight:bold;color:#111}
+.print-num{display:inline-block;box-sizing:border-box;width:5.3mm;height:5.3mm;line-height:4.8mm;margin:0 .15mm;
+  border:.25mm solid transparent;border-radius:50%;font-size:8.5pt;font-weight:bold;color:#111;text-align:center;
+  vertical-align:middle;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+.print-num.picked{background:#dcdcdc;border-color:#8a8a8a}
+.print-num.sq{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:1.2px}
 @media print{
   @page { size: A5 portrait; margin: 0; }
-  body{background:#fff;color:#000;font-size:9pt;margin:0}
+  body{background:#fff;margin:0}
   .container,.toast{display:none !important}
   .print-only{display:block !important}
   .print-preview-actions{display:none !important}
-  .a4-page{
-    width:148mm;min-height:210mm;padding:8mm;margin:0 auto;
-    page-break-after:always;break-after:page;box-sizing:border-box;
-    background:#fff;font-size:9pt;line-height:1.2;
-  }
-  .a4-page:last-child{page-break-after:auto;break-after:auto;}
-  .print-grid{display:flex;gap:6mm;}
-  .print-col{flex:1;}
-  .print-block{margin-bottom:8px;border:1px solid #bcbfc5;border-radius:4px;overflow:hidden;}
-  .print-block-title{
-    background:#e9edf2;font-weight:bold;font-size:8pt;padding:3px 6px;
-    border-bottom:1px solid #bcbfc5;color:#1a202c;
-  }
-  .print-table{width:100%;border-collapse:collapse;text-align:center;}
-  .print-table th,.print-table td{padding:3px 2px !important;font-size:9.5pt !important;}
-  .print-row-num{font-weight:bold !important;font-size:9.5pt !important;color:#111 !important;}
-  .print-num{font-weight:bold !important;font-size:9.5pt !important;color:#111 !important;display:inline-block;margin:0 2px;}
+  .a4-page{margin:0;box-shadow:none !important;page-break-after:always;break-after:page}
+  .a4-page:last-child{page-break-after:auto;break-after:auto}
 }
 
 @media(max-width:700px){
@@ -280,7 +299,7 @@ body.print-preview-mode .print-only{display:block}
       1~4 한 자리는 <b>01</b>처럼 치거나 <kbd>Space</kbd>/<kbd>Enter</kbd>.
       <br><b>자동/수동:</b> 번호 칸에서 <kbd>A</kbd> 자동 · <kbd>S</kbd> 수동 · <kbd>D</kbd> 반자동 (한/영 상관없음, 숫자패드 <kbd>/</kbd> <kbd>*</kbd> <kbd>-</kbd>) — 고른 방식은 다음 행에 이어지고, 칩을 눌러도 바뀝니다.
       <br><b>이동:</b> <kbd>←</kbd><kbd>→</kbd> 이전·다음 칸, <kbd>↑</kbd><kbd>↓</kbd> 위·아래 행, 빈 칸에서 <kbd>Backspace</kbd> 이전 칸. 행(A~E)은 같은 회차 안에서 자동으로 매겨집니다.
-      <br><b>✋ 반자동 직접 고른 번호:</b> 번호 칸을 <b>더블클릭</b>하거나 칸 오른쪽 위 <b>✋</b>를 누르면 보라색으로 표시됩니다. 입력하면서는 번호를 친 직후 <kbd>F</kbd>(숫자패드 <kbd>.</kbd>)를 누르면 방금 친 번호가 표시됩니다. 표시가 있으면 그 행은 자동으로 반자동이 되고, 저장·불러오기·인쇄에 그대로 남습니다.
+      <br><b>✋ 반자동 직접 고른 번호:</b> 번호 칸을 <b>더블클릭</b>하거나 칸 오른쪽 위 <b>✋</b>를 누르면 연한 회색으로 표시됩니다. 입력하면서는 번호를 친 직후 <kbd>F</kbd>(숫자패드 <kbd>.</kbd>)를 누르면 방금 친 번호가 표시됩니다. 표시가 있으면 그 행은 자동으로 반자동이 되고, 저장·불러오기·인쇄에 그대로 남습니다.
       <br><b>붙여넣기:</b> "자동 10 24 28 29 39 45" 같은 여러 줄 텍스트를 번호 칸에 붙여넣으면 한 번에 채워집니다. <b>[12]</b>처럼 대괄호로 감싼 번호는 직접 고른 번호로 표시됩니다.
     </div>
     <div id="rows" class="rows entry-grid"></div>
@@ -347,7 +366,7 @@ body.print-preview-mode .print-only{display:block}
       <label class="only-sq"><input type="checkbox" id="anSqFull"> 완전 사각만</label>
       <label class="only-bar"><input type="checkbox" id="anBarOne"> 끝수 1개짜리만</label>
       <span class="only-bar meta-label" style="font-size:12px;">한 용지 A~E 5행 · 같은 자리를 위에서 아래로 본 끝수가 1~2종류</span>
-      <span class="only-sq meta-label" style="font-size:12px;">같은 용지 바로 위·아래 행 · 같은 자리 세로 연번 · 근접수 3 이내</span>
+      <span class="only-sq meta-label" style="font-size:12px;">같은 용지 바로 위·아래 행 · 같은 자리 세로 연번(예: 27↕28) · 바로 옆 자리에 정확히 다음 연번(29 또는 26)</span>
       <label>회차 <select id="anRound" class="meta-input"><option value="">전체</option></select></label>
       <label>방식
         <select id="anMode" class="meta-input"><option value="">전체</option><option value="auto">자동</option><option value="manual">수동</option><option value="semi">반자동</option></select></label>
@@ -946,10 +965,10 @@ document.addEventListener('click', e => {
 
 /* ---------- 사각 패턴 ----------
    같은 용지의 바로 위·아래 행(A-B, B-C, C-D, D-E)에서
-   같은 자리(k번째)의 두 번호가 연번(차이 1)이고,
-   그 바로 옆 자리(k-1 또는 k+1)에 연번에서 3 이내인 근접수가 있으면 사각.
-   위·아래 두 행 모두 근접수 → 완전 사각(꼭짓점 4), 한쪽만 → ㄱ자 사각(꼭짓점 3) */
-const SQ_NEAR = 3;
+   같은 자리(k번째)의 두 번호가 연번(예: 27↕28)이고,
+   바로 옆 자리에 '정확히 그 다음 연번'(오른쪽 29 / 왼쪽 26)이 있어야 사각.
+     27·28 옆에 29·31 → 사각(29가 있음)      27·28 옆에 30·31 → 사각 아님(29가 없음)
+   옆자리 두 칸이 모두 이어지면(29와 29, 또는 29와 30) 완전 사각(꼭짓점 4), 한 칸만 이어지면 ㄱ자 사각(꼭짓점 3) */
 function squaresOfPair(t, b){
   const out = [];
   for(let k = 0; k < 6; k++){
@@ -958,11 +977,13 @@ function squaresOfPair(t, b){
     for(const side of [-1, 1]){
       const j = k + side;
       if(j < 0 || j > 5) continue;
-      const near = v => side > 0 ? v - hi <= SQ_NEAR : lo - v <= SQ_NEAR;
-      const tn = near(t[j]), bn = near(b[j]);
-      if(!tn && !bn) continue;
-      const q = {k, j, side: side > 0 ? 'right' : 'left', full: tn && bn, pair: [t[k], b[k]],
-                 near: {t: tn ? t[j] : null, b: bn ? b[j] : null}};
+      const want = side > 0 ? hi + 1 : lo - 1;     // 정확히 그 다음 연번
+      const next2 = side > 0 ? hi + 2 : lo - 2;    // 그 다음 수 (완전 사각용)
+      const th = t[j] === want, bh = b[j] === want;
+      if(!th && !bh) continue;
+      const full = th ? (b[j] === want || b[j] === next2) : (t[j] === want || t[j] === next2);
+      const q = {k, j, side: side > 0 ? 'right' : 'left', full, pair: [t[k], b[k]],
+                 near: {t: (th || full) ? t[j] : null, b: (bh || full) ? b[j] : null}};
       // 같은 2칸 사각을 양쪽 열에서 두 번 찾은 경우 한 번만 (완전 사각 쪽을 남김)
       const dup = out.findIndex(o => Math.min(o.k,o.j) === Math.min(k,j) && Math.max(o.k,o.j) === Math.max(k,j));
       if(dup < 0) out.push(q);
@@ -984,11 +1005,11 @@ function findSquarePairs(allRows){
     adj++;
     const squares = squaresOfPair(top.numbers, bot.numbers);
     if(!squares.length) continue;
-    const mark = {t: new Map(), b: new Map()};   // 자리 → 'p'(연번) / 'n'(근접수)
+    const mark = {t: new Map(), b: new Map()};   // 사각에 포함된 자리 (입력 화면·인쇄 표시용)
     squares.forEach(q => {
-      mark.t.set(q.k, 'p'); mark.b.set(q.k, 'p');
-      if(q.near.t != null && !mark.t.has(q.j)) mark.t.set(q.j, 'n');
-      if(q.near.b != null && !mark.b.has(q.j)) mark.b.set(q.j, 'n');
+      mark.t.set(q.k, 1); mark.b.set(q.k, 1);
+      if(q.near.t != null) mark.t.set(q.j, 1);
+      if(q.near.b != null) mark.b.set(q.j, 1);
     });
     pairs.push({top, bot, squares, full: squares.some(q => q.full), mark});
   }
@@ -999,16 +1020,25 @@ function squareTag(q){
   return `${q.full ? '■ 완전' : '◩ ㄱ자'} ${q.pair[0]}↕${q.pair[1]} ${q.side === 'right' ? '→' : '←'} ${nears}`;
 }
 function squarePairHtml(p, id){
-  const line = (item, r) => `<div class="sq-line">
+  // 완전 사각 → 사각형 테두리, ㄱ자 사각 → 꼭짓점 3개를 굵은 동그라미
+  const thick = {t: new Set(), b: new Set()};
+  p.squares.filter(q => !q.full).forEach(q => {
+    thick.t.add(q.k); thick.b.add(q.k);
+    if(q.near.t != null) thick.t.add(q.j);
+    if(q.near.b != null) thick.b.add(q.j);
+  });
+  const label = item => `<div class="sq-lab">
       <span class="an-meta">${item.round ? escapeHtml(item.round) + '회 ' : ''}${escapeHtml(item.col)}</span>
-      <span class="an-mode ${item.modeKey}">${item.mode}</span>
-      <div class="balls">${item.numbers.map((x,pos) => {
-        const m = p.mark[r].get(pos), pk = item.picks.includes(x);
-        return `<div class="ball ${ballClass(x)}${m ? ' sq-' + m : ''}${pk ? ' picked' : ''}"${pk ? ' title="직접 고른 번호"' : ''}>${x}</div>`;
-      }).join('')}</div></div>`;
+      <span class="an-mode ${item.modeKey}">${item.mode}</span></div>`;
+  const balls = (item, r) => item.numbers.map((x,pos) => {
+    const pk = item.picks.includes(x);
+    return `<div class="ball ${ballClass(x)}${thick[r].has(pos) ? ' sq-thick' : ''}${pk ? ' picked' : ''}"${pk ? ' title="직접 고른 번호"' : ''}>${x}</div>`;
+  }).join('');
+  const rects = p.squares.filter(q => q.full).map(q => `<span class="sq-rect" style="--c:${Math.min(q.k, q.j)}"></span>`).join('');
   return `<div class="an-row" onclick="goToSquare(${id})" title="입력 화면에서 이 두 행 보기">
     <span class="an-idx">${p.top.index}–${p.bot.index}행</span>
-    <div class="sq-pair">${line(p.top,'t')}${line(p.bot,'b')}</div>
+    <div class="sq-box"><div class="sq-labels">${label(p.top)}${label(p.bot)}</div>
+      <div class="sq-grid">${balls(p.top,'t')}${balls(p.bot,'b')}${rects}</div></div>
     <div class="an-tags">${p.squares.map(q => `<span class="an-tag ${q.full ? 'sqfull' : 'sq'}">${squareTag(q)}</span>`).join('')}</div>
   </div>`;
 }
@@ -1193,8 +1223,8 @@ function analyzeSquares(allRows, rows, mark){
 
   const body = ids => ids.map(id => squarePairHtml(pairs[id], id)).join('');
   $('anGroups').innerHTML =
-    groupBox('sq', '■ 완전 사각', '위·아래 두 행 모두 근접수 (꼭짓점 4개)', body(fullIds), `${fullIds.length}쌍`) +
-    (fullOnly ? '' : groupBox('sq', '◩ ㄱ자 사각', '한쪽 행에만 근접수 (꼭짓점 3개)', body(partIds), `${partIds.length}쌍`));
+    groupBox('sq', '■ 완전 사각', '옆자리 위·아래 모두 이어짐 (꼭짓점 4개 · 사각형 표시)', body(fullIds), `${fullIds.length}쌍`) +
+    (fullOnly ? '' : groupBox('sq', '◩ ㄱ자 사각', '옆자리 한 칸만 이어짐 (꼭짓점 3개 · 굵은 동그라미)', body(partIds), `${partIds.length}쌍`));
   $('anListTools').hidden = !sqList.length;
 
   return [`비교한 위·아래 행 <b>${adj}</b>쌍`,
@@ -1262,7 +1292,7 @@ function hotListText(){
     ...hotList.map(r => lineOf(r, r.groups.map(g => `끝수${g.digit}×${g.nums.length}`).join(', ')))].join('\n');
 }
 function sqListText(){
-  const out = [`# 사각 패턴 — ${sqList.length}쌍   (같은 자리 세로 연번 + 근접수 ${SQ_NEAR} 이내, [ ] = 직접 고른 번호)`];
+  const out = [`# 사각 패턴 — ${sqList.length}쌍   (같은 자리 세로 연번 + 옆자리 정확히 다음 연번, [ ] = 직접 고른 번호)`];
   sqList.forEach(p => out.push('', lineOf(p.top, ''), lineOf(p.bot, p.squares.map(squareTag).join(', '))));
   return out.join('\n');
 }
@@ -1282,7 +1312,7 @@ function printHotList(){
   if(anType === 'bar'){
     if(!barList.length){ alert('찾은 막대 패턴이 없습니다.'); return; }
     const rows = barList.flatMap(t => t.rows.map(r => ({...r, sqPos: t.shown.map(c => c.k)})));
-    buildPrint(rows, {title: '막대 패턴', countText: `${barList.length}장`, markLegend: '밑줄 = 막대 패턴 (같은 자리 세로 끝수 1~2종류)'});
+    buildPrint(rows, {title: '막대 패턴', countText: `${barList.length}장`, markLegend: '막대 패턴 (같은 자리 세로 끝수 1~2종류)'});
     return;
   }
   if(anType === 'sq'){
@@ -1302,36 +1332,27 @@ function renderChunkTable(chunkRows, chunkNum, opts = {}){
   const firstItem = chunkRows[0] || {};
   const roundStr = firstItem.round ? `제 ${escapeHtml(firstItem.round)}회` : '';
   const dateStr = firstItem.date ? ` ${escapeHtml(firstItem.date)}` : '';
-  const dayStr = firstItem.day ? ` (${escapeHtml(firstItem.day)})` : '';
+  const dayStr = firstItem.day ? `(${escapeHtml(firstItem.day)})` : '';
   const headerTitle = opts.list ? `${escapeHtml(opts.title)} #${chunkNum}`
-    : (roundStr || dateStr) ? `📌 ${roundStr}${dateStr}${dayStr}` : `로또용지 세트 #${chunkNum}`;
+    : (roundStr || dateStr) ? `${roundStr}${dateStr}${dayStr}` : `로또용지 세트 #${chunkNum}`;
+  const size = opts.chunk || 5;
 
   let html = `
     <div class="print-block">
-      <div class="print-block-title">${headerTitle} (${chunkRows.length}개 조합)</div>
+      <div class="print-block-title">${headerTitle} · ${chunkRows.length}게임</div>
       <table class="print-table">
-        <thead>
-          <tr style="background:#f0f2f5; border-bottom:1px solid #ccc;">
-            <th style="width:${opts.list ? 56 : 32}px;">행</th>
-            <th>로또 번호 (6개)</th>
-            <th style="width:58px;">방식</th>
-          </tr>
-        </thead>
+        <colgroup><col style="width:${opts.list ? 13 : 7}mm"><col><col style="width:10.5mm"></colgroup>
+        <thead><tr><th>행</th><th>로또 번호</th><th>방식</th></tr></thead>
         <tbody>`;
-
   chunkRows.forEach(item => {
-    const picks = item.picks || [];
-    const sqPos = item.sqPos || [];
-    const numsHtml = item.numbers.map((n,pos) => `<span class="print-num${picks.includes(n) ? ' picked' : ''}${sqPos.includes(pos) ? ' sq' : ''}">${pad(n)}</span>`).join(' ');
+    const picks = item.picks || [], sqPos = item.sqPos || [];
+    const numsHtml = item.numbers.map((n,pos) =>
+      `<span class="print-num${picks.includes(n) ? ' picked' : ''}${sqPos.includes(pos) ? ' sq' : ''}">${pad(n)}</span>`).join('');
     const label = opts.list ? `${item.round ? escapeHtml(item.round) + ' ' : ''}${escapeHtml(item.col || '')}` : (escapeHtml(item.col) || '-');
-    html += `
-      <tr style="border-bottom:1px solid #eee;">
-        <td class="print-row-num" style="padding:2px;">${label}</td>
-        <td style="padding:2px; letter-spacing:0.5px;">${numsHtml}</td>
-        <td style="padding:2px;">${item.mode || '-'}</td>
-      </tr>`;
+    html += `<tr><td class="print-row-num">${label}</td><td>${numsHtml}</td><td>${item.mode || '-'}</td></tr>`;
   });
-
+  // 덩어리 높이를 항상 같게 (빈 줄로 채움) → 페이지 위 간격이 일정
+  for(let i = chunkRows.length; i < size; i++) html += `<tr><td></td><td></td><td></td></tr>`;
   html += `</tbody></table></div>`;
   return html;
 }
@@ -1387,16 +1408,14 @@ function buildPrint(rows, opts){
         <button class="back" onclick="exitPrintPreview()">← 돌아가기</button>
         <button onclick="window.print()">🖨️ 다시 인쇄</button>
       </div>
-      <div style="border-bottom:1.5px solid #20242a; padding-bottom:4px; margin-bottom:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h2 style="margin:0; font-size:12pt; font-weight:bold;">🎱 ${opts.title ? escapeHtml(opts.title) + ` (${opts.countText || rows.length + '행'})` : '로또 번호 목록'}</h2>
-          <span style="font-size:8pt; color:#666;">A5 페이지 (${p + 1} / ${totalPages})</span>
-        </div>
+      <div class="print-head">
+        <h2>🎱 ${opts.title ? escapeHtml(opts.title) + ` (${opts.countText || rows.length + '행'})` : '로또 번호 목록'}</h2>
+        <span>${p + 1} / ${totalPages}</span>
       </div>`;
     const legend = [];
-    if(pageChunks.some(c => c.some(r => r.picks?.length))) legend.push('○ 표시 = 반자동에서 직접 고른 번호');
-    if(pageChunks.some(c => c.some(r => r.sqPos?.length))) legend.push(opts.markLegend || '밑줄 = 사각 패턴 꼭짓점 (2행씩 위·아래 짝)');
-    if(legend.length) pageHtml += `<div class="print-legend">${legend.join(' · ')}</div>`;
+    if(pageChunks.some(c => c.some(r => r.picks?.length))) legend.push('<span><span class="print-num picked">7</span> 회색 = 반자동에서 직접 고른 번호</span>');
+    if(pageChunks.some(c => c.some(r => r.sqPos?.length))) legend.push(`<span><span class="print-num sq">7</span> 밑줄 = ${opts.markLegend || '사각 패턴 (2행씩 위·아래 짝)'}</span>`);
+    if(legend.length) pageHtml += `<div class="print-legend">${legend.join('')}</div>`;
 
 
     pageHtml += `<div class="print-grid"><div class="print-col">`;
