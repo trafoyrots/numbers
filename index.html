@@ -386,7 +386,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <label class="only-sq"><input type="checkbox" id="anSqFull"> 완전 사각만</label>
       <label class="only-bar"><input type="checkbox" id="anBarOne"> 끝수 1개짜리만</label>
       <span class="only-bar meta-label" style="font-size:12px;">한 용지 A~E 5행 · 같은 자리를 위에서 아래로 본 끝수가 1~2종류</span>
-      <span class="only-sq meta-label" style="font-size:12px;">같은 용지 바로 위·아래 행 · 같은 자리 세로 연번(예: 27↕28) · 바로 옆 자리에 정확히 다음 연번(29 또는 26)</span>
+      <span class="only-sq meta-label" style="font-size:12px;">같은 용지 바로 위·아래 행의 이웃한 2자리(2×2) · 차이 2 이하로 3칸 이상 이어지고 그중 하나는 같은 수/연번</span>
       <label>회차 <select id="anRound" class="meta-input"><option value="">전체</option></select></label>
       <label class="only-digit">방식
         <select id="anMode" class="meta-input"><option value="">전체</option><option value="auto">자동</option><option value="manual">수동</option><option value="semi">반자동</option></select></label>
@@ -998,30 +998,33 @@ function ticketsOf(allRows){
 }
 const full6 = r => r && r.numbers.length === 6;
 
-/* ---------- 사각 패턴 규칙 ----------
-   같은 용지의 바로 위·아래 행에서 같은 자리(k번째)의 두 번호가 연번(예: 27↕28)이고,
-   바로 옆 자리에 '정확히 그 다음 연번'(오른쪽 29 / 왼쪽 26)이 있어야 사각.
-     27·28 옆에 29·31 → 사각(29가 있음)      27·28 옆에 30·31 → 사각 아님(29가 없음)
-   옆자리 두 칸이 모두 이어지면(29와 29, 또는 29와 30) 완전 사각(꼭짓점 4), 한 칸만 이어지면 ㄱ자 사각(꼭짓점 3) */
+/* ---------- 사각 패턴 규칙 (예시 13개에서 정리) ----------
+   같은 용지의 바로 위·아래 두 행에서, 이웃한 두 자리(k, k+1)가 만드는 2×2 칸을 본다.
+       위 행:  a  b
+       아래 행: c  d
+   네 번호 중 차이가 2 이하인 것끼리 이어 본다 (가로·세로·대각선 모두).
+   ① 3칸 이상이 한 덩어리로 이어지고
+   ② 그 안에 차이 0~1(같은 수 또는 연번)인 연결이 하나 이상 있으면 → 사각
+   4칸이 모두 이어지면 ■ 완전 사각, 3칸이면 ◩ ㄱ자 사각.
+     02 03/04 11 → 02-03(1)·03-04(1) → 02·03·04 ㄱ자
+     39 44/38 41 → 39-38(1)·39-41(2) → 39·38·41 ㄱ자
+     40 43/40 41 → 40-40(0)·40-41(1)·43-41(2) → 4칸 완전 */
+const SQ_LINK = 2, SQ_CORE = 1;
+const SQ_EDGES = [[0,1],[2,3],[0,2],[1,3],[0,3],[1,2]];   // 위 가로, 아래 가로, 왼 세로, 오른 세로, 대각선 2개
 function squaresOfPair(t, b){
   const out = [];
-  for(let k = 0; k < 6; k++){
-    if(Math.abs(t[k] - b[k]) !== 1) continue;
-    const lo = Math.min(t[k], b[k]), hi = Math.max(t[k], b[k]);
-    for(const side of [-1, 1]){
-      const j = k + side;
-      if(j < 0 || j > 5) continue;
-      const want = side > 0 ? hi + 1 : lo - 1;
-      const next2 = side > 0 ? hi + 2 : lo - 2;
-      const th = t[j] === want, bh = b[j] === want;
-      if(!th && !bh) continue;
-      const full = th ? (b[j] === want || b[j] === next2) : (t[j] === want || t[j] === next2);
-      const q = {k, j, side: side > 0 ? 'right' : 'left', full, pair: [t[k], b[k]],
-                 near: {t: (th || full) ? t[j] : null, b: (bh || full) ? b[j] : null}};
-      const dup = out.findIndex(o => Math.min(o.k,o.j) === Math.min(k,j) && Math.max(o.k,o.j) === Math.max(k,j));
-      if(dup < 0) out.push(q);
-      else if(q.full && !out[dup].full) out[dup] = q;
-    }
+  for(let k = 0; k < 5; k++){
+    const v = [t[k], t[k+1], b[k], b[k+1]];
+    const links = SQ_EDGES.map(([i,j]) => ({i, j, d: Math.abs(v[i] - v[j])})).filter(e => e.d <= SQ_LINK);
+    const root = [0,1,2,3], find = x => root[x] === x ? x : (root[x] = find(root[x]));
+    links.forEach(e => { root[find(e.i)] = find(e.j); });
+    const groups = {};
+    [0,1,2,3].forEach(x => (groups[find(x)] = groups[find(x)] || []).push(x));
+    Object.values(groups).forEach(cells => {
+      const inside = links.filter(e => cells.includes(e.i) && cells.includes(e.j));
+      if(cells.length >= 3 && inside.some(e => e.d <= SQ_CORE))
+        out.push({k, cells, full: cells.length === 4, vals: v});
+    });
   }
   return out;
 }
@@ -1030,8 +1033,8 @@ function isTicketPair(a, b){
   return i >= 0 && COLS.indexOf(b.col) === i + 1 && a.round === b.round && a.date === b.date;
 }
 function squareTag(q){
-  const nears = [q.near.t, q.near.b].filter(v => v != null).join('·');
-  return `${q.full ? '■ 완전' : '◩ ㄱ자'} ${q.pair[0]}↕${q.pair[1]} ${q.side === 'right' ? '→' : '←'} ${nears}`;
+  const show = idx => q.cells.includes(idx) ? pad(q.vals[idx]) : '··';
+  return `${q.full ? '■ 완전' : '◩ ㄱ자'} ${show(0)} ${show(1)} / ${show(2)} ${show(3)}`;
 }
 const barTag = c => `▮ ${c.k + 1}번째 자리 · 끝수 ${c.digits.join('·')}${c.digits.length === 1 ? ' (1개)' : ''}`;
 
@@ -1062,17 +1065,13 @@ function analyzeTicket(rows, type, opt){
       if(!full6(t) || !full6(b) || !isTicketPair(t, b)) continue;
       squaresOfPair(t.numbers, b.numbers).forEach(q => {
         if(opt.sqFull && !q.full) return;
-        if(q.full){
-          full++;
-          res.rects.push({r: i, c: Math.min(q.k, q.j), h: 2, w: 2, cls: 'sq'});
-          [i, i+1].forEach(ri => { res.under[ri].add(q.k); res.under[ri].add(q.j); });
-        } else {
-          part++;
-          res.ring[i].set(q.k, 'sq-thick'); res.ring[i+1].set(q.k, 'sq-thick');
-          res.under[i].add(q.k); res.under[i+1].add(q.k);
-          if(q.near.t != null){ res.ring[i].set(q.j, 'sq-thick'); res.under[i].add(q.j); }
-          if(q.near.b != null){ res.ring[i+1].set(q.j, 'sq-thick'); res.under[i+1].add(q.j); }
-        }
+        if(q.full){ full++; res.rects.push({r: i, c: q.k, h: 2, w: 2, cls: 'sq'}); }
+        else part++;
+        q.cells.forEach(idx => {                       // 0 위왼 · 1 위오 · 2 아래왼 · 3 아래오
+          const ri = idx < 2 ? i : i + 1, pos = q.k + (idx % 2);
+          res.under[ri].add(pos);
+          if(!q.full) res.ring[ri].set(pos, 'sq-thick');
+        });
         res.tags[i].push(`<span class="an-tag ${q.full ? 'sqfull' : 'sq'}">${squareTag(q)}</span>`);
         res.rowOn[i] = res.rowOn[i+1] = true;
       });
