@@ -59,7 +59,7 @@ button:active{transform:translateY(1px)}
 .remove{padding:9px 11px;background:#edf0f3;color:#555}
 
 /* 자동/수동 칩 */
-.mode-chip{height:40px;width:84px;padding:0 4px;border-radius:8px;font-size:13px;font-weight:800;white-space:nowrap;flex:none}
+.mode-chip{height:40px;width:58px;padding:0 4px;border-radius:8px;font-size:13px;font-weight:800;white-space:nowrap;flex:none}
 .mode-chip.auto{background:#e8f0fe;color:#2f6fed}
 .mode-chip.manual{background:#fdecec;color:#d9363e}
 .mode-chip.semi{background:#e6f6ec;color:#2a8a57}
@@ -209,7 +209,7 @@ button.slip-num{cursor:pointer}
 .tk-lab{display:flex;align-items:center;gap:6px;cursor:pointer;padding-left:6px;border-left:4px solid transparent;border-radius:3px}
 .tk-lab.on.t-digit{border-left-color:#e6a100}.tk-lab.on.t-sq{border-left-color:#0d9488}
 .tk-letter{width:18px;font-weight:800;color:#4a5568}
-.tk-lab .an-mode{width:54px;text-align:center}
+.tk-lab .an-mode{width:26px;text-align:center}
 .tk-dim{opacity:.35}
 .tk-grid{position:relative;display:grid;grid-template-columns:repeat(6,var(--b));grid-auto-rows:var(--b);gap:var(--gy) var(--gx);flex:none}
 .tk-grid .ball{width:var(--b);height:var(--b);font-size:14px}
@@ -238,7 +238,7 @@ button.slip-num{cursor:pointer}
 .sq-box{display:flex;gap:10px;align-items:flex-start}
 .sq-labels{display:grid;grid-template-rows:34px 34px;row-gap:12px}
 .sq-lab{display:flex;align-items:center;gap:6px}
-.sq-lab .an-meta{width:78px;text-align:center}.sq-lab .an-mode{width:54px;text-align:center}
+.sq-lab .an-meta{width:78px;text-align:center}.sq-lab .an-mode{width:26px;text-align:center}
 .sq-grid{position:relative;display:grid;grid-template-columns:repeat(6,34px);grid-template-rows:34px 34px;gap:12px 8px}
 .sq-grid .ball{width:34px;height:34px;font-size:14px}
 /* 완전 사각: 4칸을 사각형으로 묶음 (칸 크기·간격은 그대로) */
@@ -319,9 +319,9 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   .input-guide{font-size:11.5px !important}
   /* 입력 행: 1줄 = 행·회차·발행일·방식·삭제, 2줄 = 번호 6칸 */
   .entry-row{display:grid !important;gap:6px;padding:8px 7px;align-items:center;
-    grid-template-columns:44px 54px minmax(0,1fr) 64px 34px;
+    grid-template-columns:44px 56px minmax(0,1fr) 52px 34px;
     grid-template-areas:"col round date chip del" "nums nums nums nums nums"}
-  .entry-row.ocr-row{grid-template-columns:44px 64px minmax(0,1fr) 34px;grid-template-areas:"col chip badge del" "nums nums nums nums"}
+  .entry-row.ocr-row{grid-template-columns:44px 52px minmax(0,1fr) 34px;grid-template-areas:"col chip badge del" "nums nums nums nums"}
   .entry-row .row-num,.entry-row [data-meta=day]{display:none}
   .entry-row [data-meta=col]{grid-area:col;width:100%}
   .entry-row [data-meta=round]{grid-area:round;width:100%}
@@ -340,7 +340,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   .tk{--b:30px;--gx:5px;--gy:9px}
   .tk-body{padding:10px 8px;gap:8px}
   .tk-lab{gap:3px;padding-left:3px}
-  .tk-lab .an-mode{width:38px;font-size:10px;padding:2px 0}
+  .tk-lab .an-mode{width:22px;font-size:11px;padding:2px 0}
   .tk-letter{width:13px;font-size:13px}
   .tk-grid .ball{font-size:12px}
   .tk-tags{display:none}
@@ -377,9 +377,9 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
         <span class="meta-label" style="font-size:12px;">새 행 방식</span>
         <div class="seg" id="modeSeg">
-          <button type="button" data-mode="auto" class="on">자동<kbd>A</kbd></button>
-          <button type="button" data-mode="manual">수동<kbd>S</kbd></button>
-          <button type="button" data-mode="semi">반자동<kbd>D</kbd></button>
+          <button type="button" data-mode="auto" class="on">자<kbd>A</kbd></button>
+          <button type="button" data-mode="manual">수<kbd>S</kbd></button>
+          <button type="button" data-mode="semi">반<kbd>D</kbd></button>
         </div>
       </div>
     </div>
@@ -395,7 +395,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     <div class="input-guide" style="font-size:12px;color:#59636e;background:#f4f7fb;border-radius:9px;padding:9px 11px;margin-bottom:10px;line-height:1.9;">
       <b>번호만 치면 됩니다.</b> 두 자리를 치면 다음 칸으로 넘어가고(5~9는 한 자리로 바로 이동), 6번째 번호 뒤에는 다음 행이 자동으로 생깁니다.
       1~4 한 자리는 <b>01</b>처럼 치거나 <kbd>Space</kbd>/<kbd>Enter</kbd>.
-      <br><b>자동/수동:</b> 번호 칸에서 <kbd>A</kbd> 자동 · <kbd>S</kbd> 수동 · <kbd>D</kbd> 반자동 (한/영 상관없음, 숫자패드 <kbd>/</kbd> <kbd>*</kbd> <kbd>-</kbd>) — 고른 방식은 다음 행에 이어지고, 칩을 눌러도 바뀝니다.
+      <br><b>자·수·반:</b> 번호 칸에서 <kbd>A</kbd> 자(자동) · <kbd>S</kbd> 수(수동) · <kbd>D</kbd> 반(반자동) (한/영 상관없음, 숫자패드 <kbd>/</kbd> <kbd>*</kbd> <kbd>-</kbd>) — 고른 방식은 다음 행에 이어지고, 칩을 눌러도 바뀝니다.
       <br><b>이동:</b> <kbd>←</kbd><kbd>→</kbd> 이전·다음 칸, <kbd>↑</kbd><kbd>↓</kbd> 위·아래 행, 빈 칸에서 <kbd>Backspace</kbd> 이전 칸. 행(A~E)은 같은 회차 안에서 자동으로 매겨집니다.
       <br><b>✋ 반자동 직접 고른 번호:</b> 번호 칸을 <b>더블클릭</b>하거나 칸 오른쪽 위 <b>✋</b>를 누르면 연한 회색으로 표시됩니다. 입력하면서는 번호를 친 직후 <kbd>F</kbd>(숫자패드 <kbd>.</kbd>)를 누르면 방금 친 번호가 표시됩니다. 표시가 있으면 그 행은 자동으로 반자동이 되고, 저장·불러오기·인쇄에 그대로 남습니다.
       <br><b>붙여넣기:</b> "자동 10 24 28 29 39 45" 같은 여러 줄 텍스트를 번호 칸에 붙여넣으면 한 번에 채워집니다. <b>[12]</b>처럼 대괄호로 감싼 번호는 직접 고른 번호로 표시됩니다.
@@ -477,7 +477,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <span data-for="sq" class="meta-label" style="font-size:12px;">바로 위·아래 행의 이웃한 2자리(2×2) · 차이 2 이하로 3칸 이상 이어지고 그중 하나는 같은 수/연번</span>
       <label>회차 <select id="anRound" class="meta-input"><option value="">전체</option></select></label>
       <label data-for="digit">방식
-        <select id="anMode" class="meta-input"><option value="">전체</option><option value="auto">자동</option><option value="manual">수동</option><option value="semi">반자동</option></select></label>
+        <select id="anMode" class="meta-input"><option value="">전체</option><option value="auto">자</option><option value="manual">수</option><option value="semi">반</option></select></label>
       <label><input type="checkbox" id="anMark" checked> 입력 화면에도 표시</label>
     </div>
     <div id="anChips" class="an-chips"></div>
@@ -528,9 +528,10 @@ function escapeHtml(v){
   return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-const MODE_LABEL = {auto:'자동', manual:'수동', semi:'반자동'};
+const MODE_LABEL = {auto:'자동', manual:'수동', semi:'반자동'};        // 저장 파일용 (예전 파일과 호환)
+const MODE_SHORT = {auto:'자', manual:'수', semi:'반'};                 // 화면·인쇄 표시용 한 글자
 const MODE_ORDER = ['auto','manual','semi'];
-const LABEL_TO_MODE = {'자동':'auto','수동':'manual','반자동':'semi'};
+const LABEL_TO_MODE = {'자동':'auto','수동':'manual','반자동':'semi','자':'auto','수':'manual','반':'semi'};
 // event.code 기준이라 한/영 상태와 무관 (A=ㅁ, S=ㄴ, D=ㅇ, W=ㅈ, T=ㅅ, Q=ㅂ)
 const MODE_KEYS = {
   KeyA:'auto', KeyW:'auto', NumpadDivide:'auto',
@@ -635,7 +636,7 @@ function paintMode(row, mode, uncertain){
   const chip = row.querySelector('.mode-chip');
   const k = mode === 'semi' ? row.querySelectorAll('.num-input.picked').length : 0;
   chip.className = 'mode-chip ' + mode + (uncertain ? ' uncertain' : '');
-  chip.textContent = MODE_LABEL[mode] + (k ? ` ✋${k}` : '') + (uncertain ? '?' : '');
+  chip.textContent = MODE_SHORT[mode] + (k ? ` ✋${k}` : '') + (uncertain ? '?' : '');
   chip.title = '눌러서 변경 · 번호 칸에서 A/S/D 키' + (mode === 'semi' ? ' · 직접 고른 번호는 더블클릭 또는 F 키' : '');
 }
 function setSticky(mode){
@@ -863,7 +864,7 @@ function detectModeText(line){
   if(/반자/.test(c)) return 'semi';
   if(/수동/.test(c)) return 'manual';
   if(/자동/.test(c)) return 'auto';
-  const m = line.match(/^\s*(?:[A-Ea-e]\s*)?(수|자|반)(?=\s|\d|$)/);
+  const m = line.match(/^\s*(?:[A-Ea-e]\s*)?(수|자|반)(?=\s|\d|$)/) || line.match(/(?:^|\s)(수|자|반)(?=\s*(\||$))/);
   return m ? ({'수':'manual','자':'auto','반':'semi'})[m[1]] : null;
 }
 function parseTextGames(text){
@@ -984,7 +985,7 @@ function getRows(){
     if(vals.length){
       const date = normalizeDate(metaVal(row,'date'));
       result.push({numbers: vals, round: metaVal(row,'round'), date, day: metaVal(row,'day') || weekdayFromDate(date),
-                   col: metaVal(row,'col'), mode: MODE_LABEL[row.dataset.mode] || '', modeKey: row.dataset.mode,
+                   col: metaVal(row,'col'), mode: MODE_SHORT[row.dataset.mode] || '', modeKey: row.dataset.mode,
                    picks: row.dataset.mode === 'semi' ? readPicks(row) : [], el: row});
     }
   });
@@ -1394,13 +1395,13 @@ function analyze(){
     patChips = [`5행 다 채운 용지 <b>${comp}</b>장`, `막대 <b>${cols}</b>줄 <small>(용지 ${hitTickets.length}장)</small>`];
   }
   const mc = {};
-  statRows.forEach(r => mc[r.mode] = (mc[r.mode] || 0) + 1);
+  statRows.forEach(r => mc[r.modeKey] = (mc[r.modeKey] || 0) + 1);
   const pickRows = statRows.filter(r => r.picks.length), pickNums = pickRows.reduce((s,r) => s + r.picks.length, 0);
   $('anChips').innerHTML = allRows.length ? [
     `용지 <b>${tickets.length}</b>장 <small>(${statRows.length}행)</small>`,
     ...patChips,
-    `자동 <b>${mc['자동']||0}</b> · 수동 <b>${mc['수동']||0}</b> · 반자동 <b>${mc['반자동']||0}</b>`,
-    ...(pickRows.length ? [`✋ 직접 고른 번호 <b>${pickNums}</b>개 <small>(반자동 ${pickRows.length}행)</small>`] : [])
+    `자 <b>${mc.auto||0}</b> · 수 <b>${mc.manual||0}</b> · 반 <b>${mc.semi||0}</b>`,
+    ...(pickRows.length ? [`✋ 직접 고른 번호 <b>${pickNums}</b>개 <small>(반 ${pickRows.length}행)</small>`] : [])
   ].map(t => `<div class="an-chip">${t}</div>`).join('') : '';
 
   // 번호 통계
@@ -1420,7 +1421,7 @@ function analyze(){
     : '<div class="empty">모든 번호가 한 번 이상 나왔습니다.</div>';
   $('info').innerHTML =
     `분석 행: <b>${statRows.length}</b>개<br>유효 번호: <b>${total}</b>개<br>최다 출현: <b>${max}회</b><br>` +
-    `방식: 자동 <b>${mc['자동']||0}</b> · 수동 <b>${mc['수동']||0}</b> · 반자동 <b>${mc['반자동']||0}</b>`;
+    `방식: 자 <b>${mc.auto||0}</b> · 수 <b>${mc.manual||0}</b> · 반 <b>${mc.semi||0}</b>`;
   // 출현 횟수: 로또 용지 배열, 번호 아래에 횟수
   $('countSlip').innerHTML = slipHtml(n => {
     const c = counts[n], a = max ? c / max : 0;
@@ -1509,7 +1510,7 @@ function renderChunkTable(chunkRows, chunkNum, opts = {}){
     <div class="print-block">
       <div class="print-block-title">${headerTitle} · ${chunkRows.length}게임</div>
       <table class="print-table">
-        <colgroup><col style="width:${opts.list ? 13 : 7}mm"><col><col style="width:10.5mm"></colgroup>
+        <colgroup><col style="width:${opts.list ? 13 : 7}mm"><col><col style="width:6.5mm"></colgroup>
         <thead><tr><th>행</th><th>로또 번호</th><th>방식</th></tr></thead>
         <tbody>`;
   chunkRows.forEach(item => {
@@ -1954,7 +1955,7 @@ async function startOCR(file){
 
     renderOCRRows(games);
     const mc = {}; games.forEach(g => mc[g.mode] = (mc[g.mode]||0) + 1);
-    const modeSummary = MODE_ORDER.filter(k => mc[k]).map(k => `${MODE_LABEL[k]} ${mc[k]}`).join(' · ');
+    const modeSummary = MODE_ORDER.filter(k => mc[k]).map(k => `${MODE_SHORT[k]} ${mc[k]}`).join(' · ');
     const needCheck = games.filter(g => g.warn.length || g.modeUncertain).length;
     const labels = games.map(g => g.label).filter(Boolean);
     const lastIdx = Math.max(...labels.map(l => COLS.indexOf(l)));
@@ -2043,7 +2044,7 @@ async function copyOCR(){
   const rows = [...document.querySelectorAll('#ocrRows .entry-row')];
   const head = `제${$('ocrRound').value}회 ${$('ocrDate').value}(${$('ocrDay').value})`;
   const t = rows.length
-    ? [head, ...rows.map(r => `${metaVal(r,'col')} ${MODE_LABEL[r.dataset.mode]} ${readCells(r).map(n => n ? pad(n) : '__').join(' ')}`)].join('\n')
+    ? [head, ...rows.map(r => `${metaVal(r,'col')} ${MODE_SHORT[r.dataset.mode]} ${readCells(r).map(n => n ? pad(n) : '__').join(' ')}`)].join('\n')
     : $('ocrText').textContent;
   try{ await navigator.clipboard.writeText(t); toast('OCR 결과를 복사했습니다.'); }
   catch(e){ alert('복사하지 못했습니다.'); }
@@ -2184,7 +2185,8 @@ function parsePdfLines(lines, rows){
     if(!six.every(isNum)) return;
     const letter = toks.find(x => /^[A-E]$/.test(x)) || '';
     const roundLabel = (toks.find(x => /^\d{3,4}$/.test(x)) || '');
-    const mode = /반자동/.test(t) ? '반자동' : /수동/.test(t) ? '수동' : '자동';
+    const last = toks[toks.length - 1];
+    const mode = /반자동/.test(t) || last === '반' ? '반자동' : /수동/.test(t) || last === '수' ? '수동' : '자동';
     const col = letter || COLS[nextCol] || '';
     nextCol = (letter ? COLS.indexOf(letter) : nextCol) + 1;
     rows.push({round: roundLabel || meta.round, date: meta.date, day: meta.day, col, mode, numbers: six, picks: []});
