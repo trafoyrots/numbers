@@ -314,13 +314,16 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   body.print-analysis .subtitle,body.print-analysis .an-head,body.print-analysis #pageAnalysis .note,body.print-analysis #anFilters,
   body.print-analysis #anListTools,body.print-analysis .ex-panel:not([open]),body.print-analysis .ex-panel .toolbar,
   body.print-analysis .ex-panel .note,body.print-analysis .toast{display:none !important}
+  /* 설명은 모두 빼고 번호 + 패턴 표시만, 용지를 4열로 촘촘히 */
+  body.print-analysis .an-print-head,body.print-analysis #exPanel,body.print-analysis #anChips,body.print-analysis #anExtra,
+  body.print-analysis #statistics,body.print-analysis .tk-head,body.print-analysis .tk-col,body.print-analysis .tk-notes{display:none !important}
   body.print-analysis #pageAnalysis{display:block !important}
-  body.print-analysis .card{box-shadow:none;padding:0;margin:0 0 6mm;border-radius:0}
-  body.print-analysis .an-print-head{display:block;border-bottom:1.5px solid #333;padding-bottom:2mm;margin-bottom:3mm;font-size:10pt;color:#333}
-  body.print-analysis .an-print-head b{font-size:13pt;color:#000;margin-right:3mm}
-  body.print-analysis .tk,body.print-analysis .an-group,body.print-analysis .ex-line,body.print-analysis .stat-box{break-inside:avoid}
-  body.print-analysis #statistics{break-before:page}
-  body.print-analysis .tk-body{overflow:visible}
+  body.print-analysis .card{box-shadow:none;padding:0;margin:0;border:0;border-radius:0;background:none}
+  body.print-analysis #anGroups{display:grid;grid-template-columns:repeat(4,max-content);justify-content:space-between;row-gap:2.5mm}
+  body.print-analysis .tk{--b:6mm;--gx:1.2mm;--gy:0.8mm;margin:0;border:0.3mm solid #d8dbe0;border-radius:2mm;overflow:visible;break-inside:avoid;page-break-inside:avoid}
+  body.print-analysis .tk-body{padding:1.5mm;overflow:visible;display:block}
+  body.print-analysis .tk-grid .ball{font-size:8.5pt;font-weight:700}
+  body.print-analysis .ball.picked::after{display:none}
 }
 @media print{
   @page { size: A5 portrait; margin: 0; }
@@ -1600,8 +1603,9 @@ function analyzeAll(rows, opt){
   return res;
 }
 // 여러 패턴 테를 안쪽부터 겹겹이
+let ringK = 1;   // 인쇄(작은 공)에서는 테를 가늘게
 function ringShadow(colors){
-  const w = colors.length > 2 ? 2 : colors.length > 1 ? 2.5 : 3, g = colors.length > 2 ? 1 : 1.5, out = [];
+  const w = ringK * (colors.length > 2 ? 2 : colors.length > 1 ? 2.5 : 3), g = ringK * (colors.length > 2 ? 1 : 1.5), out = [];
   colors.forEach((c, j) => { out.push(`inset 0 0 0 ${j * (w + g) + w}px ${c}`, `inset 0 0 0 ${(j + 1) * (w + g)}px #fff`); });
   return out.join(',');
 }
@@ -1820,7 +1824,7 @@ function digitCollectHtml(list, opt){
     <div class="dg-sum">${lines}</div></div>`;
 }
 
-// 분석 화면을 보이는 그대로 인쇄 (A4 세로)
+// 분석 인쇄 (A4 세로): 설명 없이 번호 + 패턴 표시만, 용지 4열
 // 인쇄는 항상 "전체 적용"(동끝·연번·사각·막대를 한 용지에 모두) 화면으로 — 끝나면 보던 화면으로 되돌림
 function withAllPatterns(){
   const prev = anType;
@@ -1829,19 +1833,17 @@ function withAllPatterns(){
 }
 function printAnalysis(){
   showPage('analysis');
+  ringK = 0.6;                                   // 작은 공에 맞게 테를 가늘게
   const restore = withAllPatterns();
-  const dir = ` · 동끝·연번 ${$('anN').value}개 이상 · ${DIR_LABEL[$('anDir').value]}`;
-  const src = $('anSrcWrap').hidden ? '' : ` · 자료: ${$('anSrc').selectedOptions[0]?.textContent || '전체'}`;
-  const rnd = $('anRound').value ? ` · ${$('anRound').value}회` : '';
-  const ex = excluded.size ? ` · 제외수 ${[...excluded].sort((a,b) => a-b).map(pad).join(' ')}` : '';
-  $('anPrintHead').innerHTML = `<b>📊 전체 패턴 (동끝·연번·사각·막대)</b>${dir}${src}${rnd}${ex} · ${anView === 'all' ? '전체 용지' : '패턴 있는 용지만'} · ${new Date().toLocaleDateString('ko-KR')}`;
+  analyze();
   const pageStyle = document.createElement('style');
-  pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:10mm}}';   // 이 인쇄만 A4 + 여백
+  pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:8mm}}';   // 이 인쇄만 A4
   document.head.appendChild(pageStyle);
   document.body.classList.add('print-analysis');
   let finished = false;
   const done = () => { if(finished) return; finished = true;
-    document.body.classList.remove('print-analysis'); pageStyle.remove(); window.removeEventListener('afterprint', done); restore(); };
+    document.body.classList.remove('print-analysis'); pageStyle.remove(); window.removeEventListener('afterprint', done);
+    ringK = 1; restore(); analyze(); };
   window.addEventListener('afterprint', done);
   setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
 }
