@@ -103,6 +103,13 @@ kbd{
 }
 .drop.dragover{border-color:#2f6fed;background:#eef4ff}
 #preview{max-width:100%;max-height:300px;border-radius:10px;margin-top:12px;display:none}
+.cap-tools{margin:12px 0 0}
+.crop-wrap{margin-top:12px;text-align:center}
+.crop-hint{font-size:12.5px;color:#4a5058;margin-bottom:8px}
+.crop-stage{position:relative;display:inline-block;max-width:100%;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;
+  border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px #d4d9df;vertical-align:top}
+#cropCanvas{display:block;max-width:100%;max-height:70vh;width:auto;height:auto}
+.crop-sel{position:absolute;border:2px solid #2f6fed;background:rgba(47,111,237,.10);box-shadow:0 0 0 9999px rgba(0,0,0,.38);pointer-events:none}
 .ocr-result{
   background:#f7f8fa;border-radius:12px;padding:15px;min-height:60px;
   white-space:pre-wrap;word-break:break-word;font-size:14px;line-height:1.6
@@ -485,10 +492,23 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <div>
         <div class="drop" id="dropZone">
           <strong>로또용지 사진을 선택하세요.</strong><br>
-          <span class="note">회차·발행일·요일 + A~E행(자동/수동, 번호)만 가져오고, 발행번호·바코드 숫자 등은 무시합니다.<br>끌어다 놓기나 <kbd>Ctrl</kbd>+<kbd>V</kbd> 붙여넣기도 됩니다.</span><br><br>
+          <span class="note">회차·발행일·요일 + A~E행(자동/수동, 번호)만 가져오고, 발행번호·바코드 숫자 등은 무시합니다.<br>끌어다 놓기나 <kbd>Ctrl</kbd>+<kbd>V</kbd> 붙여넣기(캡처 화면)도 됩니다. 이미지를 넣으면 <b>용지 부분만 네모로 지정</b>해 인식할 수 있습니다.</span><br><br>
           <input id="imageInput" type="file" accept="image/*" onchange="loadImage(event)">
+          <div class="cap-tools" id="capTools" hidden>
+            <button type="button" class="secondary" onclick="captureScreen()">🖥️ 화면에서 가져오기 (유튜브 등)</button>
+            <div class="note" style="margin-top:4px">영상을 원하는 장면에서 <b>멈춘 뒤</b> 누르고, 공유할 탭(예: 유튜브)을 고르세요. 그 순간 화면이 정지 이미지로 들어옵니다.</div>
+          </div>
+          <div id="cropWrap" class="crop-wrap" hidden>
+            <div class="crop-hint">✂️ 용지 부분을 마우스나 손가락으로 <b>끌어서 네모로 지정</b>하세요. 지정하지 않으면 전체를 읽습니다.</div>
+            <div id="cropStage" class="crop-stage"><canvas id="cropCanvas"></canvas><div id="cropSel" class="crop-sel" hidden></div></div>
+            <div class="toolbar" style="justify-content:center;margin-top:8px">
+              <button type="button" class="blue" onclick="runCropOCR()">🔍 선택 구역 인식</button>
+              <button type="button" class="secondary" onclick="clearCropSel()">구역 지우기</button>
+              <button type="button" class="secondary" onclick="closeCrop()">취소</button>
+            </div>
+          </div>
           <img id="preview" alt="">
-          <div id="ocrStatus" class="status">이미지를 선택하면 OCR이 시작됩니다. (처음 한 번은 한글 인식 데이터를 내려받습니다)</div>
+          <div id="ocrStatus" class="status">이미지를 넣고 구역을 지정한 뒤 [선택 구역 인식]을 누르세요. (처음 한 번은 한글 인식 데이터를 내려받습니다)</div>
           <div class="progress"><i id="progress"></i></div>
         </div>
       </div>
@@ -1794,12 +1814,92 @@ function loadImage(event){
   event.target.value = '';
   if(file) handleImageFile(file);
 }
-function handleImageFile(file){
-  const preview = $('preview');
-  preview.src = URL.createObjectURL(file);
-  preview.style.display = 'block';
-  startOCR(file);
+// 이미지가 들어오면 바로 인식하지 않고, 먼저 구역 지정 화면을 띄움
+async function handleImageFile(file){
+  try{ openCrop(imageToCanvas(await loadImageElement(file))); }
+  catch(e){ toast(e.message); }
 }
+function imageToCanvas(img){
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth || img.videoWidth || img.width;
+  c.height = img.naturalHeight || img.videoHeight || img.height;
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c;
+}
+
+/* ---------- 구역 지정 (마우스·터치 공통) ---------- */
+let cropSrc = null, cropRect = null;   // cropSrc: 원본 크기 캔버스, cropRect: 원본 좌표 {x,y,w,h}
+function openCrop(srcCanvas){
+  cropSrc = srcCanvas; cropRect = null;
+  const cv = $('cropCanvas');
+  cv.width = srcCanvas.width; cv.height = srcCanvas.height;
+  cv.getContext('2d').drawImage(srcCanvas, 0, 0);
+  $('cropSel').hidden = true;
+  $('cropWrap').hidden = false;
+  $('ocrStatus').textContent = '용지 부분을 끌어서 지정한 뒤 [선택 구역 인식]을 누르세요.';
+  $('cropWrap').scrollIntoView({block: 'nearest', behavior: 'smooth'});
+}
+function closeCrop(){ $('cropWrap').hidden = true; cropSrc = null; cropRect = null; }
+function clearCropSel(){ cropRect = null; $('cropSel').hidden = true; }
+function runCropOCR(){
+  if(!cropSrc) return;
+  let src = cropSrc;
+  if(cropRect && cropRect.w > 10 && cropRect.h > 10){
+    const c = document.createElement('canvas');
+    c.width = Math.round(cropRect.w); c.height = Math.round(cropRect.h);
+    c.getContext('2d').drawImage(cropSrc, cropRect.x, cropRect.y, cropRect.w, cropRect.h, 0, 0, c.width, c.height);
+    src = c;
+  }
+  const preview = $('preview');
+  preview.src = src.toDataURL('image/jpeg', .85);
+  preview.style.display = 'block';
+  closeCrop();
+  startOCR(src);
+}
+(function(){
+  const stage = $('cropStage');
+  let start = null;
+  const pt = e => {
+    const r = $('cropCanvas').getBoundingClientRect();
+    return {x: Math.min(Math.max(e.clientX - r.left, 0), r.width), y: Math.min(Math.max(e.clientY - r.top, 0), r.height), r};
+  };
+  const draw = (a, b, done) => {
+    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(a.x - b.x), h = Math.abs(a.y - b.y);
+    const sel = $('cropSel');
+    sel.hidden = false;
+    Object.assign(sel.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px'});
+    const sx = cropSrc.width / b.r.width, sy = cropSrc.height / b.r.height;
+    cropRect = {x: x * sx, y: y * sy, w: w * sx, h: h * sy};
+    if(done && (w < 8 || h < 8)) clearCropSel();
+  };
+  stage.addEventListener('pointerdown', e => { if(!cropSrc) return; e.preventDefault(); stage.setPointerCapture(e.pointerId); start = pt(e); draw(start, start); });
+  stage.addEventListener('pointermove', e => { if(start) draw(start, pt(e)); });
+  stage.addEventListener('pointerup', e => { if(start){ draw(start, pt(e), true); start = null; } });
+  stage.addEventListener('pointercancel', () => { start = null; });
+})();
+
+/* ---------- 화면에서 가져오기 (PC 브라우저: 유튜브 등 다른 탭의 정지 화면) ---------- */
+async function captureScreen(){
+  if(!navigator.mediaDevices?.getDisplayMedia){
+    alert('이 브라우저는 화면 가져오기를 지원하지 않습니다.\n화면을 캡처(스크린샷)해서 이미지로 넣어 주세요.');
+    return;
+  }
+  let stream;
+  try{
+    stream = await navigator.mediaDevices.getDisplayMedia({video: {frameRate: 5}, audio: false});
+    const v = document.createElement('video');
+    v.muted = true; v.playsInline = true; v.srcObject = stream;
+    await v.play();
+    await new Promise(r => setTimeout(r, 400));      // 첫 화면이 그려질 때까지 잠깐 대기
+    openCrop(imageToCanvas(v));
+    toast('화면을 가져왔습니다. 용지 부분을 끌어서 지정하세요.');
+  }catch(e){
+    if(e.name !== 'NotAllowedError' && e.name !== 'AbortError') alert('화면을 가져오지 못했습니다: ' + e.message);
+  }finally{
+    stream?.getTracks().forEach(t => t.stop());       // 공유는 바로 끝냄 (한 장만 찍음)
+  }
+}
+if(navigator.mediaDevices?.getDisplayMedia && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) $('capTools').hidden = false;
 function loadImageElement(file){
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -1811,8 +1911,9 @@ function loadImageElement(file){
 
 // 작은 사진 확대 + 흑백 + 명암 늘리기 (모든 브라우저에서 동작하도록 직접 처리)
 function preprocessImage(img){
-  const scale = Math.min(3, Math.max(1, 1800 / img.naturalWidth));
-  const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+  const W0 = img.naturalWidth || img.width, H0 = img.naturalHeight || img.height;
+  const scale = Math.min(4, Math.max(1, 1800 / W0));       // 잘라낸 작은 구역도 충분히 키워서 읽음
+  const w = Math.round(W0 * scale), h = Math.round(H0 * scale);
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   const ctx = c.getContext('2d', {willReadFrequently:true});
@@ -2066,7 +2167,7 @@ function extractMeta(l1, l2){
   return {round: round ?? '', date: issueT != null ? fmtDate(issueT) : '', day: issueT != null ? DAYS[new Date(issueT).getUTCDay()] : '', note};
 }
 
-async function startOCR(file){
+async function startOCR(src){
   if(ocrBusy){ toast('이전 이미지를 처리하는 중입니다.'); return; }
   ocrBusy = true;
   const status = $('ocrStatus'), text = $('ocrText'), progress = $('progress');
@@ -2075,7 +2176,7 @@ async function startOCR(file){
   setFilled(false);
   try{
     status.textContent = '이미지 선명도 최적화 중...';
-    const img = await loadImageElement(file);
+    const img = src instanceof HTMLCanvasElement ? src : await loadImageElement(src);
     const canvas = preprocessImage(img);
     const worker = await getWorker();
 
