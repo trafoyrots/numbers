@@ -314,15 +314,15 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   body.print-analysis .subtitle,body.print-analysis .an-head,body.print-analysis #pageAnalysis .note,body.print-analysis #anFilters,
   body.print-analysis #anListTools,body.print-analysis .ex-panel:not([open]),body.print-analysis .ex-panel .toolbar,
   body.print-analysis .ex-panel .note,body.print-analysis .toast{display:none !important}
-  /* 설명은 모두 빼고 번호 + 패턴 표시만, 용지를 4열로 촘촘히 */
+  /* 설명은 모두 빼고 번호 + 패턴 표시만, 용지를 2열로 */
   body.print-analysis .an-print-head,body.print-analysis #exPanel,body.print-analysis #anChips,body.print-analysis #anExtra,
   body.print-analysis #statistics,body.print-analysis .tk-head,body.print-analysis .tk-col,body.print-analysis .tk-notes{display:none !important}
   body.print-analysis #pageAnalysis{display:block !important}
   body.print-analysis .card{box-shadow:none;padding:0;margin:0;border:0;border-radius:0;background:none}
-  body.print-analysis #anGroups{display:grid;grid-template-columns:repeat(4,max-content);justify-content:space-between;row-gap:2.5mm}
-  body.print-analysis .tk{--b:6mm;--gx:1.2mm;--gy:0.8mm;margin:0;border:0.3mm solid #d8dbe0;border-radius:2mm;overflow:visible;break-inside:avoid;page-break-inside:avoid}
-  body.print-analysis .tk-body{padding:1.5mm;overflow:visible;display:block}
-  body.print-analysis .tk-grid .ball{font-size:8.5pt;font-weight:700}
+  body.print-analysis #anGroups{display:grid;grid-template-columns:repeat(2,max-content);justify-content:space-around;row-gap:3mm}
+  body.print-analysis .tk{--b:11mm;--gx:2.2mm;--gy:1.2mm;margin:0;border:0.3mm solid #d8dbe0;border-radius:2mm;overflow:visible;break-inside:avoid;page-break-inside:avoid}
+  body.print-analysis .tk-body{padding:2.5mm;overflow:visible;display:block}
+  body.print-analysis .tk-grid .ball{font-size:13pt;font-weight:700}
   body.print-analysis .ball.picked::after{display:none}
 }
 @media print{
@@ -1824,7 +1824,7 @@ function digitCollectHtml(list, opt){
     <div class="dg-sum">${lines}</div></div>`;
 }
 
-// 분석 인쇄 (A4 세로): 설명 없이 번호 + 패턴 표시만, 용지 4열
+// 분석 인쇄 (A4 세로): 설명 없이 번호 + 패턴 표시만, 용지 2열
 // 인쇄는 항상 "전체 적용"(동끝·연번·사각·막대를 한 용지에 모두) 화면으로 — 끝나면 보던 화면으로 되돌림
 function withAllPatterns(){
   const prev = anType;
@@ -1833,7 +1833,6 @@ function withAllPatterns(){
 }
 function printAnalysis(){
   showPage('analysis');
-  ringK = 0.6;                                   // 작은 공에 맞게 테를 가늘게
   const restore = withAllPatterns();
   analyze();
   const pageStyle = document.createElement('style');
