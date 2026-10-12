@@ -402,6 +402,9 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 #pageAnalysis .tk .tk-head,#pageAnalysis .tk.tk-hit.t-digit .tk-head,#pageAnalysis .tk.tk-hit.t-run .tk-head,
 #pageAnalysis .tk.tk-hit.t-sq .tk-head,#pageAnalysis .tk.tk-hit.t-bar .tk-head{background:#f8f8f7;border-bottom-color:#eceef0}
 #pageAnalysis .tk-lab.on.t-digit{border-left-color:var(--m-dg)}#pageAnalysis .tk-lab.on.t-run{border-left-color:var(--m-run)}
+#pageAnalysis .tk-lab.on.t-all{border-left-color:#8a8f98}
+.an-legend .lg{display:inline-block;width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 3px var(--c);vertical-align:-1px;margin:0 2px 0 6px}
+.an-legend .lg.sq{border-radius:3px}
 #pageAnalysis .tk-lab.on.t-sq{border-left-color:var(--m-sq)}#pageAnalysis .tk-lab.on.t-bar{border-left-color:var(--m-bar)}
 #pageAnalysis .an-group,#pageAnalysis .an-group.hot,#pageAnalysis .an-group.run,#pageAnalysis .an-group.sq,#pageAnalysis .an-group.bar{border-color:var(--m-line)}
 #pageAnalysis .an-group > h3,#pageAnalysis .an-group.hot > h3,#pageAnalysis .an-group.run > h3,#pageAnalysis .an-group.sq > h3,
@@ -567,7 +570,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     <div class="an-head">
       <h2 style="margin:0;">📊 패턴 분석</h2>
       <span style="flex:1"></span>
-      <button class="blue" onclick="printAnalysis()" title="지금 보이는 분석 화면을 그대로 A4로 인쇄 (PDF로 저장도 가능)">🖨️ 분석 화면 그대로 인쇄</button>
+      <button class="blue" onclick="printAnalysis()" title="동끝·연번·사각·막대를 한 용지에 모두 적용한 화면을 A4로 인쇄 (PDF로 저장도 가능)">🖨️ 전체 패턴 적용 인쇄</button>
       <button class="secondary" onclick="showPage('input')">✏️ 입력으로 돌아가기</button>
     </div>
     <div id="anPrintHead" class="an-print-head"></div>
@@ -588,16 +591,21 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
         <button type="button" data-type="run">🔗 연번</button>
         <button type="button" data-type="sq">▦ 사각</button>
         <button type="button" data-type="bar">▮ 막대</button>
+        <button type="button" data-type="all" title="동끝·연번·사각·막대를 한 용지에 모두 표시">🧩 전체 적용</button>
       </div>
-      <label data-for="digit run"><select id="anN" class="meta-input"><option selected>2</option><option>3</option><option>4</option><option>5</option></select>
+      <label data-for="digit run all"><select id="anN" class="meta-input"><option selected>2</option><option>3</option><option>4</option><option>5</option></select>
         개 이상</label>
-      <label data-for="digit run"><select id="anDir" class="meta-input"><option value="h">가로행</option><option value="v">세로행</option><option value="hv">가로+세로</option></select></label>
+      <label data-for="digit run all"><select id="anDir" class="meta-input"><option value="h">가로행</option><option value="v">세로행</option><option value="hv">가로+세로</option></select></label>
       <div class="seg" id="anView">
         <button type="button" data-view="hit" class="on">패턴 있는 용지만</button>
         <button type="button" data-view="all">전체 용지</button>
       </div>
-      <label data-for="sq"><input type="checkbox" id="anSqFull"> 완전 사각만</label>
-      <label data-for="bar"><input type="checkbox" id="anBarOne"> 끝수 1개짜리만</label>
+      <label data-for="sq all"><input type="checkbox" id="anSqFull"> 완전 사각만</label>
+      <label data-for="bar all"><input type="checkbox" id="anBarOne"> 끝수 1개짜리만</label>
+      <span data-for="all" class="meta-label an-legend" style="font-size:12px;">한 용지에 모두 표시 ·
+        <i class="lg" style="--c:var(--m-dg)"></i>가로 동끝 <i class="lg" style="--c:var(--m-dgv)"></i>세로 동끝
+        <i class="lg" style="--c:var(--m-run)"></i>연번 <i class="lg" style="--c:var(--m-sq)"></i>사각 <i class="lg sq" style="--c:var(--m-bar)"></i>막대
+        · 여러 패턴이 겹치면 테가 여러 겹</span>
       <span data-for="digit" class="meta-label" id="anHelpDigit" style="font-size:12px;"></span>
       <span data-for="run" class="meta-label" id="anHelpRun" style="font-size:12px;"></span>
       <span data-for="bar" class="meta-label" style="font-size:12px;">한 용지 A~E 5행 · 같은 자리를 위에서 아래로 본 끝수가 1~2종류</span>
@@ -611,7 +619,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     <div id="anChips" class="an-chips"></div>
     <div id="anListTools" class="toolbar" style="margin-top:10px" hidden>
       <button class="secondary" onclick="copyHotList()">📋 패턴 있는 용지 복사</button>
-      <button class="blue" onclick="printHotList()">🖨️ 패턴 있는 용지만 인쇄</button>
+      <button class="blue" onclick="printHotList()" title="동끝·연번·사각·막대를 모두 적용해, 패턴 있는 용지만 인쇄">🖨️ 패턴 있는 용지만 인쇄 (전체 적용)</button>
       <button class="secondary" onclick="saveResultFile()" title="지금 보이는 분석 결과를 제목을 붙여 텍스트 파일로 저장">💾 분석 결과 파일로 저장</button>
     </div>
     <div id="anGroups"></div>
@@ -636,7 +644,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     </div>
     <h3 style="font-size:15px;margin:18px 0 10px;">출현 횟수 <small class="meta-label" style="font-size:12px;">로또 용지 배열 · 번호 아래 숫자가 나온 횟수</small></h3>
     <div id="countSlip" class="slip" style="max-width:520px"></div>
-    <h3 style="font-size:15px;margin:22px 0 10px;">출현 횟수별 번호 <small class="meta-label" style="font-size:12px;">많이 나온 순 · 같은 횟수끼리 모음</small></h3>
+    <h3 style="font-size:15px;margin:22px 0 10px;">출현 횟수별 번호 <small class="meta-label" style="font-size:12px;">적게 나온 순 · 같은 횟수끼리 모음</small></h3>
     <div id="countGroups" class="cnt-groups"></div>
   </div>
   </div><!-- /pageAnalysis -->
@@ -1275,7 +1283,7 @@ function goToRow(i){
 const AN_KEY = 'lotto_analysis_settings', EX_KEY = 'lotto_excluded';
 let anView = 'hit', anType = 'digit', analysisTickets = [];
 let excluded = new Set();
-const TYPE_LABEL = {digit: '동끝 패턴', run: '연번 패턴', sq: '사각 패턴', bar: '막대 패턴'};
+const TYPE_LABEL = {digit: '동끝 패턴', run: '연번 패턴', sq: '사각 패턴', bar: '막대 패턴', all: '패턴'};
 const DIR_LABEL = {h: '가로행', v: '세로행', hv: '가로+세로'};
 function setAnView(v, silent){
   anView = v === 'all' ? 'all' : 'hit';
@@ -1283,7 +1291,7 @@ function setAnView(v, silent){
   if(!silent){ saveAnSettings(); analyze(); }
 }
 function setAnType(t, silent){
-  anType = ['run','sq','bar'].includes(t) ? t : 'digit';
+  anType = ['run','sq','bar','all'].includes(t) ? t : 'digit';
   document.querySelectorAll('#anType button').forEach(b => b.classList.toggle('on', b.dataset.type === anType));
   $('anFilters').dataset.type = anType;
   document.querySelectorAll('#anFilters [data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(anType); });
@@ -1559,6 +1567,45 @@ function analyzeTicket(rows, type, opt){
   return res;
 }
 
+/* ---------- 용지 하나에 모든 패턴 적용 ----------
+   동끝(제외수 적용)·연번·사각·막대를 각각 분석한 뒤 한 결과로 합침. 칸마다 걸린 패턴을 모두 기억(겹테로 표시) */
+const RING_KEY = {dg: ['dg'], dgv: ['dgv'], dgb: ['dg','dgv'], rn: ['rn'], nb: ['nb'], 'sq-thick': ['sq']};
+const RING_COLOR = {dg: 'var(--m-dg)', dgv: 'var(--m-dgv)', rn: 'var(--m-run)', sq: 'var(--m-sq)'};
+function analyzeAll(rows, opt){
+  const sub = {
+    digit: analyzeTicket(rows, 'digit', {...opt, mode: '', ex: excluded}),
+    run:   analyzeTicket(rows, 'run',   {...opt, ex: new Set()}),
+    sq:    analyzeTicket(rows, 'sq',    {...opt, ex: new Set()}),
+    bar:   analyzeTicket(rows, 'bar',   {...opt, ex: new Set()})
+  };
+  const res = {multi: true, sub, ring: rows.map(() => new Map()), tags: rows.map(() => []), under: rows.map(() => new Set()),
+    ex: sub.digit.ex, rowOn: rows.map(() => false), dim: rows.map(() => false), rects: [], head: [], count: 0,
+    stat: {}, nb: sub.run.nb, dg: sub.digit.dg};
+  Object.values(sub).forEach(s => {
+    rows.forEach((_, i) => {
+      s.ring[i].forEach((v, pos) => {
+        const set = res.ring[i].get(pos) || new Set();
+        (RING_KEY[v] || []).forEach(k => set.add(k));
+        res.ring[i].set(pos, set);
+      });
+      s.under[i].forEach(p => res.under[i].add(p));
+      if(s.rowOn[i]) res.rowOn[i] = true;
+      res.tags[i].push(...s.tags[i]);
+    });
+    res.rects.push(...s.rects);
+    if(s.count) res.head.push(...s.head);
+    res.count += s.count;
+  });
+  res.ring.forEach(m => m.forEach(set => { if(set.has('rn')) set.delete('nb'); }));
+  return res;
+}
+// 여러 패턴 테를 안쪽부터 겹겹이
+function ringShadow(colors){
+  const w = colors.length > 2 ? 2 : colors.length > 1 ? 2.5 : 3, g = colors.length > 2 ? 1 : 1.5, out = [];
+  colors.forEach((c, j) => { out.push(`inset 0 0 0 ${j * (w + g) + w}px ${c}`, `inset 0 0 0 ${(j + 1) * (w + g)}px #fff`); });
+  return out.join(',');
+}
+
 function ticketHtml(tk, id){
   const {rows, res} = tk, first = rows[0];
   const date = first.date ? ` ${escapeHtml(first.date)}${first.day ? `(${escapeHtml(first.day)})` : ''}` : '';
@@ -1572,8 +1619,14 @@ function ticketHtml(tk, id){
   const balls = rows.map((r, i) => Array.from({length: 6}, (_, pos) => {
       const x = r.numbers[pos];
       if(!isNum(x)) return `<div class="ball blank"></div>`;
-      const ring = res.ring[i].get(pos), pk = r.picks.includes(x), ex = res.ex[i].has(pos);
-      return `<div class="ball ${ballClass(x)}${ring ? ' ' + ring : ''}${pk ? ' picked' : ''}${res.dim[i] ? ' tk-dim' : ''}${ex ? ' ex' : ''}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : ''}>${x}</div>`;
+      let ring = res.ring[i].get(pos), st = '';
+      if(res.multi && ring){
+        const cols = ['dg','dgv','rn','sq'].filter(k => ring.has(k)).map(k => RING_COLOR[k]);
+        if(cols.length) st = ` style="box-shadow:${ringShadow(cols)}"`;
+        ring = ring.has('nb') ? 'nb' : '';
+      }
+      const pk = r.picks.includes(x), ex = res.ex[i].has(pos);
+      return `<div${st} class="ball ${ballClass(x)}${ring ? ' ' + ring : ''}${pk ? ' picked' : ''}${res.dim[i] ? ' tk-dim' : ''}${ex ? ' ex' : ''}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : ''}>${x}</div>`;
     }).join('')).join('');
   const rects = res.rects.map(q => {
     const inset = q.cls === 'sq' ? 5 : 3;
@@ -1632,7 +1685,7 @@ function analyze(){
   const tickets = ticketsOf(allRows)
     .filter(srcOk)
     .filter(rows => !sel.value || rows[0].round === sel.value)
-    .map(rows => ({rows, res: analyzeTicket(rows, anType, opt)}));
+    .map(rows => ({rows, res: anType === 'all' ? analyzeAll(rows, opt) : analyzeTicket(rows, anType, opt)}));
   const hitTickets = tickets.filter(t => t.res.count);
   // 제외수 판: 지금 고른 패턴과 상관없이, 남은 번호로 동끝을 바로 분석
   const exRes = ticketsOf(allRows).filter(srcOk).filter(rows => !sel.value || rows[0].round === sel.value)
@@ -1649,13 +1702,16 @@ function analyze(){
   // 입력 화면에도 표시 (행 순서는 그대로, 표시만)
   clearInputMarks();
   if($('anMark').checked){
-    const [rowCls, cellCls] = {digit: ['hot-row','hit-digit'], run: ['run-row','run-hit'], sq: ['sq-row','sq-hit'], bar: ['bar-row','bar-hit']}[anType];
-    hitTickets.forEach(t => t.rows.forEach((r, i) => {
-      if(!t.res.under[i].size) return;
-      r.el.classList.add(rowCls);
-      r.el.dataset.hot = stripTags((t.res.tags[i].length ? t.res.tags[i] : t.res.head).join(' · ')).slice(0, 80);
-      const cells = cellsOf(r.el);
-      t.res.under[i].forEach(pos => cells[pos]?.classList.add(cellCls));
+    const MARK = {digit: ['hot-row','hit-digit'], run: ['run-row','run-hit'], sq: ['sq-row','sq-hit'], bar: ['bar-row','bar-hit']};
+    hitTickets.forEach(t => (anType === 'all' ? Object.entries(t.res.sub) : [[anType, t.res]]).forEach(([ty, res]) => {
+      const [rowCls, cellCls] = MARK[ty];
+      t.rows.forEach((r, i) => {
+        if(!res.under[i].size) return;
+        r.el.classList.add(rowCls);
+        r.el.dataset.hot = stripTags((t.res.tags[i].length ? t.res.tags[i] : t.res.head).join(' · ')).slice(0, 80);
+        const cells = cellsOf(r.el);
+        res.under[i].forEach(pos => cells[pos]?.classList.add(cellCls));
+      });
     }));
   }
 
@@ -1664,12 +1720,20 @@ function analyze(){
     : analysisTickets.length ? analysisTickets.map((t, id) => ticketHtml(t, id)).join('')
     : `<div class="empty">${TYPE_LABEL[anType]}이 있는 용지가 없습니다. 조건을 바꾸거나 "전체 용지"로 보세요.</div>`;
   $('anListTools').hidden = !hitTickets.length;
-  $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt) : '';
+  $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt)
+    : anType === 'all' ? digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt) : '';
 
   // 요약
   const statRows = tickets.flatMap(t => t.rows).filter(r => !opt.mode || r.modeKey === opt.mode);
   let patChips = [];
-  if(anType === 'digit' || anType === 'run'){
+  if(anType === 'all'){
+    const sum = (ty, f) => tickets.reduce((s, t) => s + f(t.res.sub[ty]), 0);
+    const has = ty => tickets.filter(t => t.res.sub[ty].count).length;
+    patChips = [`패턴 있는 용지 <b>${hitTickets.length}</b>장`,
+      `동끝 <b>${sum('digit', r => r.count)}</b> <small>(${has('digit')}장)</small> · 연번 <b>${sum('run', r => r.count)}</b> <small>(${has('run')}장)</small>`,
+      `사각 <b>${sum('sq', r => r.count)}</b> <small>(${has('sq')}장)</small> · 막대 <b>${sum('bar', r => r.count)}</b> <small>(${has('bar')}장)</small>`];
+    if(excluded.size) patChips.push(`🚫 제외수 <b>${excluded.size}</b>개 (동끝에 적용)`);
+  } else if(anType === 'digit' || anType === 'run'){
     const cnt = hitTickets.reduce((s, t) => s + t.res.count, 0);
     const what = anType === 'digit' ? '동끝' : '연번', unit = '개';
     patChips = [`${what} ${opt.n}개+ ${DIR_LABEL[opt.dir]} <b>${cnt}</b>${unit} <small>(용지 ${hitTickets.length}장)</small>`];
@@ -1713,8 +1777,8 @@ function analyze(){
   // 출현 횟수별 번호 (같은 횟수끼리 한 줄)
   const byCount = {};
   for(let n = 1; n <= 45; n++) (byCount[counts[n]] = byCount[counts[n]] || []).push(n);
-  $('countGroups').innerHTML = total ? Object.keys(byCount).map(Number).sort((a,b) => b - a).map(c =>
-    `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b><small>${byCount[c].length}개</small>` +
+  $('countGroups').innerHTML = total ? Object.keys(byCount).map(Number).sort((a,b) => a - b).map(c =>
+    `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b>` +
     byCount[c].map(n => `<span class="ball ${ballClass(n)}${excluded.has(n) ? ' ex' : ''}"${excluded.has(n) ? ' title="제외수"' : ''}>${n}</span>`).join('') + `</div>`
   ).join('') : '<div class="empty">입력된 번호가 없습니다.</div>';
   $('countSlip').innerHTML = slipHtml(n => {
@@ -1757,18 +1821,27 @@ function digitCollectHtml(list, opt){
 }
 
 // 분석 화면을 보이는 그대로 인쇄 (A4 세로)
+// 인쇄는 항상 "전체 적용"(동끝·연번·사각·막대를 한 용지에 모두) 화면으로 — 끝나면 보던 화면으로 되돌림
+function withAllPatterns(){
+  const prev = anType;
+  if(prev !== 'all'){ setAnType('all', true); analyze(); }
+  return () => { if(prev !== 'all' && anType === 'all'){ setAnType(prev, true); analyze(); } };
+}
 function printAnalysis(){
   showPage('analysis');
-  const dir = ['digit','run'].includes(anType) ? ` · ${$('anN').value}개 이상 · ${DIR_LABEL[$('anDir').value]}` : '';
+  const restore = withAllPatterns();
+  const dir = ` · 동끝·연번 ${$('anN').value}개 이상 · ${DIR_LABEL[$('anDir').value]}`;
   const src = $('anSrcWrap').hidden ? '' : ` · 자료: ${$('anSrc').selectedOptions[0]?.textContent || '전체'}`;
   const rnd = $('anRound').value ? ` · ${$('anRound').value}회` : '';
-  const ex = anType === 'digit' && excluded.size ? ` · 제외수 ${[...excluded].sort((a,b) => a-b).map(pad).join(' ')}` : '';
-  $('anPrintHead').innerHTML = `<b>📊 ${TYPE_LABEL[anType]}</b>${dir}${src}${rnd}${ex} · ${anView === 'all' ? '전체 용지' : '패턴 있는 용지만'} · ${new Date().toLocaleDateString('ko-KR')}`;
+  const ex = excluded.size ? ` · 제외수 ${[...excluded].sort((a,b) => a-b).map(pad).join(' ')}` : '';
+  $('anPrintHead').innerHTML = `<b>📊 전체 패턴 (동끝·연번·사각·막대)</b>${dir}${src}${rnd}${ex} · ${anView === 'all' ? '전체 용지' : '패턴 있는 용지만'} · ${new Date().toLocaleDateString('ko-KR')}`;
   const pageStyle = document.createElement('style');
   pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:10mm}}';   // 이 인쇄만 A4 + 여백
   document.head.appendChild(pageStyle);
   document.body.classList.add('print-analysis');
-  const done = () => { document.body.classList.remove('print-analysis'); pageStyle.remove(); window.removeEventListener('afterprint', done); };
+  let finished = false;
+  const done = () => { if(finished) return; finished = true;
+    document.body.classList.remove('print-analysis'); pageStyle.remove(); window.removeEventListener('afterprint', done); restore(); };
   window.addEventListener('afterprint', done);
   setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
 }
@@ -1779,6 +1852,7 @@ const lineOf = (r, tail) => `${r.round ? r.round + '회 ' : ''}${r.col || ''} ${
 const hitList = () => analysisTickets.filter(t => t.res.count);
 function patternTitle(){
   const nd = `${$('anN').value}개 이상 ${DIR_LABEL[$('anDir').value]}`;
+  if(anType === 'all') return `전체 패턴 (동끝·연번 ${nd}${excluded.size ? ' · 동끝 제외수 뺌' : ''} · 사각 · 막대)`;
   return anType === 'digit' ? `동끝 ${nd}${excluded.size ? ' (제외수 뺌)' : ''}` : anType === 'run' ? `연번 ${nd}` : anType === 'sq' ? '사각 패턴' : '막대 패턴';
 }
 function hotListText(){
@@ -1798,11 +1872,13 @@ async function copyHotList(){
   catch(e){ alert('복사하지 못했습니다.'); }
 }
 function printHotList(){
-  const list = hitList();
-  if(!list.length){ alert(`${TYPE_LABEL[anType]}이 있는 용지가 없습니다.`); return; }
+  // 인쇄는 전체 패턴 적용 결과로만
+  const restore = withAllPatterns();
+  const list = hitList(), title = patternTitle();
   const rows = list.flatMap(t => t.rows.map((r, i) => ({...r, sqPos: [...t.res.under[i]]})));
-  buildPrint(rows, {title: patternTitle(), countText: `용지 ${list.length}장`,
-    markLegend: {digit: '동끝 번호', run: '연번', sq: '사각 패턴 꼭짓점', bar: '막대 패턴 자리'}[anType]});
+  restore();
+  if(!list.length){ alert('패턴이 있는 용지가 없습니다.'); return; }
+  buildPrint(rows, {title, countText: `용지 ${list.length}장`, markLegend: '패턴(동끝·연번·사각·막대) 자리'});
 }
 
 /* ============================================================
