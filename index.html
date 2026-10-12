@@ -351,21 +351,14 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   .slip-num{height:28px;font-size:12px}
 }
 /* ===== 분석 화면: 톤 낮춘 색 (공은 연한 바탕 + 진한 글자, 패턴은 무채색에 가까운 테 하나씩) ===== */
-:root{--m-dg:#a0814f;--m-dgv:#647a94;--m-run:#55708f;--m-nb:#9aa8ba;--m-sq:#5a8a82;--m-bar:#6f7196;--m-line:#e3e6ea}
-#pageAnalysis .ball{font-weight:700}
-#pageAnalysis .ball.yellow{background:#f0e8d6;color:#6b5a33}
-#pageAnalysis .ball.blue{background:#e1e7ef;color:#43566f}
-#pageAnalysis .ball.red{background:#f0e2e1;color:#764a49}
-#pageAnalysis .ball.green{background:#e1ebe5;color:#42614f}
-#pageAnalysis .ball.gray{background:#e7e8eb;color:#585e68}
-#pageAnalysis .ball.blank{background:#f6f7f8}
-#pageAnalysis .ball.dg{box-shadow:inset 0 0 0 3px var(--m-dg)}
-#pageAnalysis .ball.dgv{box-shadow:inset 0 0 0 3px var(--m-dgv)}
-#pageAnalysis .ball.dgb{box-shadow:inset 0 0 0 3px var(--m-dg),inset 0 0 0 6px var(--m-dgv)}
-#pageAnalysis .ball.rn{box-shadow:inset 0 0 0 3px var(--m-run)}
-#pageAnalysis .ball.sq-thick{box-shadow:inset 0 0 0 3px var(--m-sq)}
-#pageAnalysis .ball.nb{outline:2px dashed var(--m-nb);outline-offset:-3px}
-#pageAnalysis .ball.hit{box-shadow:inset 0 0 0 3px #7b818b}
+:root{--m-dg:#7a6239;--m-dgv:#4d6380;--m-run:#3f5878;--m-nb:#e9edf2;--m-sq:#3f6d66;--m-bar:#585a80;--m-line:#e3e6ea}
+#pageAnalysis .ball.dg{box-shadow:inset 0 0 0 3px var(--m-dg),inset 0 0 0 5px #fff}
+#pageAnalysis .ball.dgv{box-shadow:inset 0 0 0 3px var(--m-dgv),inset 0 0 0 5px #fff}
+#pageAnalysis .ball.dgb{box-shadow:inset 0 0 0 3px var(--m-dg),inset 0 0 0 5px #fff,inset 0 0 0 7px var(--m-dgv)}
+#pageAnalysis .ball.rn{box-shadow:inset 0 0 0 3px var(--m-run),inset 0 0 0 5px #fff}
+#pageAnalysis .ball.sq-thick{box-shadow:inset 0 0 0 3px var(--m-sq),inset 0 0 0 5px #fff}
+#pageAnalysis .ball.nb{outline:2px dashed var(--m-nb);outline-offset:-4px}
+#pageAnalysis .ball.hit{box-shadow:inset 0 0 0 3px #5f646d,inset 0 0 0 5px #fff}
 #pageAnalysis .tk-rect.sq{border:2px solid var(--m-sq)}
 #pageAnalysis .tk-rect.run{border:2px solid var(--m-run)}
 #pageAnalysis .tk-rect.bar1{border:2px solid var(--m-bar)}
