@@ -395,6 +395,17 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .row.hot-row::after,.row.sq-row::after,.row.bar-row::after,.row.run-row::after{background:#f0f0ec;color:#5b5f66;font-weight:600}
 .num-input.hit-digit{box-shadow:inset 0 -3px 0 var(--m-dg)}.num-input.run-hit{box-shadow:inset 0 -3px 0 var(--m-run)}
 .num-input.sq-hit{box-shadow:inset 0 -3px 0 var(--m-sq)}.num-input.bar-hit{box-shadow:inset 0 -3px 0 var(--m-bar)}
+/* 불러온 자료(파일) 표시 */
+.src-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px;font-size:13px;color:#4a5058}
+.src-chip{display:inline-flex;align-items:center;gap:6px;background:#eef1f5;border-radius:14px;padding:4px 4px 4px 11px;font-weight:700;color:#3f4652}
+.src-chip small{color:#7b838d;font-weight:600}
+.src-chip button{background:transparent;color:#8a8f98;padding:0 6px;font-size:15px;line-height:1}
+.src-chip.direct{padding-right:11px}
+#rows .row{position:relative}
+#rows .row[data-src-head]{margin-top:20px}
+#rows .row[data-src-head]::before{content:"📚 " attr(data-src-head);position:absolute;top:-11px;left:10px;font-size:11px;font-weight:700;
+  color:#4a5160;background:#eef1f5;border-radius:9px;padding:1px 8px;white-space:nowrap}
+.an-tag.src{background:#eef1f5;color:#4a5160}
 /* 로또 용지 번호판도 톤 다운 */
 .slip-num{border-color:#e6cfd2;color:#a85a66}
 .slip-num.heat{color:#4a4f57;border-color:#e3d6bd}
@@ -450,7 +461,8 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <button class="secondary" onclick="addRows(5)">+ 5행 추가</button>
       <button class="secondary" onclick="clearAll()">전체 지우기</button>
       <button onclick="showPage('analysis')">📊 패턴 분석 보기</button>
-      <button class="blue" onclick="saveDataFile()">💾 입력 정보 저장</button>
+      <button class="blue" onclick="saveDataFile()" title="날짜·시간으로 이름을 자동으로 붙여 저장">💾 저장 (자동 이름)</button>
+      <button class="blue" onclick="saveTitled()" title="예: 일요일 데이터, 일+목+토 합본">📝 제목 정해서 저장</button>
       <button class="secondary" onclick="loadDataFile()" title="저장한 JSON 파일 또는 이 프로그램에서 인쇄해 저장한 PDF">📂 저장 정보 불러오기 (JSON·PDF)</button>
       <button class="blue" onclick="printA4()">🖨️ 입력 순서대로 A5 인쇄</button>
     </div>
@@ -462,6 +474,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <br><b>✋ 반자동 직접 고른 번호:</b> 번호 칸을 <b>더블클릭</b>하거나 칸 오른쪽 위 <b>✋</b>를 누르면 연한 회색으로 표시됩니다. 입력하면서는 번호를 친 직후 <kbd>F</kbd>(숫자패드 <kbd>.</kbd>)를 누르면 방금 친 번호가 표시됩니다. 표시가 있으면 그 행은 자동으로 반자동이 되고, 저장·불러오기·인쇄에 그대로 남습니다.
       <br><b>붙여넣기:</b> "자동 10 24 28 29 39 45" 같은 여러 줄 텍스트를 번호 칸에 붙여넣으면 한 번에 채워집니다. <b>[12]</b>처럼 대괄호로 감싼 번호는 직접 고른 번호로 표시됩니다.
     </div>
+    <div id="srcBar" class="src-bar" hidden></div>
     <div id="rows" class="rows entry-grid"></div>
     <input id="dataFileInput" type="file" accept=".json,application/json,.pdf,application/pdf" multiple style="display:none" onchange="readDataFile(event)">
   </div>
@@ -525,7 +538,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
         <button type="button" data-type="sq">▦ 사각</button>
         <button type="button" data-type="bar">▮ 막대</button>
       </div>
-      <label data-for="digit run"><select id="anN" class="meta-input"><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+      <label data-for="digit run"><select id="anN" class="meta-input"><option selected>2</option><option>3</option><option>4</option><option>5</option></select>
         개 이상</label>
       <label data-for="digit run"><select id="anDir" class="meta-input"><option value="h">가로행</option><option value="v">세로행</option><option value="hv">가로+세로</option></select></label>
       <div class="seg" id="anView">
@@ -538,6 +551,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <span data-for="run" class="meta-label" id="anHelpRun" style="font-size:12px;"></span>
       <span data-for="bar" class="meta-label" style="font-size:12px;">한 용지 A~E 5행 · 같은 자리를 위에서 아래로 본 끝수가 1~2종류</span>
       <span data-for="sq" class="meta-label" style="font-size:12px;">바로 위·아래 행의 이웃한 2자리(2×2) · 차이 2 이하로 3칸 이상 이어지고 그중 하나는 같은 수/연번</span>
+      <label id="anSrcWrap" hidden>자료 <select id="anSrc" class="meta-input"><option value="">전체 (합쳐서)</option></select></label>
       <label>회차 <select id="anRound" class="meta-input"><option value="">전체</option></select></label>
       <label data-for="digit">방식
         <select id="anMode" class="meta-input"><option value="">전체</option><option value="auto">자</option><option value="manual">수</option><option value="semi">반</option></select></label>
@@ -547,6 +561,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     <div id="anListTools" class="toolbar" style="margin-top:10px" hidden>
       <button class="secondary" onclick="copyHotList()">📋 패턴 있는 용지 복사</button>
       <button class="blue" onclick="printHotList()">🖨️ 패턴 있는 용지만 인쇄</button>
+      <button class="secondary" onclick="saveResultFile()" title="지금 보이는 분석 결과를 제목을 붙여 텍스트 파일로 저장">💾 분석 결과 파일로 저장</button>
     </div>
     <div id="anGroups"></div>
     <div id="anExtra"></div>
@@ -796,6 +811,7 @@ function addRow(values=[], meta={}, options={}){
 
   const row = document.createElement('div');
   row.className = 'row entry-row';
+  row.dataset.src = meta.src || '';
   row.innerHTML = `
     <span class="row-num"></span>
     <input class="meta-input meta-round row-meta" data-meta="round" type="text" inputmode="numeric" placeholder="회차" value="${escapeHtml(roundVal)}" title="회차">
@@ -824,14 +840,42 @@ function focusFirstEmpty(){
   focusCell(c || cellsOf(addRow())[0]);
 }
 function renumber(){
-  let prevKey = null;
-  mainRows().forEach((r,i) => {
+  let prevKey = null, prevSrc = null;
+  const rows = mainRows(), multi = new Set(rows.map(r => r.dataset.src || '')).size > 1 || rows.some(r => r.dataset.src);
+  rows.forEach((r,i) => {
     r.querySelector('.row-num').textContent = (i+1) + '.';
-    const key = metaVal(r,'round') + '|' + normalizeDate(metaVal(r,'date'));
+    const src = r.dataset.src || '';
+    const key = src + '|' + metaVal(r,'round') + '|' + normalizeDate(metaVal(r,'date'));
     r.classList.toggle('ticket-break', i > 0 && (key !== prevKey || metaVal(r,'col') === 'A'));
-    prevKey = key;
+    // 자료(파일)가 바뀌는 첫 행 위에 자료 이름 표시
+    if(multi && src !== prevSrc) r.dataset.srcHead = src || '직접 입력'; else delete r.dataset.srcHead;
+    prevKey = key; prevSrc = src;
   });
+  renderSrcBar();
 }
+// 불러온 자료 목록 (자료별 행 수, ✕ 로 그 자료만 빼기)
+function sourceCounts(){
+  const m = new Map();
+  mainRows().forEach(r => { if(isEmptyRow(r)) return; const s = r.dataset.src || ''; m.set(s, (m.get(s) || 0) + 1); });
+  return m;
+}
+function renderSrcBar(){
+  const bar = $('srcBar'); if(!bar) return;
+  const m = sourceCounts();
+  if(![...m.keys()].some(Boolean)){ bar.hidden = true; bar.innerHTML = ''; return; }
+  bar.hidden = false;
+  bar.innerHTML = '<b>📚 불러온 자료</b>' + [...m].map(([src, n]) => src
+    ? `<span class="src-chip">${escapeHtml(src)} <small>${n}행</small><button type="button" title="이 자료만 빼기" data-src-del="${escapeHtml(src)}">✕</button></span>`
+    : `<span class="src-chip direct">직접 입력 <small>${n}행</small></span>`).join('');
+}
+function removeSource(src){
+  const rows = mainRows().filter(r => (r.dataset.src || '') === src);
+  if(!rows.length || !confirm(`"${src}" 자료 ${rows.length}행을 입력 화면에서 뺄까요? (파일은 그대로 남아 있습니다)`)) return;
+  rows.forEach(r => r.remove());
+  if(!mainRows().length) addRow();
+  renumber(); analyze();
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-src-del]'); if(b) removeSource(b.dataset.srcDel); });
 // 기본값을 바꾸면 아직 비어 있는 행들도 같이 바뀜
 function syncEmptyRowsToDefault(){
   let prev = null;
@@ -1049,7 +1093,7 @@ function getRows(){
       const date = normalizeDate(metaVal(row,'date'));
       result.push({numbers: vals, round: metaVal(row,'round'), date, day: metaVal(row,'day') || weekdayFromDate(date),
                    col: metaVal(row,'col'), mode: MODE_SHORT[row.dataset.mode] || '', modeKey: row.dataset.mode,
-                   picks: row.dataset.mode === 'semi' ? readPicks(row) : [], el: row});
+                   picks: row.dataset.mode === 'semi' ? readPicks(row) : [], src: row.dataset.src || '', el: row});
     }
   });
   return result;
@@ -1117,13 +1161,13 @@ function setAnType(t, silent){
   if(!silent){ saveAnSettings(); analyze(); }
 }
 function saveAnSettings(){
-  try{ localStorage.setItem(AN_KEY, JSON.stringify({n: $('anN').value, dir: $('anDir').value, view: anView, type: anType,
+  try{ localStorage.setItem(AN_KEY, JSON.stringify({v: 2, n: $('anN').value, dir: $('anDir').value, view: anView, type: anType,
     mark: $('anMark').checked, sqFull: $('anSqFull').checked, barOne: $('anBarOne').checked})); }catch(e){}
 }
 function loadAnSettings(){
   try{
     const st = JSON.parse(localStorage.getItem(AN_KEY) || '{}');
-    if(st.n) $('anN').value = Math.min(5, Math.max(2, +st.n));
+    if(st.n && st.v === 2) $('anN').value = Math.min(5, Math.max(2, +st.n));   // 예전 설정(기본 3개)은 무시
     if(st.dir) $('anDir').value = ['h','v','hv'].includes(st.dir) ? st.dir : 'h';
     if(typeof st.mark === 'boolean') $('anMark').checked = st.mark;
     if(typeof st.sqFull === 'boolean') $('anSqFull').checked = st.sqFull;
@@ -1140,7 +1184,8 @@ document.addEventListener('click', e => {
   const t = e.target.closest('#anType button'); if(t) return setAnType(t.dataset.type);
   const x = e.target.closest('#exSlip .slip-num'); if(x) return toggleExcluded(+x.dataset.n);
 });
-['anN','anDir','anMark','anMode','anRound','anSqFull','anBarOne'].forEach(id => $(id).addEventListener('change', () => { saveAnSettings(); analyze(); }));
+let anMultiSrc = false;
+['anN','anDir','anMark','anMode','anRound','anSrc','anSqFull','anBarOne'].forEach(id => $(id).addEventListener('change', () => { saveAnSettings(); analyze(); }));
 
 /* ---------- 제외수 ---------- */
 function saveExcluded(){ try{ localStorage.setItem(EX_KEY, JSON.stringify([...excluded].sort((a,b) => a-b))); }catch(e){} }
@@ -1189,7 +1234,7 @@ function ticketsOf(allRows){
   const out = []; let cur = [];
   allRows.forEach(r => {
     const prev = cur[cur.length - 1];
-    if(prev && (r.col === 'A' || r.round !== prev.round || r.date !== prev.date || COLS.indexOf(r.col) !== COLS.indexOf(prev.col) + 1)){ out.push(cur); cur = []; }
+    if(prev && (r.col === 'A' || r.src !== prev.src || r.round !== prev.round || r.date !== prev.date || COLS.indexOf(r.col) !== COLS.indexOf(prev.col) + 1)){ out.push(cur); cur = []; }
     cur.push(r);
   });
   if(cur.length) out.push(cur);
@@ -1388,6 +1433,7 @@ function ticketHtml(tk, id){
   const head = `<div class="tk-head" onclick="goToTicket(${id},0)" title="입력 화면에서 이 용지 보기">
       <b>${first.round ? `제 ${escapeHtml(first.round)}회` : '회차 없음'}</b>${date}
       <small>${rows[0].index}${rows.length > 1 ? '–' + rows[rows.length-1].index : ''}행 · ${rows.length}게임</small>
+      ${anMultiSrc ? `<span class="an-tag src">📚 ${escapeHtml(first.src || '직접 입력')}</span>` : ''}
       ${res.head.join('')}</div>`;
   const labels = rows.map((r, i) => `<div class="tk-lab${res.rowOn[i] ? ' on t-' + anType : ''}${res.dim[i] ? ' tk-dim' : ''}" onclick="goToTicket(${id},${i})" title="입력 화면에서 이 행 보기">
       <span class="tk-letter">${escapeHtml(r.col || '-')}</span><span class="an-mode ${r.modeKey}">${r.mode}</span></div>`).join('');
@@ -1432,7 +1478,7 @@ function analyze(){
   sel.innerHTML = '<option value="">전체</option>' + rounds.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}회</option>`).join('');
   sel.value = rounds.includes(cur) ? cur : '';
 
-  const opt = {n: +$('anN').value || 3, dir: ['h','v','hv'].includes($('anDir').value) ? $('anDir').value : 'h', mode: anType === 'digit' ? $('anMode').value : '',
+  const opt = {n: +$('anN').value || 2, dir: ['h','v','hv'].includes($('anDir').value) ? $('anDir').value : 'h', mode: anType === 'digit' ? $('anMode').value : '',
                sqFull: $('anSqFull').checked, barOne: $('anBarOne').checked, ex: anType === 'digit' ? excluded : new Set()};
   const exTxt = excluded.size ? ` · 제외수 ${excluded.size}개 빼고` : '';
   $('anHelpDigit').textContent = {
@@ -1443,12 +1489,21 @@ function analyze(){
     h: `가로: 한 행에서 이웃한 자리가 1씩 이어지는 번호 ${opt.n}개 이상 (예: 14 15 16) · 점선 = 좌우에 붙은 수`,
     v: `세로: 같은 자리에서 위·아래 행으로 1씩 이어지는 번호 ${opt.n}개 이상 (예: 12→13→14) · 점선 = 위아래에 붙은 수`,
     hv: `가로·세로 연번을 함께 표시 · ${opt.n}개 이상 · 점선 = 연번에 바로 붙은 수`}[opt.dir];
+  // 자료(파일) 필터
+  const srcSel = $('anSrc'), srcCur = srcSel.value;
+  const srcs = [...new Set(allRows.map(r => r.src))];
+  $('anSrcWrap').hidden = !srcs.some(Boolean);
+  srcSel.innerHTML = '<option value="">전체 (합쳐서)</option>' + srcs.map(x => `<option value="${escapeHtml(x || '__direct')}">${escapeHtml(x || '직접 입력')}</option>`).join('');
+  srcSel.value = srcs.map(x => x || '__direct').includes(srcCur) ? srcCur : '';
+  const srcOk = rows => !srcSel.value || (rows[0].src || '__direct') === srcSel.value;
+  anMultiSrc = srcs.length > 1;
   const tickets = ticketsOf(allRows)
+    .filter(srcOk)
     .filter(rows => !sel.value || rows[0].round === sel.value)
     .map(rows => ({rows, res: analyzeTicket(rows, anType, opt)}));
   const hitTickets = tickets.filter(t => t.res.count);
   // 제외수 판: 지금 고른 패턴과 상관없이, 남은 번호로 동끝을 바로 분석
-  const exRes = ticketsOf(allRows).filter(rows => !sel.value || rows[0].round === sel.value)
+  const exRes = ticketsOf(allRows).filter(srcOk).filter(rows => !sel.value || rows[0].round === sel.value)
     .map(rows => analyzeTicket(rows, 'digit', {...opt, mode: '', ex: excluded}));
   const dgCnt = {};
   exRes.forEach(r => r.dg.forEach(g => g.nums.forEach(x => { dgCnt[x] = (dgCnt[x] || 0) + 1; })));
@@ -1575,7 +1630,7 @@ function hotListText(){
   const out = [`# ${patternTitle()} — 용지 ${list.length}장 (입력 순서 그대로, [ ] = 직접 고른 번호)`];
   list.forEach(t => {
     const f = t.rows[0];
-    out.push('', `# 제${f.round || '-'}회 ${f.date || ''} ${stripTags(t.res.head.join(' · '))}`);
+    out.push('', `# 제${f.round || '-'}회 ${f.date || ''}${f.src ? ' · ' + f.src : ''} ${stripTags(t.res.head.join(' · '))}`);
     t.rows.forEach((r, i) => out.push(lineOf(r, stripTags(t.res.tags[i].join(', ')))));
   });
   return out.join('\n');
@@ -1608,7 +1663,7 @@ function renderChunkTable(chunkRows, chunkNum, opts = {}){
 
   let html = `
     <div class="print-block">
-      <div class="print-block-title">${headerTitle} · ${chunkRows.length}게임</div>
+      <div class="print-block-title">${headerTitle}${firstItem.src ? ' · ' + escapeHtml(firstItem.src) : ''} · ${chunkRows.length}게임</div>
       <table class="print-table">
         <colgroup><col style="width:${opts.list ? 13 : 7}mm"><col><col style="width:6.5mm"></colgroup>
         <thead><tr><th>행</th><th>로또 번호</th><th>방식</th></tr></thead>
@@ -1650,7 +1705,7 @@ function buildPrint(rows, opts){
   const chunks = [];
   let chunk = [], prevKey = null;
   rows.forEach(item => {
-    const key = item.round + '|' + item.date;
+    const key = (item.src || '') + '|' + item.round + '|' + item.date;
     const newTicket = !opts.list && chunk.length && (key !== prevKey || item.col === 'A');
     if(chunk.length === CHUNK_SIZE || newTicket){ chunks.push(chunk); chunk = []; }
     chunk.push(item);
@@ -2164,9 +2219,13 @@ async function copyOCR(){
 /* ============================================================
    저장 / 불러오기 (기존 파일 형식 호환)
    ============================================================ */
-function collectSaveData(){
+function collectSaveData(title){
+  const srcs = [...sourceCounts()].filter(([s]) => s).map(([name, rows]) => ({name, rows}));
   return {
-    version:3, savedAt:new Date().toISOString(),
+    version:4, savedAt:new Date().toISOString(),
+    title: title || '',                         // 직접 정한 제목
+    sources: srcs,                              // 합쳐서 저장한 경우, 어떤 자료들이 들어 있는지
+
     defaultRound:$('defaultRound').value,
     defaultDate:$('defaultDate').value,
     defaultDay:$('defaultDay').value,
@@ -2175,15 +2234,43 @@ function collectSaveData(){
       numbers:cellsOf(row).map(x=>x.value===''?'':Number(x.value)),
       round:metaVal(row,'round'), date:metaVal(row,'date'), day:metaVal(row,'day'),
       col:metaVal(row,'col'), mode:MODE_LABEL[row.dataset.mode]||'',
-      picks:readPicks(row)            // 반자동에서 직접 고른 번호
+      picks:readPicks(row),           // 반자동에서 직접 고른 번호
+      src:row.dataset.src||''         // 어느 자료(파일)에서 온 행인지
     }))
   };
 }
-function saveDataFile(){
-  const blob=new Blob([JSON.stringify(collectSaveData(),null,2)],{type:'application/json;charset=utf-8'});
-  const url=URL.createObjectURL(blob),a=document.createElement('a'),now=new Date();
-  const stamp=now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'_'+pad(now.getHours())+pad(now.getMinutes());
-  a.href=url;a.download=`lotto_data_${stamp}.json`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
+function downloadFile(name, text, type){
+  const blob = new Blob([text], {type});
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const nowStamp = () => { const n = new Date(); return n.getFullYear() + pad(n.getMonth()+1) + pad(n.getDate()) + '_' + pad(n.getHours()) + pad(n.getMinutes()); };
+const safeName = t => String(t).replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+function saveDataFile(title){
+  const t = typeof title === 'string' ? safeName(title) : '';
+  const name = t ? `${t}_${nowStamp().slice(0, 8)}.json` : `lotto_data_${nowStamp()}.json`;
+  downloadFile(name, JSON.stringify(collectSaveData(t), null, 2), 'application/json;charset=utf-8');
+  toast(`"${name}" 으로 저장했습니다.`);
+}
+// 제목 정해서 저장 (예: 일요일 데이터 / 일+목+토 합본)
+function saveTitled(){
+  const srcs = [...sourceCounts().keys()].filter(Boolean);
+  const suggest = srcs.length > 1 ? srcs.map(x => x.replace(/\s*데이터$/, '')).join('+') + ' 합본' : (srcs[0] || '');
+  const t = prompt('저장할 제목을 입력하세요.\n예: 일요일 데이터 · 목요일 데이터 · 일+목+토 합본', suggest);
+  if(t === null) return;
+  if(!safeName(t)){ alert('제목을 입력해 주세요.'); return; }
+  saveDataFile(t);
+}
+// 분석 결과를 텍스트 파일로 저장
+function saveResultFile(){
+  if(!hitList().length){ alert(`${TYPE_LABEL[anType]}이 있는 용지가 없습니다.`); return; }
+  const src = $('anSrc').selectedOptions[0]?.textContent || '';
+  const t = prompt('분석 결과 파일 제목을 입력하세요.', `${$('anSrc').value ? src : '합본'} ${patternTitle()}`);
+  if(t === null || !safeName(t)) return;
+  const head = [`# ${safeName(t)}`, `# 저장: ${new Date().toLocaleString('ko-KR')}`,
+    `# 자료: ${$('anSrc').value ? src : [...new Set(getRows().map(r => r.src || '직접 입력'))].join(', ')}`, ''];
+  downloadFile(`${safeName(t)}_${nowStamp().slice(0, 8)}.txt`, head.join('\n') + hotListText(), 'text/plain;charset=utf-8');
 }
 function loadDataFile(){$('dataFileInput').click();}
 
@@ -2303,6 +2390,8 @@ async function readDataFile(event){
       if(isPdf) toast(`${f.name} 읽는 중...`);
       const d = isPdf ? await readPdfData(f) : JSON.parse(await f.text());
       if(!d || !Array.isArray(d.rows)) throw new Error(`${f.name}: 올바른 저장 파일이 아닙니다.`);
+      // 자료 이름: 파일 안의 제목 → 없으면 파일 이름
+      d._src = (d.title && String(d.title).trim()) || f.name.replace(/\.(json|pdf)$/i, '').replace(/_\d{8}(_\d{4})?$/, '');
       datas.push(d);
     }
   }catch(err){ alert('저장 파일을 불러오지 못했습니다: ' + err.message); return; }
@@ -2325,18 +2414,20 @@ async function readDataFile(event){
   }
 
   // 같은 회차·날짜·행·번호는 한 번만 (같은 파일을 두 번 불러와도 중복 안 됨)
-  const keyOf = (round, date, col, nums) => [round, normalizeDate(date), col, [...nums].sort((a,b) => a-b).join(',')].join('|');
-  const seen = new Set(getRows().map(r => keyOf(r.round, r.date, r.col, r.numbers)));
+  // 같은 자료·회차·날짜·행·번호는 한 번만 (같은 파일을 두 번 불러와도 중복 안 됨, 다른 요일 자료끼리는 그대로)
+  const keyOf = (src, round, date, col, nums) => [src, round, normalizeDate(date), col, [...nums].sort((a,b) => a-b).join(',')].join('|');
+  const seen = new Set(getRows().map(r => keyOf(r.src, r.round, r.date, r.col, r.numbers)));
   let added = 0, skipped = 0, picked = 0;
   datas.forEach(d => d.rows.forEach(item => {
     const nums = (Array.isArray(item.numbers) ? item.numbers : []).map(x => parseInt(x,10)).filter(isNum);
     if(!nums.length) return;
-    const k = keyOf(item.round || '', item.date || '', item.col || '', nums);
+    const src = item.src || d._src || '';
+    const k = keyOf(src, item.round || '', item.date || '', item.col || '', nums);
     if(seen.has(k)){ skipped++; return; }
     seen.add(k);
     const picks = Array.isArray(item.picks) ? item.picks.map(Number).filter(isNum) : [];
     if(picks.length) picked++;
-    addRow(item.numbers, {round:item.round||'', date:item.date||'', day:item.day||'', col:item.col||'', mode:item.mode||'', picks},
+    addRow(item.numbers, {round:item.round||'', date:item.date||'', day:item.day||'', col:item.col||'', mode:item.mode||'', picks, src},
            {mode: LABEL_TO_MODE[item.mode] || 'auto'});
     added++;
     d._added = (d._added || 0) + 1;
