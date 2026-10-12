@@ -304,6 +304,23 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .print-num.picked{background:#dcdcdc;border-color:#8a8a8a}
 .pdf-data{color:#fff;font-size:4pt;line-height:1;font-family:monospace;word-break:break-all;margin-top:2mm;user-select:none}
 .print-num.sq{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:1.2px}
+.an-print-head{display:none}
+/* 분석 화면 그대로 인쇄 (A4) */
+@media print{
+  body.print-analysis{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.print-analysis .container{display:block !important;max-width:none;padding:0}
+  body.print-analysis .print-only,body.print-analysis #pageInput,body.print-analysis .tabs,body.print-analysis h1,
+  body.print-analysis .subtitle,body.print-analysis .an-head,body.print-analysis #pageAnalysis .note,body.print-analysis #anFilters,
+  body.print-analysis #anListTools,body.print-analysis .ex-panel:not([open]),body.print-analysis .ex-panel .toolbar,
+  body.print-analysis .ex-panel .note,body.print-analysis .toast{display:none !important}
+  body.print-analysis #pageAnalysis{display:block !important}
+  body.print-analysis .card{box-shadow:none;padding:0;margin:0 0 6mm;border-radius:0}
+  body.print-analysis .an-print-head{display:block;border-bottom:1.5px solid #333;padding-bottom:2mm;margin-bottom:3mm;font-size:10pt;color:#333}
+  body.print-analysis .an-print-head b{font-size:13pt;color:#000;margin-right:3mm}
+  body.print-analysis .tk,body.print-analysis .an-group,body.print-analysis .ex-line,body.print-analysis .stat-box{break-inside:avoid}
+  body.print-analysis #statistics{break-before:page}
+  body.print-analysis .tk-body{overflow:visible}
+}
 @media print{
   @page { size: A5 portrait; margin: 0; }
   body{background:#fff;margin:0}
@@ -496,7 +513,10 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
           <input id="imageInput" type="file" accept="image/*" onchange="loadImage(event)">
           <div class="cap-tools" id="capTools" hidden>
             <button type="button" class="secondary" onclick="captureScreen()">🖥️ 화면에서 가져오기 (유튜브 등)</button>
-            <div class="note" style="margin-top:4px">영상을 원하는 장면에서 <b>멈춘 뒤</b> 누르고, 공유할 탭(예: 유튜브)을 고르세요. 그 순간 화면이 정지 이미지로 들어옵니다.</div>
+            <select id="capDelay" class="meta-input" style="width:auto;height:38px" title="화면 전체·창을 공유할 때, 유튜브로 옮겨 갈 시간">
+              <option value="0">바로 찍기</option><option value="3">3초 뒤 찍기</option><option value="5">5초 뒤 찍기</option></select>
+            <div class="note" style="margin-top:4px">영상을 원하는 장면에서 <b>멈춘 뒤</b> 누르고, 공유 창에서 <b>Chrome 탭 → 유튜브 탭</b>을 고르세요.<br>
+              목록에 유튜브가 없으면 <b>전체 화면</b>(또는 창)을 고르고 <b>3초 뒤 찍기</b>로 바꾼 뒤, 그 사이 유튜브 화면을 띄워 두세요.</div>
           </div>
           <div id="cropWrap" class="crop-wrap" hidden>
             <div class="crop-hint">✂️ 용지 부분을 마우스나 손가락으로 <b>끌어서 네모로 지정</b>하세요. 지정하지 않으면 전체를 읽습니다.</div>
@@ -538,8 +558,10 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     <div class="an-head">
       <h2 style="margin:0;">📊 패턴 분석</h2>
       <span style="flex:1"></span>
+      <button class="blue" onclick="printAnalysis()" title="지금 보이는 분석 화면을 그대로 A4로 인쇄 (PDF로 저장도 가능)">🖨️ 분석 화면 그대로 인쇄</button>
       <button class="secondary" onclick="showPage('input')">✏️ 입력으로 돌아가기</button>
     </div>
+    <div id="anPrintHead" class="an-print-head"></div>
     <div class="note">로또 용지 단위(A~E 5행)로, <b>입력한 순서 그대로</b> 패턴을 찾아 표시합니다. 행 순서를 바꾸거나 다른 용지의 번호를 섞지 않습니다. 용지 제목이나 행 글자를 누르면 입력 화면의 그 위치로 이동합니다. ✋ 표시는 반자동에서 직접 고른 번호입니다.</div>
     <details class="ex-panel" id="exPanel">
       <summary>🚫 제외수 <span id="exSummary" class="meta-label" style="font-size:12px;">(없음)</span></summary>
@@ -1637,6 +1659,23 @@ function digitCollectHtml(list, opt){
     <div class="dg-sum">${lines}</div></div>`;
 }
 
+// 분석 화면을 보이는 그대로 인쇄 (A4 세로)
+function printAnalysis(){
+  showPage('analysis');
+  const dir = ['digit','run'].includes(anType) ? ` · ${$('anN').value}개 이상 · ${DIR_LABEL[$('anDir').value]}` : '';
+  const src = $('anSrcWrap').hidden ? '' : ` · 자료: ${$('anSrc').selectedOptions[0]?.textContent || '전체'}`;
+  const rnd = $('anRound').value ? ` · ${$('anRound').value}회` : '';
+  const ex = anType === 'digit' && excluded.size ? ` · 제외수 ${[...excluded].sort((a,b) => a-b).map(pad).join(' ')}` : '';
+  $('anPrintHead').innerHTML = `<b>📊 ${TYPE_LABEL[anType]}</b>${dir}${src}${rnd}${ex} · ${anView === 'all' ? '전체 용지' : '패턴 있는 용지만'} · ${new Date().toLocaleDateString('ko-KR')}`;
+  const pageStyle = document.createElement('style');
+  pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:10mm}}';   // 이 인쇄만 A4 + 여백
+  document.head.appendChild(pageStyle);
+  document.body.classList.add('print-analysis');
+  const done = () => { document.body.classList.remove('print-analysis'); pageStyle.remove(); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
+}
+
 // 패턴 있는 용지 복사 / 인쇄 (용지 단위, 행 순서 그대로)
 const lineOf = (r, tail) => `${r.round ? r.round + '회 ' : ''}${r.col || ''} ${r.mode} | ` +
   r.numbers.map(x => r.picks.includes(x) ? `[${pad(x)}]` : pad(x)).join(' ') + ` | ${tail || ''}`;
@@ -1886,13 +1925,21 @@ async function captureScreen(){
   }
   let stream;
   try{
-    stream = await navigator.mediaDevices.getDisplayMedia({video: {frameRate: 5}, audio: false});
+    const opts = {video: {frameRate: 5}, audio: false, selfBrowserSurface: 'exclude', surfaceSwitching: 'exclude'};
+    // 탭을 공유하면 크롬이 그 탭(유튜브)으로 화면을 넘기는데, 분석기에 그대로 머물도록 요청
+    let controller = null;
+    try{ if(window.CaptureController){ controller = new CaptureController(); opts.controller = controller; } }catch(e){}
+    stream = await navigator.mediaDevices.getDisplayMedia(opts);
+    try{ controller?.setFocusBehavior?.('no-focus-change'); }catch(e){}
     const v = document.createElement('video');
     v.muted = true; v.playsInline = true; v.srcObject = stream;
     await v.play();
-    await new Promise(r => setTimeout(r, 400));      // 첫 화면이 그려질 때까지 잠깐 대기
+    const delay = +($('capDelay')?.value || 0);
+    for(let s = delay; s > 0; s--){ toast(`${s}초 뒤에 화면을 찍습니다 — 유튜브 화면을 띄워 두세요`); await new Promise(r => setTimeout(r, 1000)); }
+    await new Promise(r => setTimeout(r, 400));      // 화면이 그려질 때까지 잠깐 대기
     openCrop(imageToCanvas(v));
     toast('화면을 가져왔습니다. 용지 부분을 끌어서 지정하세요.');
+    window.focus();
   }catch(e){
     if(e.name !== 'NotAllowedError' && e.name !== 'AbortError') alert('화면을 가져오지 못했습니다: ' + e.message);
   }finally{
