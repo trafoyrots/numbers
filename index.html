@@ -430,6 +430,14 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 #rows .row[data-src-head]::before{content:"📚 " attr(data-src-head);position:absolute;top:-11px;left:10px;font-size:11px;font-weight:700;
   color:#4a5160;background:#eef1f5;border-radius:9px;padding:1px 8px;white-space:nowrap}
 .an-tag.src{background:#eef1f5;color:#4a5160}
+/* 출현 횟수별 번호 */
+.cnt-groups{display:flex;flex-direction:column;gap:6px}
+.cnt-line{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 10px;border:1px solid #eceef0;border-radius:9px;background:#fff}
+.cnt-line > b{width:44px;font-size:13px;color:#3d434c;text-align:right;margin-right:4px}
+.cnt-line > small{font-size:11px;color:#9aa0a8;width:34px}
+.cnt-line .ball{width:30px;height:30px;font-size:13px}
+.cnt-line.zero > b{color:#9aa0a8}
+.cnt-line .ball.ex{opacity:.3;text-decoration:line-through}
 /* 로또 용지 번호판도 톤 다운 */
 .slip-num{border-color:#e6cfd2;color:#a85a66}
 .slip-num.heat{color:#4a4f57;border-color:#e3d6bd}
@@ -513,10 +521,8 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
           <input id="imageInput" type="file" accept="image/*" onchange="loadImage(event)">
           <div class="cap-tools" id="capTools" hidden>
             <button type="button" class="secondary" onclick="captureScreen()">🖥️ 화면에서 가져오기 (유튜브 등)</button>
-            <select id="capDelay" class="meta-input" style="width:auto;height:38px" title="화면 전체·창을 공유할 때, 유튜브로 옮겨 갈 시간">
-              <option value="0">바로 찍기</option><option value="3">3초 뒤 찍기</option><option value="5">5초 뒤 찍기</option></select>
-            <div class="note" style="margin-top:4px">영상을 원하는 장면에서 <b>멈춘 뒤</b> 누르고, 공유 창에서 <b>Chrome 탭 → 유튜브 탭</b>을 고르세요.<br>
-              목록에 유튜브가 없으면 <b>전체 화면</b>(또는 창)을 고르고 <b>3초 뒤 찍기</b>로 바꾼 뒤, 그 사이 유튜브 화면을 띄워 두세요.</div>
+            <button type="button" class="danger" id="stopShareBtn" onclick="stopShare(true)" hidden>🛑 화면 공유 끄기</button>
+            <div class="note" style="margin-top:4px">영상을 원하는 장면에서 <b>멈춘 뒤</b> 누르고, 공유 창에서 <b>Chrome 탭 → 유튜브 탭</b>을 고르세요. 화면 한 장만 찍고 공유는 바로 꺼집니다.</div>
           </div>
           <div id="cropWrap" class="crop-wrap" hidden>
             <div class="crop-hint">✂️ 용지 부분을 마우스나 손가락으로 <b>끌어서 네모로 지정</b>하세요. 지정하지 않으면 전체를 읽습니다.</div>
@@ -627,6 +633,8 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     </div>
     <h3 style="font-size:15px;margin:18px 0 10px;">출현 횟수 <small class="meta-label" style="font-size:12px;">로또 용지 배열 · 번호 아래 숫자가 나온 횟수</small></h3>
     <div id="countSlip" class="slip" style="max-width:520px"></div>
+    <h3 style="font-size:15px;margin:22px 0 10px;">출현 횟수별 번호 <small class="meta-label" style="font-size:12px;">많이 나온 순 · 같은 횟수끼리 모음</small></h3>
+    <div id="countGroups" class="cnt-groups"></div>
   </div>
   </div><!-- /pageAnalysis -->
 </div>
@@ -1620,6 +1628,13 @@ function analyze(){
     `분석 행: <b>${statRows.length}</b>개<br>유효 번호: <b>${total}</b>개<br>최다 출현: <b>${max}회</b><br>` +
     `방식: 자 <b>${mc.auto||0}</b> · 수 <b>${mc.manual||0}</b> · 반 <b>${mc.semi||0}</b>`;
   // 출현 횟수: 로또 용지 배열, 번호 아래에 횟수
+  // 출현 횟수별 번호 (같은 횟수끼리 한 줄)
+  const byCount = {};
+  for(let n = 1; n <= 45; n++) (byCount[counts[n]] = byCount[counts[n]] || []).push(n);
+  $('countGroups').innerHTML = total ? Object.keys(byCount).map(Number).sort((a,b) => b - a).map(c =>
+    `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b><small>${byCount[c].length}개</small>` +
+    byCount[c].map(n => `<span class="ball ${ballClass(n)}${excluded.has(n) ? ' ex' : ''}"${excluded.has(n) ? ' title="제외수"' : ''}>${n}</span>`).join('') + `</div>`
+  ).join('') : '<div class="empty">입력된 번호가 없습니다.</div>';
   $('countSlip').innerHTML = slipHtml(n => {
     const c = counts[n], a = max ? c / max : 0;
     const bg = c ? `background:rgba(184,150,92,${(0.10 + a * 0.42).toFixed(2)})` : '';
@@ -1918,32 +1933,59 @@ function runCropOCR(){
 })();
 
 /* ---------- 화면에서 가져오기 (PC 브라우저: 유튜브 등 다른 탭의 정지 화면) ---------- */
+let shareStream = null, shareByUser = false;
+// 화면 공유 끄기 (위쪽 '화면 공유 중' 표시줄도 함께 사라짐)
+function stopShare(byUser){
+  if(byUser === true && shareStream) shareByUser = true;
+  if(shareStream){ shareStream.getTracks().forEach(t => t.stop()); shareStream = null; }
+  const b = $('stopShareBtn'); if(b) b.hidden = true;
+}
+window.addEventListener('pagehide', stopShare);
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('시간 초과')), ms))]);
+// 공유된 화면에서 한 장 찍기 (분석기 탭이 뒤로 가 있어도 멈추지 않도록 시간 제한)
+async function grabFrame(stream){
+  await new Promise(r => setTimeout(r, 300));
+  const track = stream.getVideoTracks()[0];
+  if(window.ImageCapture){
+    try{
+      const bmp = await withTimeout(new ImageCapture(track).grabFrame(), 4000);
+      const c = document.createElement('canvas');
+      c.width = bmp.width; c.height = bmp.height;
+      c.getContext('2d').drawImage(bmp, 0, 0);
+      return c;
+    }catch(e){}
+  }
+  const v = document.createElement('video');
+  v.muted = true; v.playsInline = true; v.srcObject = stream;
+  await withTimeout(v.play(), 4000);
+  await new Promise(r => setTimeout(r, 300));
+  return imageToCanvas(v);
+}
 async function captureScreen(){
   if(!navigator.mediaDevices?.getDisplayMedia){
     alert('이 브라우저는 화면 가져오기를 지원하지 않습니다.\n화면을 캡처(스크린샷)해서 이미지로 넣어 주세요.');
     return;
   }
-  let stream;
+  stopShare(); shareByUser = false;
   try{
     const opts = {video: {frameRate: 5}, audio: false, selfBrowserSurface: 'exclude', surfaceSwitching: 'exclude'};
     // 탭을 공유하면 크롬이 그 탭(유튜브)으로 화면을 넘기는데, 분석기에 그대로 머물도록 요청
     let controller = null;
     try{ if(window.CaptureController){ controller = new CaptureController(); opts.controller = controller; } }catch(e){}
-    stream = await navigator.mediaDevices.getDisplayMedia(opts);
+    shareStream = await navigator.mediaDevices.getDisplayMedia(opts);
     try{ controller?.setFocusBehavior?.('no-focus-change'); }catch(e){}
-    const v = document.createElement('video');
-    v.muted = true; v.playsInline = true; v.srcObject = stream;
-    await v.play();
-    const delay = +($('capDelay')?.value || 0);
-    for(let s = delay; s > 0; s--){ toast(`${s}초 뒤에 화면을 찍습니다 — 유튜브 화면을 띄워 두세요`); await new Promise(r => setTimeout(r, 1000)); }
-    await new Promise(r => setTimeout(r, 400));      // 화면이 그려질 때까지 잠깐 대기
-    openCrop(imageToCanvas(v));
+    $('stopShareBtn').hidden = false;
+    shareStream.getVideoTracks()[0]?.addEventListener('ended', () => stopShare(true));   // 크롬 표시줄에서 '공유 중지'를 눌러도 정리
+    const canvas = await grabFrame(shareStream);
+    stopShare();                                       // 찍자마자 공유 끝
+    openCrop(canvas);
     toast('화면을 가져왔습니다. 용지 부분을 끌어서 지정하세요.');
     window.focus();
   }catch(e){
-    if(e.name !== 'NotAllowedError' && e.name !== 'AbortError') alert('화면을 가져오지 못했습니다: ' + e.message);
+    if(shareByUser) toast('화면 공유를 껐습니다.');
+    else if(e.name !== 'NotAllowedError' && e.name !== 'AbortError') alert('화면을 가져오지 못했습니다: ' + e.message);
   }finally{
-    stream?.getTracks().forEach(t => t.stop());       // 공유는 바로 끝냄 (한 장만 찍음)
+    stopShare();                                       // 어떤 경우에도 공유는 끔
   }
 }
 if(navigator.mediaDevices?.getDisplayMedia && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) $('capTools').hidden = false;
