@@ -35,7 +35,7 @@ button:active{transform:translateY(1px)}
 .meta-input{height:40px;padding:6px 8px;border:1px solid #d4d9df;border-radius:8px;outline:none;font-size:13px;font-weight:700;background:#fff;font-family:inherit}
 .meta-input:focus{border-color:#2f6fed;box-shadow:0 0 0 3px rgba(47,111,237,.12)}
 .meta-input.filled{background:#eaf7ef;border-color:#35a76d}
-.meta-round{width:70px}.meta-date{width:112px}.meta-day{width:42px;text-align:center}.meta-col{width:52px;text-align:center}
+.meta-round{width:70px}.meta-date{width:112px}.meta-day{width:42px;text-align:center}.meta-col{width:52px;text-align:center}.meta-ta{width:64px;text-align:center}
 .meta-label{font-size:11px;color:#69727d;font-weight:700;margin-left:2px}
 .num-input{
   width:54px;height:44px;text-align:center;font-size:17px;font-weight:700;
@@ -141,6 +141,9 @@ details.raw pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:8
 .fm-sec button{background:#fff;color:#20242a;border:1px solid #e3e6ea;text-align:left;padding:8px 10px;border-radius:8px;display:flex;flex-direction:column;gap:2px;font-size:14px}
 .fm-sec button:hover{border-color:#2f6fed;background:#f3f7ff}
 .fm-sec button small{color:#7a828c;font-size:11.5px;font-weight:500}
+.fm-pair{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.fm-wide{grid-column:1 / -1}
+#defaultTa{width:84px}
 @media(max-width:600px){ .filemenu{margin-left:0;width:100%} .filemenu > summary{text-align:center} .fm-panel{left:0;right:auto;grid-template-columns:1fr} }
 .tabs{display:flex;gap:6px;background:#e9edf2;padding:4px;border-radius:12px;width:fit-content;max-width:100%}
 .tabs button{background:transparent;color:#5b636d;padding:10px 18px;border-radius:9px;font-size:15px}
@@ -283,7 +286,7 @@ button.slip-num{cursor:pointer}
   border-radius:10px;border:1px solid #f2e3c6;margin-bottom:6px;flex-wrap:wrap
 }
 
-/* A5 세로(Portrait) 인쇄 — 미리보기와 인쇄 공통 (모든 칸 고정 크기) */
+/* A4 세로 기본 인쇄 — 미리보기와 인쇄 공통 (모든 칸 고정 크기) */
 .print-only{display:none}
 body.print-preview-mode{background:#eef1f5}
 body.print-preview-mode .container{display:none}
@@ -292,33 +295,35 @@ body.print-preview-mode .print-only{display:block}
 .print-preview-actions button{padding:8px 12px;border-radius:8px;border:0;background:#252a31;color:#fff;font-weight:700;cursor:pointer}
 .print-preview-actions .back{background:#e9edf2;color:#252a31}
 .a4-page{
-  width:148mm;min-height:210mm;padding:6mm 7mm;margin:10px auto;box-sizing:border-box;
-  background:#fff;color:#000;font-size:8.5pt;line-height:1.2;
+  width:210mm;min-height:297mm;padding:8mm 10mm;margin:10px auto;box-sizing:border-box;
+  background:#fff;color:#000;font-size:10.62pt;line-height:1.2;
   -webkit-print-color-adjust:exact;print-color-adjust:exact
 }
 body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
-.print-head{display:flex;align-items:center;gap:3mm;border-bottom:.8px solid #555;padding-bottom:.6mm;margin-bottom:1.5mm;height:4.5mm}
-.print-head h2{margin:0;font-size:8pt;font-weight:bold;white-space:nowrap}
-.print-head .pg{margin-left:auto;font-size:7pt;color:#666;white-space:nowrap}
-.print-legend{font-size:6.5pt;color:#333;margin:0;display:flex;gap:3mm;align-items:center;flex-wrap:nowrap;overflow:hidden}
-.print-legend .print-num{width:4mm;height:4mm;line-height:3.5mm;font-size:6pt}
-.print-grid{display:flex;gap:5mm;align-items:flex-start}
+.print-head{display:flex;align-items:center;gap:3.75mm;border-bottom:.8px solid #555;padding-bottom:.75mm;margin-bottom:1.88mm;height:5.62mm}
+.print-head h2{margin:0;font-size:10pt;font-weight:bold;white-space:nowrap}
+.print-head .pg{margin-left:auto;font-size:8.75pt;color:#666;white-space:nowrap}
+.print-legend{font-size:8.12pt;color:#333;margin:0;display:flex;gap:3.75mm;align-items:center;flex-wrap:nowrap;overflow:hidden}
+.print-legend .print-num{width:5mm;height:5mm;line-height:4.38mm;font-size:7.5pt}
+.print-grid{display:flex;gap:6.25mm;align-items:flex-start}
 .print-col{flex:1;min-width:0}
-.print-block{margin-bottom:2.2mm;border:1px solid #bcbfc5;border-radius:4px;overflow:hidden;break-inside:avoid}
-.print-block-title{background:#e9edf2;font-weight:bold;font-size:7.5pt;height:4.6mm;line-height:4.6mm;padding:0 2mm;
+.print-block{margin-bottom:2.75mm;border:1px solid #bcbfc5;border-radius:4px;overflow:hidden;break-inside:avoid}
+.print-block-title{background:#e9edf2;font-weight:bold;font-size:9.38pt;height:5.75mm;line-height:5.75mm;padding:0 2.5mm;
   border-bottom:1px solid #bcbfc5;color:#1a202c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .print-table{width:100%;border-collapse:collapse;text-align:center;table-layout:fixed}
-.print-table th{height:4mm;padding:0;font-size:6.5pt;font-weight:bold;color:#4a5568;background:#f0f2f5;border-bottom:1px solid #ccc}
-.print-table td{height:6.1mm;padding:0;vertical-align:middle;border-bottom:1px solid #eee;font-size:7.5pt;white-space:nowrap;overflow:hidden}
+.print-table th{height:5mm;padding:0;font-size:8.12pt;font-weight:bold;color:#4a5568;background:#f0f2f5;border-bottom:1px solid #ccc}
+.print-table td{height:7.62mm;padding:0;vertical-align:middle;border-bottom:1px solid #eee;font-size:9.38pt;white-space:nowrap;overflow:hidden}
 .print-table tr:last-child td{border-bottom:0}
 .print-row-num{font-weight:bold;color:#111}
-.print-num{display:inline-block;box-sizing:border-box;width:5.3mm;height:5.3mm;line-height:4.8mm;margin:0 .15mm;
-  border:.25mm solid transparent;border-radius:50%;font-size:8.5pt;font-weight:bold;color:#111;text-align:center;
+.print-num{display:inline-block;box-sizing:border-box;width:6.62mm;height:6.62mm;line-height:6mm;margin:0 .19mm;
+  border:.31mm solid transparent;border-radius:50%;font-size:10.62pt;font-weight:bold;color:#111;text-align:center;
   vertical-align:middle;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
 .print-num.picked{background:#dcdcdc;border-color:#8a8a8a}
-.pdf-data{color:#fff;font-size:4pt;line-height:1;font-family:monospace;word-break:break-all;margin-top:2mm;user-select:none}
+.pdf-data{color:#fff;font-size:5pt;line-height:1;font-family:monospace;word-break:break-all;margin-top:2.5mm;user-select:none}
 .print-num.sq{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:1.2px}
 .an-print-head{display:none}
+.tk-plabel{display:none}
+.an-tag.ta{background:#eef0f3;color:#3d434b;font-weight:800}
 /* 분석 결과만 인쇄 (A4): 동끝 번호 모음 · 연번 인접수 · 번호 통계 */
 @media print{
   body.print-results{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -346,14 +351,17 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   body.print-analysis #statistics,body.print-analysis .tk-head,body.print-analysis .tk-col,body.print-analysis .tk-notes{display:none !important}
   body.print-analysis #pageAnalysis{display:block !important}
   body.print-analysis .card{box-shadow:none;padding:0;margin:0;border:0;border-radius:0;background:none}
-  body.print-analysis #anGroups{display:grid;grid-template-columns:repeat(2,max-content);justify-content:space-around;row-gap:3mm}
-  body.print-analysis .tk{--b:11mm;--gx:2.2mm;--gy:1.2mm;margin:0;border:0.3mm solid #d8dbe0;border-radius:2mm;overflow:visible;break-inside:avoid;page-break-inside:avoid}
+  body.print-analysis #anGroups{display:block !important;text-align:center;font-size:0;orphans:1;widows:1}
+  /* 격자(grid) 대신 줄 바꿈 배치: 모든 브라우저에서 쪽이 넘어가도 마지막 용지가 빠지지 않게 */
+  body.print-analysis .tk{display:inline-block;vertical-align:top;text-align:left;font-size:13px;--b:10mm;--gx:2mm;--gy:1.1mm;margin:0 3mm 2.6mm;border:0.3mm solid #d8dbe0;border-radius:2mm;overflow:visible;break-inside:avoid;page-break-inside:avoid}
   body.print-analysis .tk-body{padding:2.5mm;overflow:visible;display:block}
-  body.print-analysis .tk-grid .ball{font-size:13pt;font-weight:700}
+  body.print-analysis .tk-plabel{display:block;font-size:10pt;line-height:1.15;color:#222;padding:1.3mm 2.5mm 0;font-weight:600}
+  body.print-analysis .tk-plabel b{font-weight:800}
+  body.print-analysis .tk-grid .ball{font-size:12pt;font-weight:700}
   body.print-analysis .ball.picked::after{display:none}
 }
 @media print{
-  @page { size: A5 portrait; margin: 0; }
+  @page { size: A4 portrait; margin: 0; }
   body{background:#fff;margin:0}
   .container,.toast{display:none !important}
   .print-only{display:block !important}
@@ -374,8 +382,8 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   .input-guide{font-size:11.5px !important}
   /* 입력 행: 1줄 = 행·회차·발행일·방식·삭제, 2줄 = 번호 6칸 */
   .entry-row{display:grid !important;gap:6px;padding:8px 7px;align-items:center;
-    grid-template-columns:44px 52px minmax(0,1fr) 46px 30px 34px;
-    grid-template-areas:"col round date chip ins del" "nums nums nums nums nums nums"}
+    grid-template-columns:42px 46px minmax(0,1fr) 38px 40px 28px 32px;
+    grid-template-areas:"col round date chip ta ins del" "nums nums nums nums nums nums nums"}
   .entry-row.ocr-row{grid-template-columns:44px 52px minmax(0,1fr) 34px;grid-template-areas:"col chip badge del" "nums nums nums nums"}
   .entry-row .row-num,.entry-row [data-meta=day]{display:none}
   .entry-row [data-meta=col]{grid-area:col;width:100%}
@@ -383,6 +391,8 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   .entry-row [data-meta=date]{grid-area:date;width:100%}
   .entry-row .mode-chip{grid-area:chip;width:100%;font-size:12px;height:36px;padding:0 2px}
   .entry-row .remove{grid-area:del;padding:8px 0;font-size:12px}
+  .entry-row [data-meta=ta]{grid-area:ta;width:100%;padding:0 2px;-webkit-appearance:none;appearance:none;text-align:center;text-align-last:center;font-size:12px}
+  .entry-row [data-meta=date]{font-size:12px;padding-left:4px;padding-right:4px}
   .entry-row .ins{grid-area:ins;padding:8px 0;font-size:14px}
   .entry-row .badge{grid-area:badge;justify-self:start}
   .entry-row .nums{grid-area:nums;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
@@ -508,18 +518,17 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <div class="fm-sec"><h4>💾 저장</h4>
         <button type="button" onclick="fmRun(saveTitled)"><b>제목 정해서 저장</b><small>예: 일요일 데이터 · 일+목+토 합본 (JSON)</small></button>
         <button type="button" onclick="fmRun(saveDataFile)"><b>바로 저장</b><small>날짜·시간으로 이름 자동 (JSON)</small></button>
-        <button type="button" onclick="fmRun(saveResultFile, true)"><b>분석 결과 텍스트로 저장</b><small>패턴 있는 용지 목록 (.txt)</small></button>
       </div>
       <div class="fm-sec"><h4>📂 불러오기</h4>
         <button type="button" onclick="fmRun(loadDataFile)"><b>데이터 파일 불러오기</b><small>JSON·PDF, 여러 개 한꺼번에 가능</small></button>
       </div>
-      <div class="fm-sec"><h4>🖨️ 인쇄</h4>
-        <button type="button" onclick="fmRun(printA4)"><b>입력 순서대로 번호표</b><small>A5 · 입력 화면의 모든 행</small></button>
-        <button type="button" onclick="fmRun(printAnalysis, true)"><b>지금 보는 패턴 그림</b><small>A4 · 화면과 같은 색·패턴 표시, 한 줄에 2장</small></button>
-        <button type="button" onclick="fmRun(printResults, true)"><b>분석 결과만</b><small>A4 · 동끝 번호 모음부터 번호 통계까지</small></button>
-      </div>
-      <div class="fm-sec"><h4>📋 복사</h4>
-        <button type="button" onclick="fmRun(copyHotList, true)"><b>패턴 있는 용지 복사</b><small>텍스트로 클립보드에</small></button>
+      <div class="fm-sec fm-wide"><h4>🖨️ 인쇄</h4>
+        <button type="button" onclick="fmRun(printA4)"><b>기본 인쇄</b><small>A4 · 입력한 순서 그대로 번호표 (회차·요일·타)</small></button>
+        <div class="fm-pair">
+          <button type="button" onclick="fmRun(printAnalysis, true)"><b>패턴별 인쇄 · 칼라</b><small>A4 · 화면과 같은 공·색 표시, 한 줄에 2장</small></button>
+          <button type="button" onclick="fmRun(printPatternBW, true)"><b>패턴별 인쇄 · 흑백</b><small>A4 · 숫자 표, 패턴 자리는 밑줄</small></button>
+        </div>
+        <button type="button" onclick="fmRun(printResults, true)"><b>분석 결과 인쇄</b><small>A4 · 동끝 번호 모음부터 번호 통계까지</small></button>
       </div>
     </div>
   </details>
@@ -544,6 +553,9 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
           <button type="button" data-mode="manual">수<kbd>S</kbd></button>
           <button type="button" data-mode="semi">반<kbd>D</kbd></button>
         </div>
+        <span class="meta-label" style="font-size:12px;margin-left:6px;">새 용지 타</span>
+        <select id="defaultTa" class="meta-input meta-ta" title="새로 시작하는 용지(A행)에 넣을 타 · 비워 두면 미기입"><option value="">미기입</option><option value="1">1타</option><option value="2">2타</option><option value="3">3타</option><option value="4">4타</option><option value="5">5타</option><option value="6">6타</option><option value="7">7타</option><option value="8">8타</option><option value="9">9타</option><option value="10">10타</option></select>
+        <span class="meta-label" style="font-size:12px;">비워 두면 미기입 · 각 행에서도 바꿀 수 있음 (같은 용지 전체에 적용)</span>
       </div>
     </div>
     <div class="toolbar" style="margin-bottom:12px">
@@ -901,6 +913,11 @@ function guardIme(e, cell){
 function colSelectHtml(){
   return `<select class="meta-input meta-col row-meta" data-meta="col" title="행" tabindex="-1"><option value="">행</option>${COLS.map(c=>`<option>${c}</option>`).join('')}</select>`;
 }
+// 타: 용지(티켓) 단위 표시. 1타·4타처럼 중요한 것만 적고 나머지는 미기입
+function taSelectHtml(){
+  return `<select class="meta-input meta-ta row-meta" data-meta="ta" title="타 (같은 용지 전체에 적용)" tabindex="-1"><option value="">타</option>${Array.from({length:10}, (_, i) => `<option value="${i+1}">${i+1}타</option>`).join('')}</select>`;
+}
+const taLabel = v => v ? `${v}타` : '';
 function numCellsHtml(values){
   return Array.from({length:6}, (_,i) => {
     const n = parseInt(values?.[i],10);
@@ -928,6 +945,9 @@ function addRow(values=[], meta={}, options={}){
     tk = cont ? prev.dataset.tk : newTk();
   }
   row.dataset.tk = tk;
+  // 타: 정해 준 값 → 같은 용지에 이어지면 그 용지의 타 → 새 용지면 '새 용지 타' 기본값
+  const sameTk = mainRows().find(r => r.dataset.tk === tk);
+  const taVal = meta.ta != null ? String(meta.ta) : sameTk ? metaVal(sameTk, 'ta') : ($('defaultTa')?.value || '');
   row.innerHTML = `
     <span class="row-num"></span>
     <input class="meta-input meta-round row-meta" data-meta="round" type="text" inputmode="numeric" placeholder="회차" value="${escapeHtml(roundVal)}" title="회차">
@@ -935,10 +955,17 @@ function addRow(values=[], meta={}, options={}){
     <input class="meta-input meta-day row-meta" data-meta="day" type="text" placeholder="요일" value="${escapeHtml(dayVal)}" title="요일" tabindex="-1">
     ${colSelectHtml()}
     <button type="button" class="mode-chip" tabindex="-1"></button>
+    ${taSelectHtml()}
     ${numCellsHtml(values)}
     <button type="button" class="ins" tabindex="-1" title="이 행 아래에 한 줄 추가 (같은 용지 안)">＋</button>
     <button type="button" class="remove" tabindex="-1">삭제</button>`;
   setMeta(row, 'col', colVal);
+  setMeta(row, 'ta', /^\d+$/.test(taVal) ? taVal : '');
+  row.querySelector('[data-meta="ta"]').addEventListener('change', e => {
+    // 같은 용지의 모든 행을 같은 타로
+    mainRows().filter(r => r.dataset.tk === row.dataset.tk).forEach(r => setMeta(r, 'ta', e.target.value));
+    scheduleAnalyze();
+  });
   if(meta.picks?.length) applyPicks(row, meta.picks);
   paintMode(row, mode, false);
   bindDateField(row.querySelector('[data-meta="date"]'), row.querySelector('[data-meta="day"]'), row.querySelector('[data-meta="round"]'), scheduleAnalyze);
@@ -1203,7 +1230,7 @@ const ticketRows = tk => mainRows().filter(r => r.dataset.tk === tk);
 function insertRowBelow(row){
   const tk = row.dataset.tk;
   if(ticketRows(tk).length >= 5){ toast('이 용지는 이미 5행(A~E)이라 더 넣을 수 없습니다.'); return; }
-  const r = addRow([], {round: metaVal(row,'round'), date: metaVal(row,'date'), day: metaVal(row,'day'), src: row.dataset.src || '', tk},
+  const r = addRow([], {round: metaVal(row,'round'), date: metaVal(row,'date'), day: metaVal(row,'day'), src: row.dataset.src || '', tk, ta: metaVal(row,'ta')},
                    {mode: stickyMode, after: row});
   relabelTicket(tk); renumber(); scheduleAnalyze();
   focusCell(cellsOf(r)[0]);
@@ -1215,7 +1242,7 @@ function rememberDeleted(row){
   deletedStack.push({
     values: cellsOf(row).map(c => c.value), picks: readPicks(row), mode: row.dataset.mode, tk: row.dataset.tk,
     idx: ticketRows(row.dataset.tk).indexOf(row),          // 용지 안에서 몇 번째였는지
-    meta: {round: metaVal(row,'round'), date: metaVal(row,'date'), day: metaVal(row,'day'), col: metaVal(row,'col'), src: row.dataset.src || ''},
+    meta: {round: metaVal(row,'round'), date: metaVal(row,'date'), day: metaVal(row,'day'), col: metaVal(row,'col'), src: row.dataset.src || '', ta: metaVal(row,'ta')},
     prev: sib(row, 'previousElementSibling'), next: sib(row, 'nextElementSibling')
   });
   if(deletedStack.length > 20) deletedStack.shift();
@@ -1269,7 +1296,8 @@ function getRows(){
       const date = normalizeDate(metaVal(row,'date'));
       result.push({numbers: vals, round: metaVal(row,'round'), date, day: metaVal(row,'day') || weekdayFromDate(date),
                    col: metaVal(row,'col'), mode: MODE_SHORT[row.dataset.mode] || '', modeKey: row.dataset.mode,
-                   picks: row.dataset.mode === 'semi' ? readPicks(row) : [], src: row.dataset.src || '', tk: row.dataset.tk || '', el: row});
+                   picks: row.dataset.mode === 'semi' ? readPicks(row) : [], src: row.dataset.src || '', tk: row.dataset.tk || '',
+                   ta: metaVal(row,'ta'), el: row});
     }
   });
   return result;
@@ -1645,12 +1673,15 @@ function ringShadow(colors){
   return out.join(',');
 }
 
-function ticketHtml(tk, id){
+function ticketHtml(tk, id, showLabel){
   const {rows, res} = tk, first = rows[0];
+  // 인쇄용 꼬리표: 회차·요일·타 (같은 묶음의 첫 용지 위에만)
+  const plabel = showLabel ? `<div class="tk-plabel">${first.round ? escapeHtml(first.round) + '회' : '회차 없음'}${first.day ? ' ' + escapeHtml(first.day) + '요일' : ''}${first.ta ? ' · <b>' + escapeHtml(first.ta) + '타</b>' : ''}</div>` : '';
   const date = first.date ? ` ${escapeHtml(first.date)}${first.day ? `(${escapeHtml(first.day)})` : ''}` : '';
   const head = `<div class="tk-head" onclick="goToTicket(${id},0)" title="입력 화면에서 이 용지 보기">
       <b>${first.round ? `제 ${escapeHtml(first.round)}회` : '회차 없음'}</b>${date}
       <small>${rows[0].index}${rows.length > 1 ? '–' + rows[rows.length-1].index : ''}행 · ${rows.length}게임</small>
+      ${first.ta ? `<span class="an-tag ta">${escapeHtml(first.ta)}타</span>` : ''}
       ${anMultiSrc ? `<span class="an-tag src">📚 ${escapeHtml(first.src || '직접 입력')}</span>` : ''}
       ${res.head.join('')}</div>`;
   const labels = rows.map((r, i) => `<div class="tk-lab${res.rowOn[i] ? ' on t-' + anType : ''}${res.dim[i] ? ' tk-dim' : ''}" onclick="goToTicket(${id},${i})" title="입력 화면에서 이 행 보기">
@@ -1674,7 +1705,7 @@ function ticketHtml(tk, id){
   }).join('');
   const tags = rows.map((_, i) => `<div class="tk-tagrow">${res.tags[i].join('')}</div>`).join('');
   const notes = rows.map((r, i) => res.tags[i].length ? `<div><b>${escapeHtml(r.col || '-')}</b>${res.tags[i].join('')}</div>` : '').join('');
-  return `<div class="tk${res.count ? ' tk-hit' : ''} t-${anType}">${head}
+  return `<div class="tk${res.count ? ' tk-hit' : ''} t-${anType}">${plabel}${head}
     <div class="tk-body"><div class="tk-col">${labels}</div>
       <div class="tk-grid">${balls}${rects}</div>
       <div class="tk-col tk-tags">${tags}</div></div>${notes ? `<div class="tk-notes">${notes}</div>` : ''}</div>`;
@@ -1756,7 +1787,10 @@ function analyze(){
 
   $('anGroups').innerHTML = !allRows.length
     ? '<div class="empty">입력된 번호가 없습니다. 입력 화면에서 번호를 넣어 주세요.</div>'
-    : analysisTickets.length ? analysisTickets.map((t, id) => ticketHtml(t, id)).join('')
+    : analysisTickets.length ? analysisTickets.map((t, id) => {
+        const key = t => [t.rows[0].round, t.rows[0].day, t.rows[0].ta].join('|');
+        return ticketHtml(t, id, id === 0 || key(t) !== key(analysisTickets[id - 1]));
+      }).join('')
     : `<div class="empty">${TYPE_LABEL[anType]}이 있는 용지가 없습니다. 조건을 바꾸거나 "전체 용지"로 보세요.</div>`;
   $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt)
     : anType === 'all' ? digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt) : '';
@@ -1949,14 +1983,15 @@ async function copyHotList(){
   try{ await navigator.clipboard.writeText(hotListText()); toast(`용지 ${list.length}장을 복사했습니다.`); }
   catch(e){ alert('복사하지 못했습니다.'); }
 }
-function printHotList(){
-  // 인쇄는 전체 패턴 적용 결과로만
-  const restore = withAllPatterns();
-  const list = hitList(), title = patternTitle();
+// 패턴별 인쇄 · 흑백: 지금 고른 패턴·보기 그대로, 숫자 표로 (패턴 자리 = 밑줄, 직접 고른 번호 = 회색 바탕)
+function printPatternBW(){
+  if($('pageAnalysis').hidden) showPage('analysis');
+  analyze();
+  const list = analysisTickets;
+  if(!list.length){ alert(`인쇄할 용지가 없습니다. ${anView === 'hit' ? '"전체 용지"로 보거나 ' : ''}조건을 바꿔 보세요.`); return; }
   const rows = list.flatMap(t => t.rows.map((r, i) => ({...r, sqPos: [...t.res.under[i]]})));
-  restore();
-  if(!list.length){ alert('패턴이 있는 용지가 없습니다.'); return; }
-  buildPrint(rows, {title, countText: `용지 ${list.length}장`, markLegend: '패턴(동끝·연번·사각·막대) 자리'});
+  const legend = {digit: '동끝 번호', run: '연번', sq: '사각 패턴 자리', bar: '막대 패턴 자리', all: '패턴(동끝·연번·사각·막대) 자리'}[anType];
+  buildPrint(rows, {title: patternTitle(), countText: `용지 ${list.length}장`, markLegend: legend});
 }
 
 /* ============================================================
@@ -1968,7 +2003,7 @@ function renderChunkTable(chunkRows, chunkNum, opts = {}){
   const dateStr = firstItem.date ? ` ${escapeHtml(firstItem.date)}` : '';
   const dayStr = firstItem.day ? `(${escapeHtml(firstItem.day)})` : '';
   const headerTitle = opts.list ? `${escapeHtml(opts.title)} #${chunkNum}`
-    : (roundStr || dateStr) ? `${roundStr}${dateStr}${dayStr}` : `로또용지 세트 #${chunkNum}`;
+    : (roundStr || dateStr) ? `${roundStr}${dateStr}${dayStr}${firstItem.ta ? ' · ' + escapeHtml(firstItem.ta) + '타' : ''}` : `로또용지 세트 #${chunkNum}`;
   const size = opts.chunk || 5;
 
   let html = `
@@ -2023,7 +2058,7 @@ function buildPrint(rows, opts){
   });
   if(chunk.length) chunks.push(chunk);
 
-  const CHUNKS_PER_PAGE = 8;   // 한 열에 4덩어리 × 2열
+  const CHUNKS_PER_PAGE = 10;   // A4: 한 열에 5덩어리 × 2열
   const totalPages = Math.ceil(chunks.length / CHUNKS_PER_PAGE) || 1;
   const printArea = $('printArea');
   printArea.innerHTML = '';
@@ -3163,7 +3198,7 @@ function useOCRNumbers(){
 
   mainRows().forEach(r => { if(isEmptyRow(r)) r.remove(); });   // 빈 행은 정리
   const ocrTk = newTk();
-  items.forEach(item => addRow(item.numbers, {...item, tk: ocrTk}, {mode: item.mode}));
+  items.forEach(item => addRow(item.numbers, {...item, tk: ocrTk, ta: $('defaultTa').value}, {mode: item.mode}));
   renumber(); analyze();
 
   $('ocrRows').innerHTML = '';
@@ -3208,6 +3243,7 @@ function collectSaveData(title){
     defaultRound:$('defaultRound').value,
     defaultDate:$('defaultDate').value,
     defaultDay:$('defaultDay').value,
+    defaultTa:$('defaultTa').value,
     excluded:[...excluded].sort((a,b)=>a-b),   // 패턴 분석 제외수
     rows:(() => { const tkNo = new Map(); return mainRows().map(row=>({
       tk: tkNo.get(row.dataset.tk) || (tkNo.set(row.dataset.tk, tkNo.size + 1), tkNo.size),   // 몇 번째 용지인지
@@ -3215,6 +3251,7 @@ function collectSaveData(title){
       round:metaVal(row,'round'), date:metaVal(row,'date'), day:metaVal(row,'day'),
       col:metaVal(row,'col'), mode:MODE_LABEL[row.dataset.mode]||'',
       picks:readPicks(row),           // 반자동에서 직접 고른 번호
+      ta:metaVal(row,'ta'),           // 몇 타인지 (빈칸 = 미기입)
       src:row.dataset.src||''         // 어느 자료(파일)에서 온 행인지
     })); })()
   };
@@ -3263,17 +3300,17 @@ function encodePrintData(rows){
     const m = {auto:'a', manual:'m', semi:'s'}[r.modeKey || LABEL_TO_MODE[r.mode]] || 'a';
     const mask = r.numbers.reduce((acc, n, i) => acc + ((r.picks || []).includes(n) ? (1 << i) : 0), 0);
     return [String(r.round || '').replace(/\D/g,''), d8, /^[A-E]$/.test(r.col) ? r.col : '', m,
-            r.numbers.map(pad).join(''), mask.toString(36)].join('.');
+            r.numbers.map(pad).join(''), mask.toString(36), String(r.ta || '').replace(/\D/g,'')].join('.');
   }).join('_');
 }
 function decodePrintData(seg){
   return seg.split('_').filter(Boolean).map(r => {
-    const [round = '', d8 = '', col = '', m = 'a', nums = '', mask = '0'] = r.split('.');
+    const [round = '', d8 = '', col = '', m = 'a', nums = '', mask = '0', ta = ''] = r.split('.');
     const numbers = (nums.match(/\d\d/g) || []).map(Number).filter(isNum);
     const bits = parseInt(mask, 36) || 0;
     const date = d8.length === 8 ? `${d8.slice(0,4)}/${d8.slice(4,6)}/${d8.slice(6,8)}` : '';
     return {round, date, day: weekdayFromDate(date), col, mode: {a:'자동', m:'수동', s:'반자동'}[m] || '자동',
-            numbers, picks: numbers.filter((_, i) => bits & (1 << i))};
+            numbers, picks: numbers.filter((_, i) => bits & (1 << i)), ta};
   }).filter(r => r.numbers.length === 6);
 }
 let pdfjsPromise = null;
@@ -3413,7 +3450,8 @@ async function readDataFile(event){
     seen.add(k);
     const picks = Array.isArray(item.picks) ? item.picks.map(Number).filter(isNum) : [];
     if(picks.length) picked++;
-    addRow(item.numbers, {round:item.round||'', date:item.date||'', day:item.day||'', col:item.col||'', mode:item.mode||'', picks, src, tk: curTk},
+    addRow(item.numbers, {round:item.round||'', date:item.date||'', day:item.day||'', col:item.col||'', mode:item.mode||'', picks, src, tk: curTk,
+                          ta: /^\d+$/.test(String(item.ta ?? '')) ? String(item.ta) : ''},
            {mode: LABEL_TO_MODE[item.mode] || 'auto'});
     added++;
     d._added = (d._added || 0) + 1;
