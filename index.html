@@ -632,7 +632,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     <h2>🔢 번호 통계</h2>
     <div class="summary">
       <div class="stat-box">
-        <h3>가장 많이 나온 번호 TOP 6</h3>
+        <h3>가장 많이 나온 번호 TOP 6 <small id="topLabel" class="meta-label" style="font-size:12px;font-weight:600"></small></h3>
         <div id="top6" class="balls"><div class="empty">아직 분석하지 않았습니다.</div></div>
       </div>
       <div class="stat-box">
@@ -1761,14 +1761,23 @@ function analyze(){
   const counts = Array(46).fill(0);
   let total = 0;
   statRows.forEach(item => item.numbers.forEach(x => { counts[x]++; total++; }));
+  // TOP 6: 전체 적용이면 입력한 모든 번호, 패턴을 고르면 그 패턴에 들어간 번호만 (한 칸은 한 번만 셈)
+  let topCounts = counts;
+  if(anType !== 'all'){
+    topCounts = Array(46).fill(0);
+    tickets.forEach(t => t.rows.forEach((r, i) => t.res.under[i].forEach(pos => { const x = r.numbers[pos]; if(isNum(x)) topCounts[x]++; })));
+  }
+  $('topLabel').textContent = anType === 'all' ? '· 입력한 전체 번호' : `· ${TYPE_LABEL[anType]} 안에서`;
   const ranked = Array.from({length:45}, (_,i) => i+1).sort((a,b) => counts[b] - counts[a] || a - b);
-  const top = ranked.slice(0,6);
-  const max = counts[top[0]] || 0;
+  const topRanked = Array.from({length:45}, (_,i) => i+1).filter(x => topCounts[x]).sort((a,b) => topCounts[b] - topCounts[a] || a - b);
+  const top = topRanked.slice(0,6);
+  const max = counts[ranked[0]] || 0;
   const zeros = Array.from({length:45}, (_,i) => i+1).filter(x => counts[x] === 0);
-  $('top6').innerHTML = total ? top.map(x =>
-    `<div title="${counts[x]}회"><div class="ball ${ballClass(x)}">${x}</div>
-    <small style="display:block;text-align:center;margin-top:3px">${counts[x]}회</small></div>`).join('')
-    : '<div class="empty">입력된 번호가 없습니다.</div>';
+  $('top6').innerHTML = !total ? '<div class="empty">입력된 번호가 없습니다.</div>'
+    : top.length ? top.map(x =>
+    `<div title="${topCounts[x]}회"><div class="ball ${ballClass(x)}">${x}</div>
+    <small style="display:block;text-align:center;margin-top:3px">${topCounts[x]}회</small></div>`).join('')
+    : `<div class="empty">${TYPE_LABEL[anType]}에 들어간 번호가 없습니다.</div>`;
   $('zero').innerHTML = !total ? '<div class="empty">입력된 번호가 없습니다.</div>' : zeros.length
     ? zeros.map(x => `<div class="ball gray">${x}</div>`).join('')
     : '<div class="empty">모든 번호가 한 번 이상 나왔습니다.</div>';
