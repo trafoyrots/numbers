@@ -337,7 +337,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 @media print{
   body.print-analysis{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.print-analysis .container{display:block !important;max-width:none;padding:0}
-  body.print-analysis .print-only,body.print-analysis #pageInput,body.print-analysis .tabs,body.print-analysis h1,
+  body.print-analysis .print-only,body.print-analysis #pageInput,body.print-analysis .tabs,body.print-analysis .topbar,body.print-analysis h1,
   body.print-analysis .subtitle,body.print-analysis .an-head,body.print-analysis #pageAnalysis .note,body.print-analysis #anFilters,
   body.print-analysis .ex-panel:not([open]),body.print-analysis .ex-panel .toolbar,
   body.print-analysis .ex-panel .note,body.print-analysis .toast{display:none !important}
@@ -515,9 +515,8 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       </div>
       <div class="fm-sec"><h4>🖨️ 인쇄</h4>
         <button type="button" onclick="fmRun(printA4)"><b>입력 순서대로 번호표</b><small>A5 · 입력 화면의 모든 행</small></button>
-        <button type="button" onclick="fmRun(printAnalysis, true)"><b>패턴 그림 (전체 적용)</b><small>A4 · 번호와 패턴 표시만, 한 줄에 2장</small></button>
+        <button type="button" onclick="fmRun(printAnalysis, true)"><b>지금 보는 패턴 그림</b><small>A4 · 화면과 같은 색·패턴 표시, 한 줄에 2장</small></button>
         <button type="button" onclick="fmRun(printResults, true)"><b>분석 결과만</b><small>A4 · 동끝 번호 모음부터 번호 통계까지</small></button>
-        <button type="button" onclick="fmRun(printHotList, true)"><b>패턴 있는 용지만 번호표</b><small>A5 · 전체 패턴 적용</small></button>
       </div>
       <div class="fm-sec"><h4>📋 복사</h4>
         <button type="button" onclick="fmRun(copyHotList, true)"><b>패턴 있는 용지 복사</b><small>텍스트로 클립보드에</small></button>
@@ -1877,9 +1876,9 @@ function withAllPatterns(){
   if(prev !== 'all'){ setAnType('all', true); analyze(); }
   return () => { if(prev !== 'all' && anType === 'all'){ setAnType(prev, true); analyze(); } };
 }
+// 지금 보고 있는 패턴(동끝·연번·사각·막대·전체 적용)과 보기(패턴 있는 용지만/전체 용지)를 화면과 같은 색·표시로 인쇄
 function printAnalysis(){
-  showPage('analysis');
-  const restore = withAllPatterns();
+  if($('pageAnalysis').hidden) showPage('analysis');
   analyze();
   const pageStyle = document.createElement('style');
   pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:8mm}}';   // 이 인쇄만 A4
@@ -1888,7 +1887,7 @@ function printAnalysis(){
   let finished = false;
   const done = () => { if(finished) return; finished = true;
     document.body.classList.remove('print-analysis'); pageStyle.remove(); window.removeEventListener('afterprint', done);
-    ringK = 1; restore(); analyze(); };
+  };
   window.addEventListener('afterprint', done);
   setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
 }
