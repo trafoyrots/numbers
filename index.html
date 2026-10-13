@@ -1497,17 +1497,22 @@ function analyzeTicket(rows, type, opt){
   }
 
   if(type === 'run'){
-    const nbCell = (i, pos) => (i >= 0 && i < rows.length && isNum(rows[i].numbers[pos])) ? {i, pos, x: rows[i].numbers[pos]} : null;
+    // 연번 인접수: 연번 양끝(좌우 또는 위아래) + 연번 옆면 칸(가로 연번이면 위·아래 행, 세로 연번이면 왼·오른 자리). 대각선 제외, 같은 용지 안에서만
+    const nbCell = (i, pos) => (i >= 0 && i < rows.length && pos >= 0 && pos < 6 && isNum(rows[i].numbers[pos])) ? {i, pos, x: rows[i].numbers[pos]} : null;
+    const markNb = cs => cs.forEach(c => { if(c && !res.ring[c.i].has(c.pos)) res.ring[c.i].set(c.pos, 'nb'); });
+    const xs = cs => cs.map(c => c ? c.x : null);
     let hc = 0;
     if(opt.dir.includes('h')){
       rows.forEach((r, i) => rowRuns(r.numbers, opt.n).forEach(({s, e}) => {
         for(let p = s; p <= e; p++) hit(i, p, 'rn');
         res.rects.push({r: i, c: s, h: 1, w: e - s + 1, cls: 'run'});
         const vals = r.numbers.slice(s, e + 1), L = nbCell(i, s - 1), R = nbCell(i, e + 1);
-        [L, R].forEach(c => { if(c && !res.ring[c.i].has(c.pos)) res.ring[c.i].set(c.pos, 'nb'); });
+        const span = Array.from({length: e - s + 1}, (_, j) => s + j);
+        const up = span.map(p => nbCell(i - 1, p)), dn = span.map(p => nbCell(i + 1, p));
         res.tags[i].push(`<span class="an-tag run2">연번 ${vals.map(pad).join('-')}</span>`);
-        res.nb.push({row: r, vals, before: L && L.x, after: R && R.x});
+        res.nb.push({row: r, vals, before: L && L.x, after: R && R.x, side1: xs(up), side2: xs(dn)});
         res.count++; hc++;
+        res._nb = (res._nb || []).concat([L, R, ...up, ...dn]);
       }));
       if(hc) res.head.push(`<span class="an-tag run2">가로 연번 ${opt.n}개+ ${hc}개</span>`);
     }
@@ -1516,12 +1521,16 @@ function analyzeTicket(rows, type, opt){
         for(let i = s; i <= e; i++) hit(i, k, 'rn');
         res.rects.push({r: s, c: k, h: e - s + 1, w: 1, cls: 'run'});
         const vals = rows.slice(s, e + 1).map(r => r.numbers[k]), U = nbCell(s - 1, k), D = nbCell(e + 1, k);
-        [U, D].forEach(c => { if(c && !res.ring[c.i].has(c.pos)) res.ring[c.i].set(c.pos, 'nb'); });
+        const span = Array.from({length: e - s + 1}, (_, j) => s + j);
+        const lf = span.map(i => nbCell(i, k - 1)), rt = span.map(i => nbCell(i, k + 1));
         res.head.push(`<span class="an-tag runv">세로 ${k + 1}번째 자리 ${rows[s].col}~${rows[e].col} 연번 ${vals.map(pad).join('→')}</span>`);
-        res.nb.push({row: rows[s], rowEnd: rows[e], k, vals, before: U && U.x, after: D && D.x});
+        res.nb.push({row: rows[s], rowEnd: rows[e], k, vals, before: U && U.x, after: D && D.x, side1: xs(lf), side2: xs(rt)});
         res.count++;
+        res._nb = (res._nb || []).concat([U, D, ...lf, ...rt]);
       });
     }
+    markNb(res._nb || []);   // 연번 칸을 다 표시한 뒤 남은 칸에만 점선
+    delete res._nb;
   }
 
   if(type === 'sq'){
@@ -1664,9 +1673,9 @@ function analyze(){
     v: `세로: 같은 자리를 A~E로 내려 볼 때 끝수가 같은 번호 ${opt.n}개 이상${exTxt}`,
     hv: `가로(갈색 테)와 세로(회청색 테)를 함께 표시 · 둘 다 해당하면 겹테 · ${opt.n}개 이상${exTxt}`}[opt.dir];
   $('anHelpRun').textContent = {
-    h: `가로: 한 행에서 이웃한 자리가 1씩 이어지는 번호 ${opt.n}개 이상 (예: 14 15 16) · 점선 = 좌우에 붙은 수`,
-    v: `세로: 같은 자리에서 위·아래 행으로 1씩 이어지는 번호 ${opt.n}개 이상 (예: 12→13→14) · 점선 = 위아래에 붙은 수`,
-    hv: `가로·세로 연번을 함께 표시 · ${opt.n}개 이상 · 점선 = 연번에 바로 붙은 수`}[opt.dir];
+    h: `가로: 한 행에서 이웃한 자리가 1씩 이어지는 번호 ${opt.n}개 이상 (예: 14 15 16) · 점선 = 인접수(좌우 + 위아래)`,
+    v: `세로: 같은 자리에서 위·아래 행으로 1씩 이어지는 번호 ${opt.n}개 이상 (예: 12→13→14) · 점선 = 인접수(위아래 + 좌우)`,
+    hv: `가로·세로 연번을 함께 표시 · ${opt.n}개 이상 · 점선 = 연번 인접수(좌우·위아래)`}[opt.dir];
   // 자료(파일) 필터
   const srcSel = $('anSrc'), srcCur = srcSel.value;
   const srcs = [...new Set(allRows.map(r => r.src))];
@@ -1787,16 +1796,18 @@ function runNeighborHtml(list, opt){
   const items = list.flatMap(t => t.res.nb);
   if(!items.length) return '';
   const cnt = {};
-  items.forEach(it => [it.before, it.after].forEach(x => { if(isNum(x)) cnt[x] = (cnt[x] || 0) + 1; }));
+  items.forEach(it => [it.before, it.after, ...(it.side1 || []), ...(it.side2 || [])].forEach(x => { if(isNum(x)) cnt[x] = (cnt[x] || 0) + 1; }));
   const nums = Object.keys(cnt).map(Number).sort((a,b) => cnt[b] - cnt[a] || a - b);
-  const side = {h: '좌우', v: '위아래', hv: '좌우·위아래'}[opt.dir];
   const nb = x => isNum(x) ? `<span class="nbx">${pad(x)}</span>` : '<span class="nbx" style="opacity:.3">－</span>';
+  const side = (label, arr) => (arr || []).some(isNum) ? ` <span class="an-meta">${label}</span> ${arr.map(nb).join(' ')}` : '';
   const lines = items.map(it => {
     const r = it.row, vert = it.k !== undefined, where = vert ? `세로 ${it.k + 1}번째 자리 ${r.col}~${it.rowEnd.col}` : `가로 ${r.col}행`;
-    return `<div><span class="an-meta">${r.round ? escapeHtml(r.round) + '회 ' : ''}${where}</span> ${nb(it.before)} <span class="rnx">${it.vals.map(pad).join(vert ? '→' : ' ')}</span> ${nb(it.after)}</div>`;
+    const ends = `${nb(it.before)} <span class="rnx">${it.vals.map(pad).join(vert ? '→' : ' ')}</span> ${nb(it.after)}`;
+    const sides = vert ? side('· 왼', it.side1) + side('· 오른', it.side2) : side('· 위', it.side1) + side('· 아래', it.side2);
+    return `<div><span class="an-meta">${r.round ? escapeHtml(r.round) + '회 ' : ''}${where}</span> ${ends}${sides}</div>`;
   }).join('');
-  return `<div class="an-group run"><h3>${{h: '↔', v: '↕', hv: '↔↕'}[opt.dir]} 연번 ${side}에 바로 붙은 수 <small>${nums.length}종류 · 연번 ${items.length}개 · 많이 나온 순</small></h3>
-    <div class="nb-sum">${nums.length ? nums.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${cnt[x]}</span>`).join('') : '<span class="empty">붙은 수가 없습니다 (연번이 맨 끝에 있음).</span>'}</div>
+  return `<div class="an-group run"><h3>🔗 연번 인접수 <small>${nums.length}종류 · 연번 ${items.length}개 · 양끝 + 옆면(가로 연번은 위·아래, 세로 연번은 왼·오른) · 대각선 제외 · 많이 나온 순</small></h3>
+    <div class="nb-sum">${nums.length ? nums.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${cnt[x]}</span>`).join('') : '<span class="empty">붙은 수가 없습니다.</span>'}</div>
     <div class="nb-list">${lines}</div></div>`;
 }
 // 동끝 번호 모음 (제외수를 뺀 번호 중 동끝으로 묶인 번호만)
