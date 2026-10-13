@@ -2234,10 +2234,13 @@ function loadImageElement(file){
   });
 }
 
-// 작은 사진 확대 + 흑백 + 명암 늘리기 (모든 브라우저에서 동작하도록 직접 처리)
-function preprocessImage(img){
-  const W0 = img.naturalWidth || img.width, H0 = img.naturalHeight || img.height;
-  const scale = Math.min(4, Math.max(1, 1800 / W0));       // 잘라낸 작은 구역도 충분히 키워서 읽음
+// 작은 사진 확대 + 낙서·형광펜·워터마크 지우기 + 기울기 바로잡기
+//  - 인쇄 글자는 "주변보다 어둡고 색이 거의 없는" 점. 빨강·파랑 펜, 형광펜, 분홍 워터마크, 색 스티커는 색이 있어서 지움
+//  - 형광펜 위의 검은 글자는 아주 어두워서 그대로 남김
+// 회차·발행일 읽기용: 확대 + 흑백 + 명암만 (예전 방식, 작은 글씨가 덜 깨짐)
+function preprocessGray(img){
+  const W0 = img.naturalWidth || img.videoWidth || img.width, H0 = img.naturalHeight || img.videoHeight || img.height;
+  const scale = Math.min(4, Math.max(1, 1800 / W0));
   const w = Math.round(W0 * scale), h = Math.round(H0 * scale);
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
@@ -2246,22 +2249,72 @@ function preprocessImage(img){
   ctx.drawImage(img, 0, 0, w, h);
   const d = ctx.getImageData(0, 0, w, h), px = d.data;
   const hist = new Uint32Array(256), gray = new Uint8Array(w*h);
-  for(let i=0, j=0; i<gray.length; i++, j+=4){
-    const g = (px[j]*299 + px[j+1]*587 + px[j+2]*114) / 1000 | 0;
-    gray[i] = g; hist[g]++;
-  }
+  for(let i=0, j=0; i<gray.length; i++, j+=4){ const g = (px[j]*299 + px[j+1]*587 + px[j+2]*114) / 1000 | 0; gray[i] = g; hist[g]++; }
   let lo = 0, hi = 255, acc = 0;
   const cut = gray.length * 0.02;
   for(let v=0; v<256; v++){ acc += hist[v]; if(acc > cut){ lo = v; break; } }
   acc = 0;
   for(let v=255; v>=0; v--){ acc += hist[v]; if(acc > cut){ hi = v; break; } }
   const range = Math.max(1, hi - lo);
-  for(let i=0, j=0; i<gray.length; i++, j+=4){
-    const v = Math.max(0, Math.min(255, (gray[i] - lo) * 255 / range));
-    px[j] = px[j+1] = px[j+2] = v; px[j+3] = 255;
-  }
+  for(let i=0, j=0; i<gray.length; i++, j+=4){ const v = Math.max(0, Math.min(255, (gray[i] - lo) * 255 / range)); px[j] = px[j+1] = px[j+2] = v; px[j+3] = 255; }
   ctx.putImageData(d, 0, 0);
   return c;
+}
+function preprocessImage(img){
+  const W0 = img.naturalWidth || img.videoWidth || img.width, H0 = img.naturalHeight || img.videoHeight || img.height;
+  const scale = Math.min(4, Math.max(1, 1800 / W0));
+  const w = Math.round(W0 * scale), h = Math.round(H0 * scale);
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d', {willReadFrequently:true});
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, w, h);
+  const d = ctx.getImageData(0, 0, w, h), px = d.data, N = w * h;
+  const lum = new Float32Array(N), chroma = new Uint8Array(N);
+  for(let i = 0, j = 0; i < N; i++, j += 4){
+    const r = px[j], g = px[j+1], b = px[j+2];
+    lum[i] = 0.299*r + 0.587*g + 0.114*b;
+    chroma[i] = Math.max(r, g, b) - Math.min(r, g, b);
+  }
+  // 주변 밝기(국소 평균) — 적분 영상
+  const W1 = w + 1, I = new Float64Array(W1 * (h + 1));
+  for(let y = 0; y < h; y++){
+    let row = 0;
+    for(let x = 0; x < w; x++){ row += lum[y*w + x]; I[(y+1)*W1 + x+1] = I[y*W1 + x+1] + row; }
+  }
+  const R = Math.max(8, Math.round(Math.min(w, h) / 16));
+  const ink = new Uint8Array(N);
+  for(let y = 0; y < h; y++){
+    const y0 = Math.max(0, y - R), y1 = Math.min(h, y + R + 1);
+    for(let x = 0; x < w; x++){
+      const x0 = Math.max(0, x - R), x1 = Math.min(w, x + R + 1);
+      const mean = (I[y1*W1 + x1] - I[y0*W1 + x1] - I[y1*W1 + x0] + I[y0*W1 + x0]) / ((y1-y0) * (x1-x0));
+      const i = y*w + x, L = lum[i];
+      ink[i] = (L < mean * 0.72 && (chroma[i] < 32 || L < 45)) ? 1 : 0;
+    }
+  }
+  // 기울기: 글자 점들을 여러 각도로 돌려 보며 가로줄이 가장 또렷해지는 각도
+  const pts = [];
+  const stepPx = Math.max(1, Math.round(Math.sqrt(N / 60000)));
+  for(let y = 0; y < h; y += stepPx) for(let x = 0; x < w; x += stepPx) if(ink[y*w + x]) pts.push(x, y);
+  let bestA = 0, bestScore = -1;
+  for(let a = -8; a <= 8.001; a += 0.5){
+    const t = a * Math.PI / 180, sn = Math.sin(t), cs = Math.cos(t);
+    const bins = new Float64Array(h + w);
+    for(let k = 0; k < pts.length; k += 2){ const yy = Math.round(pts[k+1]*cs - pts[k]*sn + w); if(yy >= 0 && yy < bins.length) bins[yy]++; }
+    let sc = 0; for(let k = 1; k < bins.length; k++){ const df = bins[k] - bins[k-1]; sc += df * df; }
+    if(sc > bestScore){ bestScore = sc; bestA = a; }
+  }
+  for(let i = 0, j = 0; i < N; i++, j += 4){ const v = ink[i] ? 0 : 255; px[j] = px[j+1] = px[j+2] = v; px[j+3] = 255; }
+  ctx.putImageData(d, 0, 0);
+  if(Math.abs(bestA) < 0.4) return c;
+  const t = -bestA * Math.PI / 180;      // 반대로 돌려서 수평으로
+  const r = document.createElement('canvas');
+  r.width = w; r.height = h;
+  const rc = r.getContext('2d', {willReadFrequently:true});
+  rc.fillStyle = '#fff'; rc.fillRect(0, 0, w, h);
+  rc.translate(w/2, h/2); rc.rotate(t); rc.drawImage(c, -w/2, -h/2);
+  return r;
 }
 
 function linesWithBox(r){
@@ -2433,6 +2486,497 @@ async function extractGamesByLine(worker, canvas, L1, L2, onStep){
   }));
 }
 
+/* ---------- 번호 줄 찾기 (기울어짐·휘어짐·낙서에 강하게) ----------
+   1) 깨끗해진 흑백 그림에서 얇은 펜 선을 걷어냄(획 두께 기준)
+   2) 두 자리 숫자 덩어리를 찾고, 덩어리들을 옆으로 이어 한 줄(기울어져도 됨)로 묶음
+   3) 줄마다 기울기를 따라 펴서 한 줄짜리 그림으로 만든 뒤 따로 읽음 */
+function inkOf(canvas){
+  const w = canvas.width, h = canvas.height;
+  const px = canvas.getContext('2d', {willReadFrequently:true}).getImageData(0, 0, w, h).data;
+  const ink = new Uint8Array(w * h);
+  for(let i = 0, j = 0; i < ink.length; i++, j += 4) ink[i] = px[j] < 128 ? 1 : 0;
+  return {ink, w, h};
+}
+// 두 번 훑는 거리 변환(체스판 근사, 8방향): 각 점에서 가장 가까운 0까지 거리
+function distMap(src, w, h, target){
+  const INF = 1e9, d = new Float32Array(w * h);
+  for(let i = 0; i < d.length; i++) d[i] = src[i] === target ? INF : 0;
+  const D1 = 1, D2 = 1.414;
+  for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){
+    const i = y*w + x; if(!d[i]) continue;
+    let v = d[i];
+    if(x > 0) v = Math.min(v, d[i-1] + D1);
+    if(y > 0){ v = Math.min(v, d[i-w] + D1); if(x > 0) v = Math.min(v, d[i-w-1] + D2); if(x < w-1) v = Math.min(v, d[i-w+1] + D2); }
+    d[i] = v;
+  }
+  for(let y = h - 1; y >= 0; y--) for(let x = w - 1; x >= 0; x--){
+    const i = y*w + x; if(!d[i]) continue;
+    let v = d[i];
+    if(x < w-1) v = Math.min(v, d[i+1] + D1);
+    if(y < h-1){ v = Math.min(v, d[i+w] + D1); if(x < w-1) v = Math.min(v, d[i+w+1] + D2); if(x > 0) v = Math.min(v, d[i+w-1] + D2); }
+    d[i] = v;
+  }
+  return d;
+}
+function strokeWidth(ink, w, h){
+  const runs = [];
+  for(let y = 0; y < h; y += 3){
+    let run = 0;
+    for(let x = 0; x <= w; x++){
+      if(x < w && ink[y*w + x]) run++;
+      else { if(run > 1) runs.push(run); run = 0; }
+    }
+  }
+  runs.sort((a,b) => a - b);
+  return runs.length ? runs[runs.length >> 1] : 4;
+}
+function boxesOf(m, w, h){
+  const lab = new Int32Array(w * h), out = [], stack = [];
+  let id = 0;
+  for(let s = 0; s < m.length; s++){
+    if(!m[s] || lab[s]) continue;
+    id++; lab[s] = id; stack.push(s);
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    while(stack.length){
+      const i = stack.pop(), x = i % w, y = (i - x) / w;
+      if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y;
+      if(x > 0 && m[i-1] && !lab[i-1]){ lab[i-1] = id; stack.push(i-1); }
+      if(x < w-1 && m[i+1] && !lab[i+1]){ lab[i+1] = id; stack.push(i+1); }
+      if(y > 0 && m[i-w] && !lab[i-w]){ lab[i-w] = id; stack.push(i-w); }
+      if(y < h-1 && m[i+w] && !lab[i+w]){ lab[i+w] = id; stack.push(i+w); }
+    }
+    out.push([x0, y0, x1 + 1, y1 + 1]);
+  }
+  return out;
+}
+function digitHeight(bs){
+  const hs = bs.filter(b => { const bh = b[3]-b[1], bw = b[2]-b[0]; return bh >= 15 && bw/bh > 0.12 && bw/bh < 1.3; }).map(b => b[3]-b[1]);
+  if(!hs.length) return 0;
+  const cnt = [];
+  for(let hh = 16; hh < 220; hh++) cnt.push([hs.filter(v => v >= hh*0.9 && v <= hh*1.1).length, hh]);
+  const mx = Math.max(...cnt.map(c => c[0]));
+  return Math.max(...cnt.filter(c => c[0] >= mx * 0.75).map(c => c[1]));
+}
+function findGameLines(canvas){
+  const {ink, w, h} = inkOf(canvas);
+  const sw = strokeWidth(ink, w, h), rad = Math.max(1, sw * 0.33);
+  // 열기(opening): 획 두께보다 얇은 선(펜 자국)을 지움
+  const dIn = distMap(ink, w, h, 1);
+  const core = new Uint8Array(w * h);
+  for(let i = 0; i < core.length; i++) core[i] = dIn[i] > rad ? 1 : 0;
+  const dOut = distMap(core, w, h, 0);
+  const op = new Uint8Array(w * h);
+  for(let i = 0; i < op.length; i++) op[i] = (ink[i] && dOut[i] <= rad + 0.5) ? 1 : 0;
+  const H = digitHeight(boxesOf(op, w, h));
+  if(!H) return {lines: [], H: 0};
+  // 가로로만 살짝 번지게 해서 두 자리 숫자를 한 덩어리로
+  const r = Math.max(1, Math.round(H * 0.22)), dil = new Uint8Array(w * h);
+  for(let y = 0; y < h; y++){
+    let last = -1e9;
+    for(let x = 0; x < w; x++){ if(op[y*w + x]) last = x; if(x - last <= r) dil[y*w + x] = 1; }
+    last = 1e9;
+    for(let x = w - 1; x >= 0; x--){ if(op[y*w + x]) last = x; if(last - x <= r) dil[y*w + x] = 1; }
+  }
+  const toks = [];
+  boxesOf(dil, w, h).forEach(b => {
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for(let y = b[1]; y < b[3]; y++) for(let x = b[0]; x < b[2]; x++) if(op[y*w + x]){
+      if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y;
+    }
+    if(x1 < 0) return;
+    const th = y1 - y0 + 1, tw = x1 - x0 + 1;
+    if(th >= 0.7*H && th <= 1.35*H && tw >= 0.3*H && tw <= 3.6*H) toks.push([x0, y0, x1 + 1, y1 + 1]);
+  });
+  // 옆 덩어리로 잇기 (기울기 허용)
+  const cyOf = t => (t[1] + t[3]) / 2, score = (t, u) => (u[0] - t[2]) + Math.abs(cyOf(u) - cyOf(t)) * 2;
+  const pred = new Map();
+  toks.forEach((t, i) => {
+    let best = null;
+    toks.forEach((u, j) => {
+      if(j === i) return;
+      const gap = u[0] - t[2];
+      if(u[0] <= t[0] + 0.3*H || Math.abs(cyOf(u) - cyOf(t)) > 0.45*H || gap < 0.15*H || gap > 3*H) return;
+      const sc = score(t, u);
+      if(!best || sc < best[0]) best = [sc, j];
+    });
+    if(best){ const p = pred.get(best[1]); if(!p || best[0] < p[0]) pred.set(best[1], [best[0], i]); }
+  });
+  const next = new Map(); pred.forEach(([, i], j) => next.set(i, j));
+  const hasPrev = new Set(next.values()), chains = [];
+  toks.forEach((t, i) => {
+    if(hasPrev.has(i)) return;
+    const c = [i];
+    while(next.has(c[c.length-1]) && c.length < 30) c.push(next.get(c[c.length-1]));
+    if(c.length >= 4) chains.push(c.map(k => toks[k]));
+  });
+  // 줄마다 직선 맞추기 (y = a + b·x)
+  let lines = chains.map(c => {
+    const xs = c.map(t => (t[0] + t[2]) / 2), ys = c.map(cyOf), n = xs.length;
+    const mx = xs.reduce((s,v) => s+v, 0) / n, my = ys.reduce((s,v) => s+v, 0) / n;
+    let sxx = 0, sxy = 0; xs.forEach((x, k) => { sxx += (x-mx)**2; sxy += (x-mx)*(ys[k]-my); });
+    let b = sxx ? sxy / sxx : 0; b = Math.max(-0.2, Math.min(0.2, b));
+    return {a: my - b*mx, b, n, toks: c.slice(), x0: Math.min(...c.map(t => t[0])), x1: Math.max(...c.map(t => t[2]))};
+  });
+  // 같은 줄이 둘로 끊긴 것 합치기
+  lines.sort((p, q) => (p.a + p.b*w/2) - (q.a + q.b*w/2));
+  const merged = [];
+  lines.forEach(l => {
+    const m = merged.find(o => Math.abs((o.a + o.b*w/2) - (l.a + l.b*w/2)) < 0.4*H);
+    if(m){ const tot = m.n + l.n; m.a = (m.a*m.n + l.a*l.n)/tot; m.b = (m.b*m.n + l.b*l.n)/tot; m.n = tot; m.x0 = Math.min(m.x0, l.x0); m.x1 = Math.max(m.x1, l.x1); m.toks = m.toks.concat(l.toks); }
+    else merged.push({...l, toks: l.toks.slice()});
+  });
+  return {lines: merged, H, w, h};
+}
+// 기울어진 줄을 펴서 한 줄짜리 그림으로
+function straightStrip(canvas, line, H, yShift = 0){
+  const w = canvas.width, hh = canvas.height;
+  const src = canvas.getContext('2d', {willReadFrequently:true}).getImageData(0, 0, w, hh).data;
+  const half = Math.round(H * 0.72), pad = 14, sh = half*2 + 1;
+  const sc = sh < 70 ? 70 / sh : 1;
+  const out = document.createElement('canvas');
+  out.width = w + pad*2; out.height = sh + pad*2;
+  const octx = out.getContext('2d', {willReadFrequently:true});
+  const od = octx.createImageData(out.width, out.height), o = od.data;
+  o.fill(255);
+  for(let x = 0; x < w; x++){
+    const yc = Math.round(line.a + line.b * x + yShift);
+    for(let k = -half; k <= half; k++){
+      const y = yc + k; if(y < 0 || y >= hh) continue;
+      const v = src[(y*w + x)*4], j = ((k + half + pad) * out.width + x + pad) * 4;
+      o[j] = o[j+1] = o[j+2] = v;
+    }
+  }
+  octx.putImageData(od, 0, 0);
+  out.digitH = H; out.padY = pad;
+  if(sc === 1) return out;
+  const s2 = document.createElement('canvas');
+  s2.width = Math.round(out.width * sc); s2.height = Math.round(out.height * sc);
+  s2.getContext('2d').drawImage(out, 0, 0, s2.width, s2.height);
+  s2.digitH = H * sc; s2.padY = pad * sc;
+  return s2;
+}
+// 펴진 줄에서 세로 투영으로 번호 칸 찾기
+function boxesFromStrip(strip){
+  const w = strip.width, h = strip.height, H = strip.digitH;
+  const px = strip.getContext('2d', {willReadFrequently:true}).getImageData(0, 0, w, h).data;
+  const yA = Math.round(h/2 - H*0.55), yB = Math.round(h/2 + H*0.55);
+  const col = new Uint16Array(w);
+  for(let x = 0; x < w; x++){ let n = 0; for(let y = Math.max(0, yA); y < Math.min(h, yB); y++) if(px[(y*w + x)*4] < 128) n++; col[x] = n; }
+  const minInk = Math.max(2, H * 0.06), runs = [];
+  let st = -1;
+  for(let x = 0; x <= w; x++){
+    const on = x < w && col[x] >= minInk;
+    if(on && st < 0) st = x;
+    if(!on && st >= 0){ runs.push([st, x]); st = -1; }
+  }
+  const blobs = [];
+  runs.forEach(r => { const l = blobs[blobs.length-1]; if(l && r[0] - l[1] < H*0.68) l[1] = r[1]; else blobs.push(r.slice()); });
+  // 가는 '1' 두 개("11")처럼 좁은 조각끼리는 조금 더 멀어도 합침
+  for(let i = 0; i + 1 < blobs.length; i++){
+    const a = blobs[i], b = blobs[i+1];
+    if(a[1] - a[0] < H*0.8 && b[1] - b[0] < H*0.8 && b[0] - a[1] < H*1.05){ a[1] = b[1]; blobs.splice(i+1, 1); i--; }
+  }
+  // '11' 처럼 좁은 번호도 있으니 폭 0.8H 이상이면 번호 칸 후보. 너무 넓으면(번호 둘이 붙음) 나눔
+  const res = [];
+  blobs.forEach(b => {
+    const bw = b[1] - b[0], k = Math.round((bw + 1.0*H) / (3.9*H));
+    if(k >= 2){ const step = (bw + 1.0*H) / k; for(let i = 0; i < k; i++) res.push([Math.round(b[0] + i*step), Math.round(yA), Math.round(b[0] + i*step + step - 1.0*H), Math.round(yB)]); }
+    else if(bw >= H*0.8) res.push([b[0], Math.round(yA), b[1], Math.round(yB)]);
+  });
+  if(res.length >= 3){
+    const ws = res.map(b => b[2] - b[0]).sort((a,b) => a - b), mw = ws[Math.floor(ws.length * 0.75)];
+    const l = res[res.length - 1];
+    if(l[2] - l[0] > mw * 1.25) l[2] = l[0] + Math.round(mw * 1.05);
+    // 번호 칸 바로 왼쪽에 붙은 '동' 글자 떼기: 오른쪽 6칸 중 맨 왼쪽 칸이 너무 넓으면 오른쪽만 남김
+    const f = res[Math.max(0, res.length - 6)];
+    if(f[2] - f[0] > mw * 1.3) f[0] = f[2] - Math.round(mw * 1.05);
+  }
+  return res;
+}
+// 줄의 덩어리 중 "두 자리 번호" 모양만 고르기 (좁은 조각은 이웃과 합치고, 붙어 버린 두 번호는 가름)
+function numberBoxes(toks, H){
+  const ts = toks.slice().sort((p, q) => p[0] - q[0]).map(t => t.slice());
+  const out = [];
+  ts.forEach(t => {
+    const last = out[out.length - 1];
+    if(last && t[0] - last[2] < 0.5*H && (last[2]-last[0] < 1.6*H || t[2]-t[0] < 1.6*H) && Math.max(last[2], t[2]) - last[0] <= 3.6*H){
+      last[0] = Math.min(last[0], t[0]); last[1] = Math.min(last[1], t[1]); last[2] = Math.max(last[2], t[2]); last[3] = Math.max(last[3], t[3]);
+    } else out.push(t);
+  });
+  const res = [];
+  out.forEach(t => {
+    const bw = t[2] - t[0], k = Math.round((bw + 1.2*H) / (3.9*H));
+    if(k >= 2){ const step = (bw + 1.2*H) / k; for(let i = 0; i < k; i++){ const x0 = t[0] + i*step; res.push([Math.round(x0), t[1], Math.round(x0 + step - 1.2*H), t[3]]); } }
+    else if(bw >= 1.5*H) res.push(t);
+  });
+  // 맨 왼쪽(‘동’ 글자가 붙기 쉬움)·맨 오른쪽(손글씨) 칸이 보통 칸보다 넓으면 바깥쪽 군더더기를 잘라냄
+  if(res.length >= 3){
+    const ws = res.map(b => b[2] - b[0]).sort((a,b) => a - b), mw = ws[ws.length >> 1];
+    const f = res[0], l = res[res.length - 1];
+    if(f[2] - f[0] > mw * 1.2) f[0] = f[2] - Math.round(mw * 1.05);
+    if(res.length > 1 && l[2] - l[0] > mw * 1.2) l[2] = l[0] + Math.round(mw * 1.05);
+  }
+  return res;
+}
+function cropBox(canvas, b, H, outH = 72){
+  const pad = Math.round(H * 0.15), x0 = Math.max(0, b[0] - pad), y0 = Math.max(0, b[1] - pad);
+  const x1 = Math.min(canvas.width, b[2] + pad), y1 = Math.min(canvas.height, b[3] + pad);
+  const sc = outH / (y1 - y0), c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round((x1 - x0) * sc)); c.height = outH;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(canvas, x0, y0, x1 - x0, y1 - y0, 0, 0, c.width, c.height);
+  return c;
+}
+// 번호 칸만 떼어 깨끗한 바탕에 나란히 붙인 한 줄 (사이의 낙서·'동' 글자 제거)
+function assembledStrip(canvas, boxes, H){
+  const crops = boxes.map(b => cropBox(canvas, b, H)), gap = 44, pad = 22;
+  const c = document.createElement('canvas');
+  c.width = crops.reduce((s, k) => s + k.width, 0) + gap * (crops.length - 1) + pad*2; c.height = 72 + pad*2;
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  let x = pad; crops.forEach(k => { ctx.drawImage(k, x, pad); x += k.width + gap; });
+  return c;
+}
+// 용지 글꼴은 옆으로 넓적해서 OCR이 잘 틀림 → 가로를 줄여 보통 글꼴 비율로
+function squeezeX(c, f){
+  const o = document.createElement('canvas');
+  o.width = Math.max(1, Math.round(c.width * f)); o.height = c.height;
+  const x = o.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(c, 0, 0, o.width, o.height);
+  return o;
+}
+// 숫자 덩어리 목록에서 오름차순 1~45 번호 6개를 가장 그럴듯하게 고름
+//  (앞뒤에 붙은 군더더기 한 글자, 붙어 버린 두 번호 "1626" 등도 풀어 봄)
+function smartParse(text){
+  const toks = String(text || '').replace(/[^0-9 ]/g, ' ').trim().split(/\s+/).filter(Boolean);
+  if(!toks.length) return null;
+  const opts = toks.map(t => {
+    const o = [];
+    const add = (arr, cost) => { if(arr.every(v => v.length && v.length <= 2)) o.push({nums: arr.map(Number), cost}); };
+    const chunks = str => { const a = []; for(let i = 0; i < str.length; i += 2) a.push(str.slice(i, i+2)); return a; };
+    if(t.length <= 2) add([t], 0);
+    if(t.length === 3){ add([t.slice(1)], 1); add([t.slice(0, 2)], 1.2); }
+    if(t.length === 4){ add(chunks(t), 0.5); add([t.slice(0, 2)], 1.5); add([t.slice(2)], 1.5); }
+    if(t.length === 5){ add(chunks(t.slice(1)), 1.5); add(chunks(t.slice(0, 4)), 1.7); add([t.slice(0,2), t.slice(3)], 1.6); }
+    if(t.length === 6) add(chunks(t), 1);
+    return o;
+  });
+  // 오른쪽부터 6개를 채우는 최소 비용 탐색
+  let best = null;
+  const dfs = (i, acc, cost, started) => {
+    if(best && cost >= best.cost) return;
+    if(acc.length === 6){ best = {nums: acc.slice(), cost: cost + (i >= 0 ? 0 : 0)}; return; }
+    if(i < 0) return;
+    for(const o of opts[i]){
+      const seq = o.nums.concat(acc);
+      if(seq.length > 6){ // 이 덩어리의 일부만 사용 (왼쪽 넘침)
+        const part = seq.slice(seq.length - 6);
+        if(part.every(isNum) && isAscending(part) && new Set(part).size === 6){ const c = cost + o.cost + 1; if(!best || c < best.cost) best = {nums: part, cost: c}; }
+        continue;
+      }
+      if(seq.every(isNum) && isAscending(seq) && new Set(seq).size === seq.length) dfs(i - 1, seq, cost + o.cost, true);
+    }
+    dfs(i - 1, acc, cost + (started ? 2 : 0.8), started);   // 이 덩어리는 군더더기로 보고 건너뜀
+  };
+  dfs(toks.length - 1, [], 0, false);
+  return best && best.cost < 4 ? {numbers: best.nums, ascending: true, cost: best.cost} : null;
+}
+async function readStrip(worker, strip){
+  await worker.setParameters({tessedit_char_whitelist:'0123456789 ', tessedit_pageseg_mode:'7'});
+  const td = (await worker.recognize(strip)).data.text || '';
+  await worker.setParameters({tessedit_char_whitelist:'', tessedit_pageseg_mode:'7'});
+  const tk = hangulGap((await worker.recognize(strip)).data.text || '');
+  const pd = partialNumbers(td), pk = partialNumbers(tk);
+  const pick = (a, b) => okGame(a) ? a : okGame(b) ? b : (a || b);   // 같은 판독에서 나온 두 해석은 한 표로
+  return {cands: [pick(parseGameLine(td, false), smartParse(td)), pick(parseGameLine(tk, true), smartParse(tk.replace(/[OoD]/g,'0').replace(/[Il|]/g,'1')))],
+          partial: pd.length >= pk.length ? pd : pk, mode: detectOcrMode(tk), label: detectLabel(tk), td, tk};
+}
+const okGame = g => !!g && g.numbers.length === 6 && g.numbers.every(isNum) && isAscending(g.numbers) && new Set(g.numbers).size === 6;
+// 한 줄 읽기: 펴진 줄 전체 + 번호 칸만 모은 줄 (+ 필요하면 칸별로) 결과를 투표
+async function readGameLine(worker, canvas, line, H, yShift = 0){
+  const s = await readStrip(worker, straightStrip(canvas, line, H, yShift));
+  const cands = s.cands.slice();
+  const H0 = H;
+  const strip = straightStrip(canvas, line, H, yShift);
+  let boxes = boxesFromStrip(strip);
+  if(boxes.length >= 6){
+    boxes = boxes.slice(-6);
+    const a = assembledStrip(strip, boxes, strip.digitH);
+    await worker.setParameters({tessedit_char_whitelist:'0123456789 ', tessedit_pageseg_mode:'7'});
+    const ta = (await worker.recognize(squeezeX(a, 0.5))).data.text || '';
+    const ga = smartParse(ta);
+    cands.push(ga, ga);   // 가장 잘 맞는 방법이라 두 표
+    const tb = (await worker.recognize(squeezeX(a, 0.62))).data.text || '';
+    cands.push(smartParse(tb));
+    // 칸별로 하나씩 (네 번째 표)
+    await worker.setParameters({tessedit_char_whitelist:'0123456789', tessedit_pageseg_mode:'8'});
+    const each = [];
+    for(const b of boxes){ const t = ((await worker.recognize(squeezeX(cropBox(strip, b, strip.digitH), 0.55))).data.text || '').replace(/\D/g, ''); each.push(t.length > 2 ? t.slice(-2) : t || 'x'); }
+    cands.push(smartParse(each.join(' ')));
+  }
+  const good = cands.filter(okGame);
+  let vote = voteGame(good.length ? good : cands);
+  let okv = vote && okGame(vote) ? vote : null;
+  let support = okv ? cands.filter(c => c && c.numbers.join() === okv.numbers.join()).length : 0;
+  // 방법끼리 답이 갈리면: 칸마다 여러 설정으로 다시 읽어 자리별 다수결
+  if(support < 2 && boxes.length >= 6){
+    const marg = c => { const o = document.createElement('canvas'); o.width = c.width + 48; o.height = c.height + 48;
+      const x = o.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, o.width, o.height); x.drawImage(c, 24, 24); return o; };
+    const perPos = [0,1,2,3,4,5].map(() => ({}));
+    const addv = (k, n, wgt) => { if(isNum(n)) perPos[k][n] = (perPos[k][n] || 0) + wgt; };
+    cands.forEach(c => { if(c && c.numbers.length === 6 && isAscending(c.numbers)) c.numbers.forEach((n, k) => addv(k, n, 1)); });
+    for(const psm of ['8', '7', '13']){
+      await worker.setParameters({tessedit_char_whitelist:'0123456789', tessedit_pageseg_mode: psm});
+      for(let k = 0; k < 6; k++){
+        const t = ((await worker.recognize(marg(squeezeX(cropBox(strip, boxes[k], strip.digitH), 0.55)))).data.text || '').replace(/\D/g, '');
+        if(t.length >= 1 && t.length <= 2) addv(k, +t, 0.8);
+      }
+    }
+    const pickN = [], weak = [];
+    perPos.forEach((m, k) => {
+      const e = Object.entries(m).sort((a, b) => b[1] - a[1]);
+      if(!e.length){ pickN.push(0); weak.push(k); return; }
+      pickN.push(+e[0][0]);
+      if(e.length > 1 && e[1][1] >= e[0][1] * 0.7) weak.push(k);
+    });
+    const pv = {numbers: pickN, ascending: isAscending(pickN)};
+    if(okGame(pv)){ okv = {numbers: pickN, warn: weak}; support = 1; }
+  }
+  return {vote: okv, support, cands, strip, boxes: boxes.length >= 6 ? boxes : null, partial: s.partial, mode: s.mode, label: s.label};
+}
+
+/* ---------- 글자 모양 맞추기 (같은 용지 안에서 확실히 읽힌 숫자를 본보기로) ----------
+   용지 번호는 모두 같은 인쇄 글꼴이라, 확실한 줄의 숫자 모양을 모아 두고 헷갈리는 줄의 숫자와 비교 */
+const GW = 20, GH = 28;
+function glyphOf(px, w, x0, y0, x1, y1){
+  // 잉크 범위로 좁히기
+  let a = x1, b = x0, c = y1, d = y0;
+  for(let y = y0; y < y1; y++) for(let x = x0; x < x1; x++) if(px[(y*w + x)*4] < 128){ if(x < a) a = x; if(x > b) b = x; if(y < c) c = y; if(y > d) d = y; }
+  if(b < a || d < c) return null;
+  const gw = b - a + 1, gh = d - c + 1, sc = GH / gh, tw = Math.min(GW, Math.max(1, Math.round(gw * sc))), ox = Math.floor((GW - tw) / 2);
+  const g = new Float32Array(GW * GH);
+  for(let yy = 0; yy < GH; yy++) for(let xx = 0; xx < tw; xx++){
+    const sx0 = a + xx * gw / tw, sx1 = a + (xx + 1) * gw / tw, sy0 = c + yy * gh / GH, sy1 = c + (yy + 1) * gh / GH;
+    let n = 0, k = 0;
+    for(let y = Math.floor(sy0); y < Math.max(Math.floor(sy0) + 1, Math.ceil(sy1)); y++) for(let x = Math.floor(sx0); x < Math.max(Math.floor(sx0) + 1, Math.ceil(sx1)); x++){ n++; if(px[(y*w + x)*4] < 128) k++; }
+    g[yy*GW + ox + xx] = n ? k / n : 0;
+  }
+  // 평균 0, 크기 1로 (정규화 상관)
+  let m = 0; for(const v of g) m += v; m /= g.length;
+  let q = 0; for(let i = 0; i < g.length; i++){ g[i] -= m; q += g[i]*g[i]; }
+  q = Math.sqrt(q) || 1; for(let i = 0; i < g.length; i++) g[i] /= q;
+  return g;
+}
+function digitsOfBox(strip, box){
+  const w = strip.width, px = strip.getContext('2d', {willReadFrequently:true}).getImageData(0, 0, w, strip.height).data;
+  const [x0, y0, x1, y1] = box, bw = x1 - x0;
+  const col = []; for(let x = x0; x < x1; x++){ let n = 0; for(let y = y0; y < y1; y++) if(px[(y*w + x)*4] < 128) n++; col.push(n); }
+  let cut = Math.round(bw / 2), best = 1e9;
+  for(let i = Math.round(bw * 0.3); i <= Math.round(bw * 0.7); i++){ const v = col[i] + Math.abs(i - bw/2) * 0.02; if(v < best){ best = v; cut = i; } }
+  const L = glyphOf(px, w, x0, y0, x0 + cut, y1), R = glyphOf(px, w, x0 + cut, y0, x1, y1);
+  return L && R ? [L, R] : null;
+}
+const corr = (p, q) => { let s = 0; for(let i = 0; i < p.length; i++) s += p[i]*q[i]; return s; };
+function classifyDigit(g, T){
+  let bestD = -1, bestS = -2, second = -2;
+  for(let d = 0; d <= 9; d++){
+    if(!T[d] || !T[d].length) continue;
+    const sc = Math.max(...T[d].map(t => corr(g, t)));
+    if(sc > bestS){ second = bestS; bestS = sc; bestD = d; } else if(sc > second) second = sc;
+  }
+  return {d: bestD, s: bestS, margin: bestS - second};
+}
+// 확실한 줄(여러 방법이 같은 답)에서 숫자 본보기를 모으고, 나머지 줄을 다시 판정
+function refineByGlyphs(entries){
+  const T = {};
+  entries.forEach(e => {
+    const s = e.s; if(!s.vote || s.support < 3 || !s.boxes) return;
+    s.boxes.forEach((b, k) => {
+      const ds = digitsOfBox(s.strip, b), n = s.vote.numbers[k];
+      if(!ds) return;
+      [Math.floor(n / 10), n % 10].forEach((d, j) => { (T[d] = T[d] || []).push(ds[j]); });
+    });
+  });
+  const known = Object.keys(T).length;
+  if(known < 5) return;
+  entries.forEach(e => {
+    const s = e.s; if(!s.boxes || (s.vote && s.support >= 3)) return;
+    const weak = new Set();
+    const nums = [];
+    for(let k = 0; k < s.boxes.length; k++){
+      const ds = digitsOfBox(s.strip, s.boxes[k]); if(!ds) return;
+      const [a, c] = ds.map(g => classifyDigit(g, T));
+      if(a.d < 0 || c.d < 0) return;
+      if(a.s < 0.5 || c.s < 0.5 || a.margin < 0.05 || c.margin < 0.05) weak.add(k);
+      nums.push(a.d * 10 + c.d);
+    }
+    const tg = {numbers: nums, ascending: isAscending(nums)};
+    if(!okGame(tg)) return;
+    if(!s.vote){
+      // 글자로는 못 읽은 줄: 모양 맞추기 결과를 쓰되, 덜 확실한 칸은 확인 표시
+      s.vote = {numbers: nums, warn: [...weak]};
+      s.support = 1; s.byGlyph = true;
+    } else {
+      // 읽긴 했지만 근거가 약한 줄: 모양 맞추기와 다른 칸에 확인 표시만
+      const w = new Set(s.vote.warn || []);
+      s.vote.numbers.forEach((n, k) => { if(n !== nums[k]) w.add(k); });
+      s.vote.warn = [...w];
+    }
+  });
+}
+async function extractGamesByShape(worker, canvas, onStep){
+  const {lines, H} = findGameLines(canvas);
+  if(!lines.length) return [];
+  const read = [];
+  let step = 0;
+  for(const l of lines){
+    onStep && onStep(step++, lines.length + 2);
+    const s = await readGameLine(worker, canvas, l, H);
+    read.push({l, s, y: l.a + l.b * canvas.width / 2});
+  }
+  const good = read.filter(r => r.s.vote);
+  if(!good.length) return [];
+  // 번호 줄 간격으로 A~E 자리 정하기 (빠진 줄은 이웃 줄 기울기로 다시 읽음)
+  const ys = good.map(r => r.y);
+  const ds = ys.slice(1).map((y, i) => y - ys[i]).filter(d => d > 0.6*H);
+  const pitch = ds.length ? ds.sort((a,b) => a-b)[ds.length >> 1] : H * 1.35;
+  const y0 = good[0].y, slots = new Map();
+  good.forEach(r => { const k = Math.round((r.y - y0) / pitch); if(!slots.has(k)) slots.set(k, r); });
+  // 못 읽은 줄도 번호 줄 자리에 딱 맞으면(덩어리 5개 이상) 그 자리에 둠 → 나중에 직접 고칠 수 있게
+  const gk = [...slots.keys()];
+  read.filter(r => !r.s.vote && r.l.n >= 5).forEach(r => {
+    const f = (r.y - y0) / pitch, k = Math.round(f);
+    if(Math.abs(f - k) < 0.3 && !slots.has(k) && k >= Math.min(...gk) - 1 && k <= Math.max(...gk) + 1 && slots.size < 5) slots.set(k, r);
+  });
+  let kMax = Math.max(...slots.keys());
+  const nearest = k => { let bk = null; slots.forEach((_, kk) => { if(bk === null || Math.abs(kk - k) < Math.abs(bk - k)) bk = kk; }); return slots.get(bk); };
+  const probe = async k => {
+    const ref = nearest(k), dy = (k - Math.round((ref.y - y0) / pitch)) * pitch;
+    const yc = ref.y + dy;
+    if(yc < H*0.4 || yc > canvas.height - H*0.4) return null;
+    onStep && onStep(step++, lines.length + 2);
+    const s = await readGameLine(worker, canvas, ref.l, H, dy);
+    return {l: ref.l, s, y: yc};
+  };
+  let kMin = Math.min(...slots.keys());
+  for(let k = kMin; k <= kMax; k++) if(!slots.has(k)){ const p = await probe(k); if(p) slots.set(k, p); }
+  // 5줄이 안 되면 위·아래로 한 줄씩 더 찾아봄 (제대로 읽힐 때만)
+  for(let k = kMax + 1; slots.size < 5 && k <= kMax + 4; k++){ const p = await probe(k); if(!p || !p.s.vote) break; slots.set(k, p); }
+  for(let k = kMin - 1; slots.size < 5 && k >= kMin - 4; k--){ const p = await probe(k); if(!p || !p.s.vote) break; slots.set(k, p); }
+  kMin = Math.min(...slots.keys());
+  const ks = [...slots.keys()].sort((a,b) => a-b).filter(k => k >= kMin);
+  refineByGlyphs(ks.map(k => slots.get(k)));
+  // 행 표시(A~E)가 2개 이상 맞게 읽혔으면 그것을 기준으로
+  const votes = {};
+  ks.forEach(k => { const i = COLS.indexOf(slots.get(k).s.label); if(i >= 0){ const off = i - (k - ks[0]); votes[off] = (votes[off] || 0) + 1; } });
+  let offset = 0;
+  const bestOff = Object.keys(votes).sort((a,b) => votes[b] - votes[a])[0];
+  if(bestOff !== undefined && votes[bestOff] >= 2 && +bestOff >= 0 && (ks[ks.length-1] - ks[0]) + (+bestOff) <= 4) offset = +bestOff;
+  return ks.slice(0, 5).map(k => {
+    const s = slots.get(k).s;
+    return {numbers: s.vote ? s.vote.numbers : s.partial, warn: s.vote ? s.vote.warn : [0,1,2,3,4,5], failed: !s.vote,
+            mode: s.mode, label: COLS[k - ks[0] + offset] || ''};
+  });
+}
+
 // 줄 위치 정보가 없을 때의 간단한 방식 (순서대로 A~E)
 function extractGamesSimple(l1, l2){
   const p1 = [], p2 = [];
@@ -2502,25 +3046,33 @@ async function startOCR(src){
   try{
     status.textContent = '이미지 선명도 최적화 중...';
     const img = src instanceof HTMLCanvasElement ? src : await loadImageElement(src);
-    const canvas = preprocessImage(img);
+    const canvas = preprocessImage(img), grayCv = preprocessGray(img);
     const worker = await getWorker();
 
     ocrPhase = {base:0, span:.35};
     status.textContent = '① 회차·발행일·자동/수동 읽는 중...';
     await worker.setParameters({tessedit_char_whitelist:'', tessedit_pageseg_mode:'6', preserve_interword_spaces:'1'});
-    const r1 = await worker.recognize(canvas);
+    const r1 = await worker.recognize(grayCv);
 
     ocrPhase = {base:.35, span:.25};
     status.textContent = '② 번호 위치 찾는 중...';
     await worker.setParameters({tessedit_char_whitelist:'0123456789/:. ', tessedit_pageseg_mode:'6', preserve_interword_spaces:'1'});
-    const r2 = await worker.recognize(canvas);
+    const r2 = await worker.recognize(grayCv);
 
     const L1 = linesWithBox(r1), L2 = linesWithBox(r2);
     const T1 = L1 || textLines(r1), T2 = L2 || textLines(r2);
     const meta = extractMeta(T1, T2);
-    let games;
-    if(L1 && L2){
-      games = await extractGamesByLine(worker, canvas, L1, L2, (i, t) => {
+    let games = [];
+    // 새 방식: 번호 줄 모양을 직접 찾아 펴서 읽기 (기울어짐·낙서에 강함)
+    try{
+      games = await extractGamesByShape(worker, canvas, (i, t) => {
+        ocrPhase = {base: .6 + .4 * Math.min(i, t-1) / t, span: .4 / t};
+        status.textContent = `③ 줄별 정밀 판독 중 (${Math.min(i+1, t)}/${t})...`;
+      });
+    }catch(e){ console.warn(e); games = []; }
+    if(games.filter(g => !g.failed).length >= 3){}
+    else if(L1 && L2){
+      games = await extractGamesByLine(worker, grayCv, L1, L2, (i, t) => {
         ocrPhase = {base: .6 + .4 * Math.min(i, t-1) / t, span: .4 / t};
         status.textContent = `③ 줄별 정밀 판독 중 (${Math.min(i+1, t)}/${t})...`;
       });
