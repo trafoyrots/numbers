@@ -129,7 +129,20 @@ details.raw pre{white-space:pre-wrap;background:#fff;border-radius:8px;padding:8
 .toast.show{opacity:1}
 
 /* 페이지 탭 */
-.tabs{display:flex;gap:6px;margin-bottom:18px;background:#e9edf2;padding:4px;border-radius:12px;width:fit-content;max-width:100%}
+.topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.filemenu{position:relative;margin-left:auto}
+.filemenu > summary{list-style:none;cursor:pointer;background:#2f6fed;color:#fff;font-weight:700;padding:11px 16px;border-radius:10px;font-size:14px;user-select:none}
+.filemenu > summary::-webkit-details-marker{display:none}
+.filemenu[open] > summary{background:#1f56c9}
+.fm-panel{position:absolute;right:0;top:calc(100% + 6px);z-index:50;background:#fff;border:1px solid #e1e5ea;border-radius:12px;box-shadow:0 10px 30px rgba(20,30,50,.18);
+  padding:10px;width:min(560px,calc(100vw - 32px));display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fm-sec{display:flex;flex-direction:column;gap:5px;padding:8px;border-radius:9px;background:#f7f8fa}
+.fm-sec h4{margin:0 0 2px;font-size:13px;color:#4a525c}
+.fm-sec button{background:#fff;color:#20242a;border:1px solid #e3e6ea;text-align:left;padding:8px 10px;border-radius:8px;display:flex;flex-direction:column;gap:2px;font-size:14px}
+.fm-sec button:hover{border-color:#2f6fed;background:#f3f7ff}
+.fm-sec button small{color:#7a828c;font-size:11.5px;font-weight:500}
+@media(max-width:600px){ .filemenu{margin-left:0;width:100%} .filemenu > summary{text-align:center} .fm-panel{left:0;right:auto;grid-template-columns:1fr} }
+.tabs{display:flex;gap:6px;background:#e9edf2;padding:4px;border-radius:12px;width:fit-content;max-width:100%}
 .tabs button{background:transparent;color:#5b636d;padding:10px 18px;border-radius:9px;font-size:15px}
 .tabs button.on{background:#fff;color:#20242a;box-shadow:0 1px 5px rgba(0,0,0,.12)}
 .tab-count{display:inline-block;min-width:20px;padding:1px 6px;margin-left:4px;border-radius:10px;background:#d9363e;color:#fff;font-size:11px}
@@ -306,13 +319,27 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .pdf-data{color:#fff;font-size:4pt;line-height:1;font-family:monospace;word-break:break-all;margin-top:2mm;user-select:none}
 .print-num.sq{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:1.2px}
 .an-print-head{display:none}
+/* 분석 결과만 인쇄 (A4): 동끝 번호 모음 · 연번 인접수 · 번호 통계 */
+@media print{
+  body.print-results{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.print-results .container{display:block !important;max-width:none;padding:0}
+  body.print-results .print-only,body.print-results #pageInput,body.print-results .topbar,body.print-results h1,
+  body.print-results .subtitle,body.print-results .toast{display:none !important}
+  body.print-results #pageAnalysis{display:block !important}
+  body.print-results #pageAnalysis > .card:first-child > :not(#anPrintHead):not(#anExtra){display:none !important}
+  body.print-results .card{box-shadow:none;padding:0;margin:0 0 5mm;border-radius:0;border:0}
+  body.print-results .an-print-head{display:block;border-bottom:1.5px solid #333;padding-bottom:2mm;margin-bottom:3mm;font-size:10pt;color:#333}
+  body.print-results .an-print-head b{font-size:13pt;color:#000;margin-right:3mm}
+  body.print-results .an-group,body.print-results .stat-box,body.print-results .dg-line,body.print-results .cnt-line,body.print-results .nb-list > div{break-inside:avoid}
+  body.print-results #statistics h2{margin-top:0}
+}
 /* 분석 화면 그대로 인쇄 (A4) */
 @media print{
   body.print-analysis{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body.print-analysis .container{display:block !important;max-width:none;padding:0}
   body.print-analysis .print-only,body.print-analysis #pageInput,body.print-analysis .tabs,body.print-analysis h1,
   body.print-analysis .subtitle,body.print-analysis .an-head,body.print-analysis #pageAnalysis .note,body.print-analysis #anFilters,
-  body.print-analysis #anListTools,body.print-analysis .ex-panel:not([open]),body.print-analysis .ex-panel .toolbar,
+  body.print-analysis .ex-panel:not([open]),body.print-analysis .ex-panel .toolbar,
   body.print-analysis .ex-panel .note,body.print-analysis .toast{display:none !important}
   /* 설명은 모두 빼고 번호 + 패턴 표시만, 용지를 2열로 */
   body.print-analysis .an-print-head,body.print-analysis #exPanel,body.print-analysis #anChips,body.print-analysis #anExtra,
@@ -470,9 +497,33 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   <h1>🎱 로또 번호 분석기</h1>
   <div class="subtitle">1~45번 로또 번호를 입력하거나 이미지에서 숫자를 OCR로 읽어 통계를 분석합니다.</div>
 
+  <div class="topbar">
   <div class="tabs" id="tabs">
-    <button type="button" data-page="input" class="on">✏️ 입력 · 인쇄</button>
+    <button type="button" data-page="input" class="on">✏️ 번호 입력</button>
     <button type="button" data-page="analysis">📊 패턴 분석<span id="tabCount" class="tab-count"></span></button>
+  </div>
+  <details class="filemenu" id="fileMenu">
+    <summary>📁 저장 · 불러오기 · 인쇄</summary>
+    <div class="fm-panel">
+      <div class="fm-sec"><h4>💾 저장</h4>
+        <button type="button" onclick="fmRun(saveTitled)"><b>제목 정해서 저장</b><small>예: 일요일 데이터 · 일+목+토 합본 (JSON)</small></button>
+        <button type="button" onclick="fmRun(saveDataFile)"><b>바로 저장</b><small>날짜·시간으로 이름 자동 (JSON)</small></button>
+        <button type="button" onclick="fmRun(saveResultFile, true)"><b>분석 결과 텍스트로 저장</b><small>패턴 있는 용지 목록 (.txt)</small></button>
+      </div>
+      <div class="fm-sec"><h4>📂 불러오기</h4>
+        <button type="button" onclick="fmRun(loadDataFile)"><b>데이터 파일 불러오기</b><small>JSON·PDF, 여러 개 한꺼번에 가능</small></button>
+      </div>
+      <div class="fm-sec"><h4>🖨️ 인쇄</h4>
+        <button type="button" onclick="fmRun(printA4)"><b>입력 순서대로 번호표</b><small>A5 · 입력 화면의 모든 행</small></button>
+        <button type="button" onclick="fmRun(printAnalysis, true)"><b>패턴 그림 (전체 적용)</b><small>A4 · 번호와 패턴 표시만, 한 줄에 2장</small></button>
+        <button type="button" onclick="fmRun(printResults, true)"><b>분석 결과만</b><small>A4 · 동끝 번호 모음부터 번호 통계까지</small></button>
+        <button type="button" onclick="fmRun(printHotList, true)"><b>패턴 있는 용지만 번호표</b><small>A5 · 전체 패턴 적용</small></button>
+      </div>
+      <div class="fm-sec"><h4>📋 복사</h4>
+        <button type="button" onclick="fmRun(copyHotList, true)"><b>패턴 있는 용지 복사</b><small>텍스트로 클립보드에</small></button>
+      </div>
+    </div>
+  </details>
   </div>
 
   <div id="pageInput" class="page">
@@ -501,11 +552,6 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <button class="secondary" onclick="addRows(5)">+ 5행 추가</button>
       <button class="secondary" id="undoBtn" onclick="undoDelete()" hidden title="방금 지운 행을 원래 용지·원래 자리로 되돌립니다">↩ 삭제 되돌리기</button>
       <button class="secondary" onclick="clearAll()">전체 지우기</button>
-      <button onclick="showPage('analysis')">📊 패턴 분석 보기</button>
-      <button class="blue" onclick="saveDataFile()" title="날짜·시간으로 이름을 자동으로 붙여 저장">💾 저장 (자동 이름)</button>
-      <button class="blue" onclick="saveTitled()" title="예: 일요일 데이터, 일+목+토 합본">📝 제목 정해서 저장</button>
-      <button class="secondary" onclick="loadDataFile()" title="저장한 JSON 파일 또는 이 프로그램에서 인쇄해 저장한 PDF">📂 저장 정보 불러오기 (JSON·PDF)</button>
-      <button class="blue" onclick="printA4()">🖨️ 입력 순서대로 A5 인쇄</button>
     </div>
     <div class="input-guide" style="font-size:12px;color:#59636e;background:#f4f7fb;border-radius:9px;padding:9px 11px;margin-bottom:10px;line-height:1.9;">
       <b>번호만 치면 됩니다.</b> 두 자리를 치면 다음 칸으로 넘어가고(5~9는 한 자리로 바로 이동), 6번째 번호 뒤에는 다음 행이 자동으로 생깁니다.
@@ -572,9 +618,6 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   <div class="card">
     <div class="an-head">
       <h2 style="margin:0;">📊 패턴 분석</h2>
-      <span style="flex:1"></span>
-      <button class="blue" onclick="printAnalysis()" title="동끝·연번·사각·막대를 한 용지에 모두 적용한 화면을 A4로 인쇄 (PDF로 저장도 가능)">🖨️ 전체 패턴 적용 인쇄</button>
-      <button class="secondary" onclick="showPage('input')">✏️ 입력으로 돌아가기</button>
     </div>
     <div id="anPrintHead" class="an-print-head"></div>
     <div class="note">로또 용지 단위(A~E 5행)로, <b>입력한 순서 그대로</b> 패턴을 찾아 표시합니다. 행 순서를 바꾸거나 다른 용지의 번호를 섞지 않습니다. 용지 제목이나 행 글자를 누르면 입력 화면의 그 위치로 이동합니다. ✋ 표시는 반자동에서 직접 고른 번호입니다.</div>
@@ -619,11 +662,6 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <label><input type="checkbox" id="anMark" checked> 입력 화면에도 표시</label>
     </div>
     <div id="anChips" class="an-chips"></div>
-    <div id="anListTools" class="toolbar" style="margin-top:10px" hidden>
-      <button class="secondary" onclick="copyHotList()">📋 패턴 있는 용지 복사</button>
-      <button class="blue" onclick="printHotList()" title="동끝·연번·사각·막대를 모두 적용해, 패턴 있는 용지만 인쇄">🖨️ 패턴 있는 용지만 인쇄 (전체 적용)</button>
-      <button class="secondary" onclick="saveResultFile()" title="지금 보이는 분석 결과를 제목을 붙여 텍스트 파일로 저장">💾 분석 결과 파일로 저장</button>
-    </div>
     <div id="anGroups"></div>
     <div id="anExtra"></div>
   </div>
@@ -1721,7 +1759,6 @@ function analyze(){
     ? '<div class="empty">입력된 번호가 없습니다. 입력 화면에서 번호를 넣어 주세요.</div>'
     : analysisTickets.length ? analysisTickets.map((t, id) => ticketHtml(t, id)).join('')
     : `<div class="empty">${TYPE_LABEL[anType]}이 있는 용지가 없습니다. 조건을 바꾸거나 "전체 용지"로 보세요.</div>`;
-  $('anListTools').hidden = !hitTickets.length;
   $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt)
     : anType === 'all' ? digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt) : '';
 
@@ -1856,6 +1893,38 @@ function printAnalysis(){
   setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
 }
 
+// 분석 결과만 인쇄 (지금 고른 패턴 기준): 동끝 번호 모음부터 아래 번호 통계까지, 용지 그림은 빼고
+function printResults(){
+  showPage('analysis');
+  analyze();
+  const nd = ['digit','run','all'].includes(anType) ? ` · ${$('anN').value}개 이상 · ${DIR_LABEL[$('anDir').value]}` : '';
+  const src = $('anSrcWrap').hidden ? '' : ` · 자료: ${$('anSrc').selectedOptions[0]?.textContent || '전체'}`;
+  const rnd = $('anRound').value ? ` · ${$('anRound').value}회` : '';
+  const ex = excluded.size ? ` · 제외수 ${[...excluded].sort((a,b) => a-b).map(pad).join(' ')}` : '';
+  $('anPrintHead').innerHTML = `<b>📊 분석 결과 · ${anType === 'all' ? '전체 패턴' : TYPE_LABEL[anType]}</b>${nd}${src}${rnd}${ex} · ${new Date().toLocaleDateString('ko-KR')}`;
+  const pageStyle = document.createElement('style');
+  pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:10mm}}';
+  document.head.appendChild(pageStyle);
+  document.body.classList.add('print-results');
+  let finished = false;
+  const done = () => { if(finished) return; finished = true;
+    document.body.classList.remove('print-results'); pageStyle.remove(); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
+}
+
+/* ---------- 저장·불러오기·인쇄 메뉴 (한 곳) ---------- */
+function fmRun(fn, needAnalysis){
+  $('fileMenu').open = false;
+  if(needAnalysis) showPage('analysis');
+  fn();
+}
+document.addEventListener('click', e => {
+  const m = $('fileMenu');
+  if(m && m.open && !m.contains(e.target)) m.open = false;
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && $('fileMenu')?.open) $('fileMenu').open = false; });
+
 // 패턴 있는 용지 복사 / 인쇄 (용지 단위, 행 순서 그대로)
 const lineOf = (r, tail) => `${r.round ? r.round + '회 ' : ''}${r.col || ''} ${r.mode} | ` +
   r.numbers.map(x => r.picks.includes(x) ? `[${pad(x)}]` : pad(x)).join(' ') + ` | ${tail || ''}`;
@@ -1877,7 +1946,7 @@ function hotListText(){
 }
 async function copyHotList(){
   const list = hitList();
-  if(!list.length) return;
+  if(!list.length){ alert(`${TYPE_LABEL[anType]}이 있는 용지가 없습니다.`); return; }
   try{ await navigator.clipboard.writeText(hotListText()); toast(`용지 ${list.length}장을 복사했습니다.`); }
   catch(e){ alert('복사하지 못했습니다.'); }
 }
