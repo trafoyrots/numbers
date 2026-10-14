@@ -374,6 +374,14 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .tk.tkt .pc.star::after{top:-6px;right:-3px;font-size:14px}
 .an-tag.star{background:#fdecec;color:#c62f2f;font-weight:800}
 .nb-list .starx,.nb-star .starx{color:#d23b3b;font-weight:800}
+.mh-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:4px 14px;padding:10px 14px}
+.mh-row{display:flex;align-items:center;gap:7px;font-size:13px;padding:3px 4px;border-radius:6px}
+.mh-row.top{background:#fff4f4}
+.mh-row .ball{width:28px;height:28px;font-size:12px}
+.mh-row small{color:#7a828c;font-size:11.5px}
+.mh-row b{white-space:nowrap;min-width:38px}
+.mh-row .starx{color:#d23b3b;font-weight:800;width:14px;text-align:center}.mh-sp{width:14px}
+#pageAnalysis .an-group.most{border-color:#f0d6d6}
 .nb-star{padding:10px 14px;border-bottom:1px solid #f0f2f5;font-size:13px;line-height:1.9;background:#fffafa}
 body.print-bw .pc.star::after{color:#000}
 .ptk-sq{position:absolute;pointer-events:none;border:.6mm solid #4f7a74;border-radius:1.6mm}
@@ -1635,7 +1643,8 @@ function analyzeTicket(rows, type, opt){
         groups.filter(g => g.nums.length >= 3).forEach(g => {
           const ps = cells.filter(c => c.x % 10 === g.digit).map(c => c.pos), lo = Math.min(...ps), hi = Math.max(...ps);
           const mids = []; for(let p = lo + 1; p < hi; p++) if(!ps.includes(p) && isNum(r.numbers[p])) mids.push(r.numbers[p]);
-          (res.between = res.between || []).push({row: r, where: `가로 ${r.col}행`, digit: g.digit, nums: g.nums, mids});
+          const before = isNum(r.numbers[lo - 1]) ? r.numbers[lo - 1] : null, after = isNum(r.numbers[hi + 1]) ? r.numbers[hi + 1] : null;   // 맨 앞 동끝 왼쪽, 맨 뒤 동끝 오른쪽
+          (res.between = res.between || []).push({row: r, where: `가로 ${r.col}행`, digit: g.digit, nums: g.nums, mids, before, after, vert: false});
         });
         hc++;
       });
@@ -1653,7 +1662,8 @@ function analyzeTicket(rows, type, opt){
           if(list.length >= 3){   // 세로 동끝 3개 이상: 위~아래 사이에 끼인 수
             const is = list.map(c => c.i), lo = Math.min(...is), hi = Math.max(...is), mids = [];
             for(let i = lo + 1; i < hi; i++) if(!is.includes(i) && isNum(rows[i].numbers[k])) mids.push(rows[i].numbers[k]);
-            (res.between = res.between || []).push({row: rows[lo], where: `세로 ${k + 1}번째 자리 ${rows[lo].col}~${rows[hi].col}`, digit: +d, nums: list.map(c => c.x), mids});
+            const before = isNum(rows[lo - 1]?.numbers[k]) ? rows[lo - 1].numbers[k] : null, after = isNum(rows[hi + 1]?.numbers[k]) ? rows[hi + 1].numbers[k] : null;   // 맨 위 동끝 위, 맨 아래 동끝 아래
+            (res.between = res.between || []).push({row: rows[lo], where: `세로 ${k + 1}번째 자리 ${rows[lo].col}~${rows[hi].col}`, digit: +d, nums: list.map(c => c.x), mids, before, after, vert: true});
           }
           res.head.push(`<span class="an-tag hotv">세로 ${k + 1}번째 자리 끝수 ${d} ×${list.length}</span>`);
           vc++;
@@ -1944,7 +1954,7 @@ function analyze(){
       }).join('')
     : `<div class="empty">${TYPE_LABEL[anType]}이 있는 용지가 없습니다. 조건을 바꾸거나 "전체 용지"로 보세요.</div>`;
   $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt)
-    : anType === 'all' ? digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt)
+    : anType === 'all' ? mostHitHtml(hitTickets) + digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt)
     : anType === 'zone' ? zoneSummaryHtml(analysisTickets) : '';
 
   // 요약
@@ -2072,6 +2082,25 @@ function digitCollectHtml(list, opt){
   return `<div class="an-group hot"><h3>🔥 동끝 번호 모음 <small>${DIR_LABEL[opt.dir]} · ${opt.n}개 이상${excluded.size ? ` · 제외수 ${excluded.size}개 뺌` : ''} · ×는 동끝으로 묶인 횟수</small></h3>
     <div class="dg-sum">${lines}</div></div>` + betweenHtml(list);
 }
+// 전체 적용: 동끝·연번·사각·막대에 걸린 횟수가 가장 많은 수 (한 칸이 한 패턴에 걸리면 1번)
+function mostHitHtml(list){
+  const tot = {}, by = {};
+  const LBL = {digit: '동끝', run: '연번', sq: '사각', bar: '막대'};
+  list.forEach(t => Object.keys(LBL).forEach(ty => {
+    const sub = t.res.sub?.[ty]; if(!sub) return;
+    t.rows.forEach((r, i) => sub.under[i].forEach(pos => {
+      const x = r.numbers[pos]; if(!isNum(x)) return;
+      tot[x] = (tot[x] || 0) + 1; (by[x] = by[x] || {})[ty] = (by[x][ty] || 0) + 1;
+    }));
+  }));
+  const ns = Object.keys(tot).map(Number).sort((a,b) => tot[b] - tot[a] || a - b);
+  if(!ns.length) return '';
+  const top = tot[ns[0]], shown = ns.slice(0, 12);
+  const row = x => `<div class="mh-row${tot[x] === top ? ' top' : ''}">${tot[x] === top ? '<span class="starx">★</span>' : '<span class="mh-sp"></span>'}` +
+    `<span class="ball ${ballClass(x)}">${x}</span><b>${tot[x]}번</b><small>${Object.keys(LBL).filter(k => by[x][k]).map(k => `${LBL[k]} ${by[x][k]}`).join(' · ')}</small></div>`;
+  return `<div class="an-group most"><h3>★ 패턴에 가장 많이 걸린 수 <small>동끝·연번·사각·막대에 걸린 횟수 합계 · ★ = 가장 많음 · 위 ${shown.length}개</small></h3>
+    <div class="mh-list">${shown.map(row).join('')}</div></div>`;
+}
 // 동끝 3개 이상일 때 그 사이에 끼인 수
 function betweenCounts(list){
   const cnt = {};
@@ -2082,10 +2111,17 @@ function betweenHtml(list){
   const items = list.flatMap(t => t.res.between || []);
   if(!items.length) return '';
   const cnt = betweenCounts(list), nums = Object.keys(cnt).map(Number).sort((a,b) => cnt[b] - cnt[a] || a - b);
+  const ecnt = {};
+  items.forEach(b => [b.before, b.after].forEach(x => { if(isNum(x)) ecnt[x] = (ecnt[x] || 0) + 1; }));
+  const enums = Object.keys(ecnt).map(Number).sort((a,b) => ecnt[b] - ecnt[a] || a - b);
+  const chips = (m, ns, empty) => ns.length ? ns.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${m[x]}</span>`).join('') : `<span class="empty">${empty}</span>`;
+  const nx = x => isNum(x) ? `<span class="nbx">${pad(x)}</span>` : '<span class="nbx" style="opacity:.3">－</span>';
   const lines = items.map(b => `<div><span class="an-meta">${b.row.round ? escapeHtml(b.row.round) + '회 ' : ''}${b.where}</span> ` +
-    `<b>끝수 ${b.digit}</b> ${b.nums.map(pad).join('·')} → 끼인 수 ${b.mids.length ? b.mids.map(x => `<span class="nbx">${pad(x)}</span>`).join(' ') : '<span class="an-meta">없음(붙어 있음)</span>'}</div>`).join('');
-  return `<div class="an-group hot"><h3>🧩 동끝 사이에 끼인 수 <small>동끝 3개 이상 · ${items.length}곳 · 많이 나온 순</small></h3>
-    <div class="nb-sum">${nums.length ? nums.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${cnt[x]}</span>`).join('') : '<span class="empty">끼인 수가 없습니다 (동끝끼리 붙어 있음).</span>'}</div>
+    `<b>끝수 ${b.digit}</b> ${b.nums.map(pad).join('·')} · <span class="an-meta">${b.vert ? '위' : '앞'}</span> ${nx(b.before)} <span class="an-meta">${b.vert ? '아래' : '뒤'}</span> ${nx(b.after)}` +
+    ` · <span class="an-meta">끼인 수</span> ${b.mids.length ? b.mids.map(nx).join(' ') : '<span class="an-meta">없음(붙어 있음)</span>'}</div>`).join('');
+  return `<div class="an-group hot"><h3>🧩 동끝 3개 이상 · 끼인 수와 앞뒤로 붙은 수 <small>${items.length}곳 · 많이 나온 순 · 가로는 앞뒤(왼·오른), 세로는 위아래</small></h3>
+    <div class="nb-sum"><b style="font-size:12.5px;margin-right:4px">끼인 수</b>${chips(cnt, nums, '없음 (동끝끼리 붙어 있음)')}</div>
+    <div class="nb-sum"><b style="font-size:12.5px;margin-right:4px">앞뒤로 붙은 수</b>${chips(ecnt, enums, '없음 (맨 끝에 있음)')}</div>
     <div class="nb-list">${lines}</div></div>`;
 }
 
