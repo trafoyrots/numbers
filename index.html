@@ -237,10 +237,11 @@ button.slip-num{cursor:pointer}
 .tk-letter{width:18px;font-weight:800;color:#4a5568}
 .tk-lab .an-mode{width:46px;text-align:center}
 /* 분석 화면: 실물 용지 모양 (인쇄와 같은 표시) */
-.tk.tkt{--b:30px;--gy:6px;--gx:6px;--cw:46px;--ch:30px}
+.tk.tkt{--b:34px;--gy:5px;--gx:6px;--cw:46px;--ch:34px}
 .tk.tkt .tkt-grid{grid-template-columns:repeat(6,var(--cw));grid-auto-rows:var(--ch);gap:var(--gy) var(--gx)}
-.tk.tkt .pc span{width:40px;height:27px;font-size:17px}
+.tk.tkt .pc span{width:33px;height:33px;font-size:16px}
 .tk.tkt .pc.dong span{border-width:2px}
+.tk.tkt .pc.dong.d3 span{border-width:3.5px}
 .tk.tkt .pc.nb span{border-width:2px}
 .tk.tkt .ptk-sq{border-width:2.5px;border-radius:7px}
 .tk.tkt .pc.tk-dim{opacity:.35}
@@ -359,12 +360,16 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .ptk-m{font-size:10pt;font-weight:600;letter-spacing:.3px}
 .ptk-grid{position:relative;display:grid;grid-template-columns:repeat(6,var(--cw));grid-auto-rows:var(--ch);gap:var(--gy) var(--gx)}
 .pc{display:flex;align-items:center;justify-content:center;border-radius:1.2mm}
-.pc span{display:inline-flex;align-items:center;justify-content:center;width:8.6mm;height:6.4mm;border-radius:50%;
+.pc span{display:inline-flex;align-items:center;justify-content:center;width:6.9mm;height:6.9mm;border-radius:50%;
   font-size:13pt;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.3px;box-sizing:border-box}
 .pc.hl-run{background:#e4e4e4}
 .pc.hl-bar{background:#f8ecaa}
 .pc.hl-both{background:linear-gradient(#f8ecaa 50%,#e4e4e4 50%)}
-.pc.dong span{border:.5mm solid #b9787c}
+.pc.dong span{border:.45mm solid #e58aab}
+.pc.dong.d2a span{border-color:#e58aab}
+.pc.dong.d2b span{border-color:#5fb0e6}
+.pc.dong.d2c span{border-color:#a596de}
+.pc.dong.d3 span{border:.85mm solid #cf2f2f}
 .pc.nb span{border:.45mm solid #dba4a8}
 .pc.dong.nb span{border-color:#b9787c}
 .pc.pk span{text-decoration:underline;text-decoration-thickness:.35mm;text-underline-offset:.6mm}
@@ -388,6 +393,9 @@ body.print-bw .pc.star::after{color:#000}
 body.print-bw .pc.hl-bar{background:repeating-linear-gradient(135deg,#c4c4c4 0 .45mm,#fff .45mm 1.3mm)}
 body.print-bw .pc.hl-both{background:repeating-linear-gradient(135deg,#b8b8b8 0 .45mm,#e2e2e2 .45mm 1.3mm)}
 body.print-bw .pc.dong span{border-color:#222}
+body.print-bw .pc.dong.d2b span{border-style:dashed}
+body.print-bw .pc.dong.d2c span{border-style:dotted}
+body.print-bw .pc.dong.d3 span{border-color:#000}
 body.print-bw .pc.nb span{border-color:#888}
 body.print-bw .ptk-sq{border-color:#222}
 .an-tag.ta{background:#eef0f3;color:#3d434b;font-weight:800}
@@ -479,8 +487,8 @@ body.print-bw .ptk-sq{border-color:#222}
   .tk-body{padding:10px 8px;gap:8px}
   .tk-lab{gap:3px;padding-left:3px}
   .tk-lab .an-mode{width:22px;font-size:11px;padding:2px 0}
-  .tk.tkt{--cw:38px;--ch:28px;--b:28px;--gx:4px;--gy:5px}
-  .tk.tkt .pc span{width:34px;height:25px;font-size:15px}
+  .tk.tkt{--cw:38px;--ch:31px;--b:31px;--gx:4px;--gy:4px}
+  .tk.tkt .pc span{width:30px;height:30px;font-size:14px}
   .tk-letter{width:13px;font-size:13px}
   .tk-grid .ball{font-size:12px}
   .tk-tags{display:none}
@@ -519,6 +527,7 @@ body.print-bw .ptk-sq{border-color:#222}
 #pageAnalysis .tk-lab.on.t-all{border-left-color:#8a8f98}
 .an-legend .lg{display:inline-block;width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 3px var(--c);vertical-align:-1px;margin:0 2px 0 6px}
 .an-legend .lg.sq{border-radius:3px}
+.an-legend .lgx.c{width:13px;height:13px;border-radius:50% !important}
 .an-legend .lgx{display:inline-block;width:16px;height:12px;vertical-align:-1px;margin:0 3px 0 8px;border-radius:3px;box-sizing:border-box}
 #pageAnalysis .tk-lab.on.t-sq{border-left-color:var(--m-sq)}#pageAnalysis .tk-lab.on.t-bar{border-left-color:var(--m-bar)}
 #pageAnalysis .an-group,#pageAnalysis .an-group.hot,#pageAnalysis .an-group.run,#pageAnalysis .an-group.sq,#pageAnalysis .an-group.bar{border-color:var(--m-line)}
@@ -736,7 +745,8 @@ body.print-bw .ptk-sq{border-color:#222}
       </div>
       <label data-for="bar all"><input type="checkbox" id="anBarOne"> 끝수 1개짜리만</label>
       <span data-for="all" class="meta-label an-legend" style="font-size:12px;">표시:
-        <i class="lgx" style="border:2px solid #b9787c;border-radius:50%"></i>동끝
+        <i class="lgx c" style="border:2px solid #e58aab"></i><i class="lgx c" style="border:2px solid #5fb0e6;margin-left:2px"></i>동끝 2개(앞·뒤)
+        <i class="lgx c" style="border:3px solid #cf2f2f"></i>동끝 3개 이상
         <i class="lgx" style="background:#e4e4e4"></i>연번
         <i class="lgx" style="background:#f8ecaa"></i>막대
         <i class="lgx" style="border:2px solid #4f7a74;border-radius:3px"></i>사각</span>
@@ -1628,12 +1638,22 @@ function analyzeTicket(rows, type, opt){
     const ok = (i, pos) => !res.dim[i] && !res.ex[i].has(pos) && isNum(rows[i].numbers[pos]);
     // 가로 = 'dg', 세로 = 'dgv', 둘 다 = 'dgb'
     const mark = (i, pos, cls) => { const cur = res.ring[i].get(pos); res.ring[i].set(pos, cur && cur !== cls ? 'dgb' : cls); res.under[i].add(pos); res.rowOn[i] = true; };
+    // 칸마다 동끝 모양: 3개 이상 = 'd3'(굵은 빨강), 2개 묶음 = 앞에서부터 'd2a'(핑크)·'d2b'(하늘)·'d2c'
+    res.dongCls = new Map();
+    const RANK = {d3: 4, d2a: 3, d2b: 2, d2c: 1};
+    const setCls = (key, c) => { const cur = res.dongCls.get(key); if(!cur || RANK[c] > RANK[cur]) res.dongCls.set(key, c); };
+    const paint = list => {   // list: [{key, order, size}] 묶음 단위
+      list.filter(g => g.size >= 3).forEach(g => g.keys.forEach(k => setCls(k, 'd3')));
+      list.filter(g => g.size === 2).sort((a, b) => a.order - b.order).forEach((g, j) => g.keys.forEach(k => setCls(k, ['d2a','d2b','d2c'][Math.min(j, 2)])));
+    };
     let hc = 0, vc = 0;
     if(opt.dir.includes('h')){
       rows.forEach((r, i) => {
         const cells = r.numbers.map((x, pos) => ({pos, x})).filter(c => ok(i, c.pos));
         const groups = lastDigitGroups(cells.map(c => c.x), opt.n);
         if(!groups.length) return;
+        paint(groups.map(g => { const ps = cells.filter(c => c.x % 10 === g.digit).map(c => c.pos);
+          return {keys: ps.map(p => i + ',' + p), order: Math.min(...ps), size: ps.length}; }));
         const set = new Set(groups.flatMap(g => g.nums));
         cells.forEach(c => { if(set.has(c.x)) mark(i, c.pos, 'dg'); });
         res.tags[i] = groups.map(g => { const k = g.nums.filter(x => r.picks.includes(x)).length;
@@ -1655,6 +1675,7 @@ function analyzeTicket(rows, type, opt){
         const cells = rows.map((r, i) => ({i, x: r.numbers[k]})).filter(c => ok(c.i, k));
         const by = {};
         cells.forEach(c => (by[c.x % 10] = by[c.x % 10] || []).push(c));
+        paint(Object.values(by).filter(l => l.length >= opt.n).map(l => ({keys: l.map(c => c.i + ',' + k), order: Math.min(...l.map(c => c.i)), size: l.length})));
         Object.entries(by).forEach(([d, list]) => {
           if(list.length < opt.n) return;
           list.forEach(c => mark(c.i, k, 'dgv'));
@@ -1761,7 +1782,7 @@ const RING_KEY = {dg: ['dg'], dgv: ['dgv'], dgb: ['dg','dgv'], rn: ['rn'], nb: [
 const RING_COLOR = {dg: 'var(--m-dg)', dgv: 'var(--m-dgv)', rn: 'var(--m-run)', sq: 'var(--m-sq)'};
 function analyzeAll(rows, opt){
   const sub = {
-    digit: analyzeTicket(rows, 'digit', {...opt, mode: '', ex: excluded}),
+    digit: analyzeTicket(rows, 'digit', {...opt, n: 2, mode: '', ex: excluded}),   // 전체 적용: 동끝은 항상 2개부터 (2개 = 핑크·하늘, 3개 이상 = 굵은 빨강)
     run:   analyzeTicket(rows, 'run',   {...opt, ex: new Set()}),
     sq:    analyzeTicket(rows, 'sq',    {...opt, ex: new Set()}),
     bar:   analyzeTicket(rows, 'bar',   {...opt, ex: new Set()})
@@ -1841,7 +1862,7 @@ function ticketHtml(tk, id, showLabel){
       if(!isNum(x)) return `<div class="pc"></div>`;
       const pk = r.picks.includes(x), ex = res.ex[i].has(pos);
       const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
-                   m.dong.has(k) ? 'dong' : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', pk ? 'pk' : '', ex ? 'ex' : '', res.dim[i] ? 'tk-dim' : ''].filter(Boolean).join(' ');
+                   m.dong.has(k) ? 'dong ' + m.dong.get(k) : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', pk ? 'pk' : '', ex ? 'ex' : '', res.dim[i] ? 'tk-dim' : ''].filter(Boolean).join(' ');
       return `<div class="${cls}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : ''}><span>${pad(x)}</span></div>`;
     }).join('')).join('') + m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 3px);top:calc(${q.r} * (var(--ch) + var(--gy)) - 3px);` +
       `width:calc(2 * var(--cw) + var(--gx) + 6px);height:calc(2 * var(--ch) + var(--gy) + 6px)"></span>`).join('') : '';
@@ -1901,9 +1922,9 @@ function analyze(){
     v: `세로: 같은 자리를 A~E로 내려 볼 때 끝수가 같은 번호 ${opt.n}개 이상${exTxt}`,
     hv: `가로(갈색 테)와 세로(회청색 테)를 함께 표시 · 둘 다 해당하면 겹테 · ${opt.n}개 이상${exTxt}`}[opt.dir];
   $('anHelpRun').textContent = {
-    h: `가로: 한 행에서 이웃한 자리가 1씩 이어지는 ${opt.n}연번 이상 (예: 14 15 16 = 3연번) · 붉은 테 = 인접수 · ★ = 3연번 이상 양끝의 끝수가 같은 수`,
-    v: `세로: 같은 자리에서 위·아래로 1씩 이어지는 ${opt.n}연번 이상 (예: 12→13→14) · 붉은 테 = 인접수 · ★ = 3연번 이상 양끝의 끝수가 같은 수`,
-    hv: `가로·세로 ${opt.n}연번 이상 · 붉은 테 = 연번 인접수 · ★ = 3연번 이상 양끝의 끝수가 같은 수`}[opt.dir];
+    h: `가로: 한 행에서 이웃한 자리가 1씩 이어지는 ${opt.n}연번 이상 (예: 14 15 16 = 3연번) · ★ = 3연번 이상 양끝의 끝수가 같은 수`,
+    v: `세로: 같은 자리에서 위·아래로 1씩 이어지는 ${opt.n}연번 이상 (예: 12→13→14) · ★ = 3연번 이상 양끝의 끝수가 같은 수`,
+    hv: `가로·세로 ${opt.n}연번 이상 · ★ = 3연번 이상 양끝의 끝수가 같은 수`}[opt.dir];
   // 자료(파일) 필터
   const srcSel = $('anSrc'), srcCur = srcSel.value;
   const srcs = [...new Set(allRows.map(r => r.src))];
@@ -2018,12 +2039,22 @@ function analyze(){
     $('zeroTitle').textContent = '동끝 사이에 끼인 수 (동끝 3개 이상)';
     $('zero').innerHTML = bn.length ? bn.map(x => `<div title="${bc[x]}회"><div class="ball ${ballClass(x)}">${x}</div><small style="display:block;text-align:center;margin-top:3px">${bc[x]}회</small></div>`).join('')
       : `<div class="empty">동끝 3개 이상 사이에 끼인 수가 없습니다.</div>`;
+  } else if(anType === 'run'){
+    // 연번 탭: '전혀 나오지 않은 번호' 대신 연번에 붙은 수(인접수)
+    const nc = {};
+    hitTickets.flatMap(t => t.res.nb || []).forEach(it => [it.before, it.after, ...(it.side1 || []), ...(it.side2 || [])].forEach(x => { if(isNum(x)) nc[x] = (nc[x] || 0) + 1; }));
+    const nn = Object.keys(nc).map(Number).sort((a,b) => nc[b] - nc[a] || a - b);
+    $('zeroTitle').textContent = '연번 인접수 (연번에 붙은 수)';
+    $('zero').innerHTML = nn.length ? nn.slice(0, 18).map(x => `<div title="${nc[x]}회"><div class="ball ${ballClass(x)}">${x}</div><small style="display:block;text-align:center;margin-top:3px">${nc[x]}회</small></div>`).join('')
+      : '<div class="empty">연번에 붙은 수가 없습니다.</div>';
   } else {
   $('zeroTitle').textContent = '전혀 나오지 않은 번호';
   $('zero').innerHTML = !total ? '<div class="empty">입력된 번호가 없습니다.</div>' : zeros.length
     ? zeros.map(x => `<div class="ball gray">${x}</div>`).join('')
     : '<div class="empty">모든 번호가 한 번 이상 나왔습니다.</div>';
   }
+  // '전혀 나오지 않은 번호'는 전체 적용에서만 (동끝·연번 탭은 위처럼 다른 분석으로 바뀌고, 사각·막대·구간은 숨김)
+  $('zero').closest('.stat-box').hidden = !['all', 'digit', 'run'].includes(anType);
   $('info').innerHTML =
     `분석 행: <b>${statRows.length}</b>개<br>유효 번호: <b>${total}</b>개<br>최다 출현: <b>${max}회</b><br>` +
     `방식: 자동 <b>${mc.auto||0}</b> · 수동 <b>${mc.manual||0}</b> · 반자동 <b>${mc.semi||0}</b>`;
@@ -2136,9 +2167,9 @@ function withAllPatterns(){
    연번 = 옅은 회색 형광펜 · 막대 = 옅은 노란 형광펜 · 사각 = 사각 띠 · 동끝 = 붉은 동그라미 테 · 연번 인접수 = 옅은 붉은 실선 테(연번 탭만) */
 function marksOf(res, type){
   const subs = type === 'all' ? Object.entries(res.sub || {}) : [[type, res]];
-  const m = {dong: new Set(), run: new Set(), nb: new Set(), bar: new Set(), sq: [], star: new Set()};
+  const m = {dong: new Map(), run: new Set(), nb: new Set(), bar: new Set(), sq: [], star: new Set()};
   subs.forEach(([ty, r]) => {
-    if(ty === 'digit') r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(/^dg/.test(v)) m.dong.add(i + ',' + pos); }));
+    if(ty === 'digit') r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(/^dg/.test(v)){ const k = i + ',' + pos; m.dong.set(k, r.dongCls?.get(k) || 'd2a'); } }));
     if(ty === 'run'){
       r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(v === 'rn') m.run.add(i + ',' + pos); else if(v === 'nb') m.nb.add(i + ',' + pos); }));
       (r.star || []).forEach(k => m.star.add(k));
@@ -2146,8 +2177,7 @@ function marksOf(res, type){
     if(ty === 'sq') r.rects.forEach(q => { if(q.cls === 'sq') m.sq.push(q); });
     if(ty === 'bar') r.rects.forEach(q => { if(/^bar/.test(q.cls)) for(let i = q.r; i < q.r + q.h; i++) m.bar.add(i + ',' + q.c); });
   });
-  m.run.forEach(k => m.nb.delete(k));
-  if(type !== 'run') m.nb.clear();   // 연번 인접수 점선은 연번 탭 인쇄에서만
+  m.nb.clear();   // 연번 인접수는 용지에 표시하지 않음 (아래 분석·통계에서 알려 줌)
   return m;
 }
 function ticketPrintHtml(t, showLabel){
@@ -2158,7 +2188,7 @@ function ticketPrintHtml(t, showLabel){
     const x = r.numbers[pos], k = i + ',' + pos;
     if(!isNum(x)) return `<div class="pc"></div>`;
     const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
-                 m.dong.has(k) ? 'dong' : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', r.picks.includes(x) ? 'pk' : '', res.ex?.[i]?.has(pos) ? 'ex' : ''].filter(Boolean).join(' ');
+                 m.dong.has(k) ? 'dong ' + m.dong.get(k) : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', r.picks.includes(x) ? 'pk' : '', res.ex?.[i]?.has(pos) ? 'ex' : ''].filter(Boolean).join(' ');
     return `<div class="${cls}"><span>${pad(x)}</span></div>`;
   }).join('')).join('');
   const sq = m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 0.7mm);top:calc(${q.r} * (var(--ch) + var(--gy)) - 0.6mm);` +
