@@ -241,7 +241,7 @@ button.slip-num{cursor:pointer}
 .tk.tkt .tkt-grid{grid-template-columns:repeat(6,var(--cw));grid-auto-rows:var(--ch);gap:var(--gy) var(--gx)}
 .tk.tkt .pc span{width:40px;height:27px;font-size:17px}
 .tk.tkt .pc.dong span{border-width:2px}
-.tk.tkt .pc.nb span{outline-width:1.5px}
+.tk.tkt .pc.nb span{border-width:2px}
 .tk.tkt .ptk-sq{border-width:2.5px;border-radius:7px}
 .tk.tkt .pc.tk-dim{opacity:.35}
 .tk-dim{opacity:.35}
@@ -365,14 +365,15 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .pc.hl-bar{background:#f8ecaa}
 .pc.hl-both{background:linear-gradient(#f8ecaa 50%,#e4e4e4 50%)}
 .pc.dong span{border:.5mm solid #b9787c}
-.pc.nb span{outline:.35mm dashed #8a8f96;outline-offset:-.2mm}
-.pc.dong.nb span{outline-offset:.4mm}
+.pc.nb span{border:.45mm solid #dba4a8}
+.pc.dong.nb span{border-color:#b9787c}
 .pc.pk span{text-decoration:underline;text-decoration-thickness:.35mm;text-underline-offset:.6mm}
 .pc.ex span{color:#b5b5b5}
 .ptk-sq{position:absolute;pointer-events:none;border:.6mm solid #4f7a74;border-radius:1.6mm}
 body.print-bw .pc.hl-bar{background:repeating-linear-gradient(135deg,#c4c4c4 0 .45mm,#fff .45mm 1.3mm)}
 body.print-bw .pc.hl-both{background:repeating-linear-gradient(135deg,#b8b8b8 0 .45mm,#e2e2e2 .45mm 1.3mm)}
 body.print-bw .pc.dong span{border-color:#222}
+body.print-bw .pc.nb span{border-color:#888}
 body.print-bw .ptk-sq{border-color:#222}
 .an-tag.ta{background:#eef0f3;color:#3d434b;font-weight:800}
 /* 분석 결과만 인쇄 (A4): 동끝 번호 모음 · 연번 인접수 · 번호 통계 */
@@ -2017,7 +2018,7 @@ function withAllPatterns(){
   return () => { if(prev !== 'all' && anType === 'all'){ setAnType(prev, true); analyze(); } };
 }
 /* ---------- 패턴별 인쇄: 실물 용지처럼 (공 그림 없이 숫자) ----------
-   연번 = 옅은 회색 형광펜 · 막대 = 옅은 노란 형광펜 · 사각 = 사각 띠 · 동끝 = 붉은 동그라미 테 · 연번 인접수 = 점선 테(연번 탭만) */
+   연번 = 옅은 회색 형광펜 · 막대 = 옅은 노란 형광펜 · 사각 = 사각 띠 · 동끝 = 붉은 동그라미 테 · 연번 인접수 = 옅은 붉은 실선 테(연번 탭만) */
 function marksOf(res, type){
   const subs = type === 'all' ? Object.entries(res.sub || {}) : [[type, res]];
   const m = {dong: new Set(), run: new Set(), nb: new Set(), bar: new Set(), sq: []};
