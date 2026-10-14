@@ -314,7 +314,9 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .print-table th{height:5mm;padding:0;font-size:8.12pt;font-weight:bold;color:#4a5568;background:#f0f2f5;border-bottom:1px solid #ccc}
 .print-table td{height:7.62mm;padding:0;vertical-align:middle;border-bottom:1px solid #eee;font-size:9.38pt;white-space:nowrap;overflow:hidden}
 .print-table tr:last-child td{border-bottom:0}
-.print-row-num{font-weight:bold;color:#111}
+.print-row-num{font-weight:bold;color:#111;text-align:left;padding-left:2.5mm !important}
+.print-mode{text-align:left;color:#222;font-size:9pt !important;letter-spacing:.5px}
+.print-nums{text-align:left}
 .print-num{display:inline-block;box-sizing:border-box;width:6.62mm;height:6.62mm;line-height:6mm;margin:0 .19mm;
   border:.31mm solid transparent;border-radius:50%;font-size:10.62pt;font-weight:bold;color:#111;text-align:center;
   vertical-align:middle;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
@@ -323,6 +325,45 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .print-num.sq{text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:1.2px}
 .an-print-head{display:none}
 .tk-plabel{display:none}
+.an-print{display:none}
+/* 구간 분석 표 */
+.tk.t-zone .tk-body{flex-wrap:wrap;align-items:center}
+.tk-zone{flex:1;min-width:280px}
+.zt{border-collapse:collapse;width:100%;font-size:13px}
+.zt th,.zt td{border-bottom:1px solid #eceef1;padding:4px 6px;text-align:left;vertical-align:middle}
+.zt thead th{font-size:11.5px;color:#6b727c;font-weight:600;border-bottom:1px solid #d9dde2}
+.zt tbody th{white-space:nowrap;color:#3b4148;font-size:12.5px}
+.zt .zc{white-space:nowrap;text-align:center}.zt .zc small{color:#8a9099;font-size:10.5px;margin-left:1px}
+.zt .zm{color:#9aa0a8;font-size:12px}
+.zn{display:inline-block;font-weight:700;padding:0 4px;border-radius:9px;color:#fff;font-size:12px;line-height:18px;margin:1px 0}
+.zn small{font-size:10px;margin-left:1px;opacity:.9}
+.zn.yellow{background:#e0a91b}.zn.blue{background:#4a7fd0}.zn.red{background:#d65552}.zn.gray{background:#8d9198}.zn.green{background:#3d9c66}
+/* 패턴별 인쇄: 용지 모양 */
+.ptk{--cw:10mm;--ch:7.2mm;--gx:1.2mm;--gy:.9mm;display:inline-block;vertical-align:top;text-align:left;font-size:12px;margin:0 3mm 3mm;
+  border:.3mm solid #cfd3d8;border-radius:2mm;padding:1.6mm 2.5mm 2.2mm;break-inside:avoid;page-break-inside:avoid;background:#fff;color:#111}
+.ptk-label{font-size:10pt;font-weight:600;color:#222;margin:0 0 1.2mm}
+.ptk-label b{font-weight:800}
+.ptk-body{display:flex;gap:1.5mm}
+.ptk-left{display:grid;grid-template-columns:5mm 11mm;grid-auto-rows:var(--ch);row-gap:var(--gy);align-items:center}
+.ptk-l{font-weight:800;font-size:11.5pt}
+.ptk-m{font-size:10pt;font-weight:600;letter-spacing:.3px}
+.ptk-grid{position:relative;display:grid;grid-template-columns:repeat(6,var(--cw));grid-auto-rows:var(--ch);gap:var(--gy) var(--gx)}
+.pc{display:flex;align-items:center;justify-content:center;border-radius:1.2mm}
+.pc span{display:inline-flex;align-items:center;justify-content:center;width:8.6mm;height:6.4mm;border-radius:50%;
+  font-size:13pt;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:.3px;box-sizing:border-box}
+.pc.hl-run{background:#e4e4e4}
+.pc.hl-bar{background:#f8ecaa}
+.pc.hl-both{background:linear-gradient(#f8ecaa 50%,#e4e4e4 50%)}
+.pc.dong span{border:.5mm solid #b9787c}
+.pc.nb span{outline:.35mm dashed #8a8f96;outline-offset:-.2mm}
+.pc.dong.nb span{outline-offset:.4mm}
+.pc.pk span{text-decoration:underline;text-decoration-thickness:.35mm;text-underline-offset:.6mm}
+.pc.ex span{color:#b5b5b5}
+.ptk-sq{position:absolute;pointer-events:none;border:.6mm solid #4f7a74;border-radius:1.6mm}
+body.print-bw .pc.hl-bar{background:repeating-linear-gradient(135deg,#c4c4c4 0 .45mm,#fff .45mm 1.3mm)}
+body.print-bw .pc.hl-both{background:repeating-linear-gradient(135deg,#b8b8b8 0 .45mm,#e2e2e2 .45mm 1.3mm)}
+body.print-bw .pc.dong span{border-color:#222}
+body.print-bw .ptk-sq{border-color:#222}
 .an-tag.ta{background:#eef0f3;color:#3d434b;font-weight:800}
 /* 분석 결과만 인쇄 (A4): 동끝 번호 모음 · 연번 인접수 · 번호 통계 */
 @media print{
@@ -355,6 +396,11 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   /* 격자(grid) 대신 줄 바꿈 배치: 모든 브라우저에서 쪽이 넘어가도 마지막 용지가 빠지지 않게 */
   body.print-analysis .tk{display:inline-block;vertical-align:top;text-align:left;font-size:13px;--b:10mm;--gx:2mm;--gy:1.1mm;margin:0 3mm 2.6mm;border:0.3mm solid #d8dbe0;border-radius:2mm;overflow:visible;break-inside:avoid;page-break-inside:avoid}
   body.print-analysis .tk-body{padding:2.5mm;overflow:visible;display:block}
+  body.print-analysis.print-ticket #anGroups{display:none !important}
+  body.print-analysis.print-ticket #anPrint{display:block !important;text-align:center;font-size:0;orphans:1;widows:1}
+  body.print-analysis .tk.t-zone{display:block !important;margin:0 0 3mm !important}
+  body.print-analysis .tk.t-zone .tk-body{display:flex !important;gap:5mm;align-items:center}
+  body.print-analysis .tk.t-zone .tk-zone{display:block !important}
   body.print-analysis .tk-plabel{display:block;font-size:10pt;line-height:1.15;color:#222;padding:1.3mm 2.5mm 0;font-weight:600}
   body.print-analysis .tk-plabel b{font-weight:800}
   body.print-analysis .tk-grid .ball{font-size:12pt;font-weight:700}
@@ -525,8 +571,8 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
       <div class="fm-sec fm-wide"><h4>🖨️ 인쇄</h4>
         <button type="button" onclick="fmRun(printA4)"><b>기본 인쇄</b><small>A4 · 입력한 순서 그대로 번호표 (회차·요일·타)</small></button>
         <div class="fm-pair">
-          <button type="button" onclick="fmRun(printAnalysis, true)"><b>패턴별 인쇄 · 칼라</b><small>A4 · 화면과 같은 공·색 표시, 한 줄에 2장</small></button>
-          <button type="button" onclick="fmRun(printPatternBW, true)"><b>패턴별 인쇄 · 흑백</b><small>A4 · 숫자 표, 패턴 자리는 밑줄</small></button>
+          <button type="button" onclick="fmRun(() => printAnalysis(false), true)"><b>패턴별 인쇄 · 칼라</b><small>A4 · 용지 모양, 형광펜·테로 표시</small></button>
+          <button type="button" onclick="fmRun(() => printAnalysis(true), true)"><b>패턴별 인쇄 · 흑백</b><small>A4 · 용지 모양, 회색·검은 테로 표시</small></button>
         </div>
         <button type="button" onclick="fmRun(printResults, true)"><b>분석 결과 인쇄</b><small>A4 · 동끝 번호 모음부터 번호 통계까지</small></button>
       </div>
@@ -648,6 +694,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
         <button type="button" data-type="run">🔗 연번</button>
         <button type="button" data-type="sq">▦ 사각</button>
         <button type="button" data-type="bar">▮ 막대</button>
+        <button type="button" data-type="zone" title="1~10 · 11~20 · 21~30 · 31~40 · 41~45 구간별로 나온 번호와 안 나온 번호">📊 구간</button>
         <button type="button" data-type="all" title="동끝·연번·사각·막대를 한 용지에 모두 표시">🧩 전체 적용</button>
       </div>
       <label data-for="digit run all"><select id="anN" class="meta-input"><option selected>2</option><option>3</option><option>4</option><option>5</option></select>
@@ -674,6 +721,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
     </div>
     <div id="anChips" class="an-chips"></div>
     <div id="anGroups"></div>
+    <div id="anPrint" class="an-print"></div>
     <div id="anExtra"></div>
   </div>
 
@@ -1350,7 +1398,7 @@ function goToRow(i){
 const AN_KEY = 'lotto_analysis_settings', EX_KEY = 'lotto_excluded';
 let anView = 'hit', anType = 'digit', analysisTickets = [];
 let excluded = new Set();
-const TYPE_LABEL = {digit: '동끝 패턴', run: '연번 패턴', sq: '사각 패턴', bar: '막대 패턴', all: '패턴'};
+const TYPE_LABEL = {digit: '동끝 패턴', run: '연번 패턴', sq: '사각 패턴', bar: '막대 패턴', zone: '구간 분석', all: '패턴'};
 const DIR_LABEL = {h: '가로행', v: '세로행', hv: '가로+세로'};
 function setAnView(v, silent){
   anView = v === 'all' ? 'all' : 'hit';
@@ -1358,7 +1406,7 @@ function setAnView(v, silent){
   if(!silent){ saveAnSettings(); analyze(); }
 }
 function setAnType(t, silent){
-  anType = ['run','sq','bar','all'].includes(t) ? t : 'digit';
+  anType = ['run','sq','bar','zone','all'].includes(t) ? t : 'digit';
   document.querySelectorAll('#anType button').forEach(b => b.classList.toggle('on', b.dataset.type === anType));
   $('anFilters').dataset.type = anType;
   document.querySelectorAll('#anFilters [data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(anType); });
@@ -1630,6 +1678,7 @@ function analyzeTicket(rows, type, opt){
     }
     if(!complete) res.head.push(`<span class="an-tag">5행이 다 채워진 용지만 막대를 봅니다</span>`);
   }
+  if(type === 'zone'){ res.zone = zoneOf(rows); res.count = 1; }   // 구간 분석은 모든 용지가 대상
   return res;
 }
 
@@ -1673,6 +1722,32 @@ function ringShadow(colors){
   return out.join(',');
 }
 
+/* ---------- 구간 분석: 1~10 · 11~20 · 21~30 · 31~40 · 41~45 (공 색 구간과 같음) ---------- */
+const ZONES = [{name: '1~10', lo: 1, hi: 10}, {name: '11~20', lo: 11, hi: 20}, {name: '21~30', lo: 21, hi: 30},
+               {name: '31~40', lo: 31, hi: 40}, {name: '41~45', lo: 41, hi: 45}];
+function zoneOf(rows){
+  const cnt = {};
+  rows.forEach(r => r.numbers.forEach(n => { if(isNum(n)) cnt[n] = (cnt[n] || 0) + 1; }));
+  return ZONES.map(z => {
+    const nums = [], miss = []; let total = 0;
+    for(let n = z.lo; n <= z.hi; n++){ if(cnt[n]){ nums.push([n, cnt[n]]); total += cnt[n]; } else miss.push(n); }
+    return {...z, nums, total, miss};
+  });
+}
+function zoneTableHtml(zs, games){
+  const numTxt = ([n, c]) => `<span class="zn ${ballClass(n)}">${pad(n)}${c > 1 ? `<small>×${c}</small>` : ''}</span>`;
+  return `<table class="zt"><thead><tr><th>구간</th><th>나온 번호</th><th>개수</th><th>안 나온 번호</th></tr></thead><tbody>` +
+    zs.map(z => `<tr><th>${z.name}</th><td>${z.nums.length ? z.nums.map(numTxt).join(' ') : '<span class="zm">없음</span>'}</td>` +
+      `<td class="zc"><b>${z.total}</b>${games ? `<small>/${games * 6}</small>` : ''}</td>` +
+      `<td class="zm">${z.miss.length ? z.miss.map(pad).join(' ') : '모두 나옴'}</td></tr>`).join('') + `</tbody></table>`;
+}
+function zoneSummaryHtml(list){
+  if(!list.length) return '';
+  const rows = list.flatMap(t => t.rows);
+  return `<div class="an-group"><h3>📊 구간 합계 <small>보이는 용지 ${list.length}장 · ${rows.length}게임 · ×는 나온 횟수</small></h3>
+    <div style="padding:10px 14px">${zoneTableHtml(zoneOf(rows), rows.length)}</div></div>`;
+}
+
 function ticketHtml(tk, id, showLabel){
   const {rows, res} = tk, first = rows[0];
   // 인쇄용 꼬리표: 회차·요일·타 (같은 묶음의 첫 용지 위에만)
@@ -1705,10 +1780,11 @@ function ticketHtml(tk, id, showLabel){
   }).join('');
   const tags = rows.map((_, i) => `<div class="tk-tagrow">${res.tags[i].join('')}</div>`).join('');
   const notes = rows.map((r, i) => res.tags[i].length ? `<div><b>${escapeHtml(r.col || '-')}</b>${res.tags[i].join('')}</div>` : '').join('');
+  const side = res.zone ? `<div class="tk-zone">${zoneTableHtml(res.zone, rows.length)}</div>` : `<div class="tk-col tk-tags">${tags}</div>`;
   return `<div class="tk${res.count ? ' tk-hit' : ''} t-${anType}">${plabel}${head}
     <div class="tk-body"><div class="tk-col">${labels}</div>
       <div class="tk-grid">${balls}${rects}</div>
-      <div class="tk-col tk-tags">${tags}</div></div>${notes ? `<div class="tk-notes">${notes}</div>` : ''}</div>`;
+      ${side}</div>${notes && !res.zone ? `<div class="tk-notes">${notes}</div>` : ''}</div>`;
 }
 function goToTicket(id, i){
   const tk = analysisTickets[id], r = tk && tk.rows[i];
@@ -1773,7 +1849,7 @@ function analyze(){
   clearInputMarks();
   if($('anMark').checked){
     const MARK = {digit: ['hot-row','hit-digit'], run: ['run-row','run-hit'], sq: ['sq-row','sq-hit'], bar: ['bar-row','bar-hit']};
-    hitTickets.forEach(t => (anType === 'all' ? Object.entries(t.res.sub) : [[anType, t.res]]).forEach(([ty, res]) => {
+    if(anType !== 'zone') hitTickets.forEach(t => (anType === 'all' ? Object.entries(t.res.sub) : [[anType, t.res]]).forEach(([ty, res]) => {
       const [rowCls, cellCls] = MARK[ty];
       t.rows.forEach((r, i) => {
         if(!res.under[i].size) return;
@@ -1793,12 +1869,15 @@ function analyze(){
       }).join('')
     : `<div class="empty">${TYPE_LABEL[anType]}이 있는 용지가 없습니다. 조건을 바꾸거나 "전체 용지"로 보세요.</div>`;
   $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt)
-    : anType === 'all' ? digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt) : '';
+    : anType === 'all' ? digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt)
+    : anType === 'zone' ? zoneSummaryHtml(analysisTickets) : '';
 
   // 요약
   const statRows = tickets.flatMap(t => t.rows).filter(r => !opt.mode || r.modeKey === opt.mode);
   let patChips = [];
-  if(anType === 'all'){
+  if(anType === 'zone'){
+    patChips = [`구간 분석 <small>1~10 · 11~20 · 21~30 · 31~40 · 41~45</small>`];
+  } else if(anType === 'all'){
     const sum = (ty, f) => tickets.reduce((s, t) => s + f(t.res.sub[ty]), 0);
     const has = ty => tickets.filter(t => t.res.sub[ty].count).length;
     patChips = [`패턴 있는 용지 <b>${hitTickets.length}</b>장`,
@@ -1833,11 +1912,11 @@ function analyze(){
   statRows.forEach(item => item.numbers.forEach(x => { counts[x]++; total++; }));
   // TOP 6: 전체 적용이면 입력한 모든 번호, 패턴을 고르면 그 패턴에 들어간 번호만 (한 칸은 한 번만 셈)
   let topCounts = counts;
-  if(anType !== 'all'){
+  if(anType !== 'all' && anType !== 'zone'){
     topCounts = Array(46).fill(0);
     tickets.forEach(t => t.rows.forEach((r, i) => t.res.under[i].forEach(pos => { const x = r.numbers[pos]; if(isNum(x)) topCounts[x]++; })));
   }
-  $('topLabel').textContent = anType === 'all' ? '· 입력한 전체 번호' : `· ${TYPE_LABEL[anType]} 안에서`;
+  $('topLabel').textContent = (anType === 'all' || anType === 'zone') ? '· 입력한 전체 번호' : `· ${TYPE_LABEL[anType]} 안에서`;
   const ranked = Array.from({length:45}, (_,i) => i+1).sort((a,b) => counts[b] - counts[a] || a - b);
   const topRanked = Array.from({length:45}, (_,i) => i+1).filter(x => topCounts[x]).sort((a,b) => topCounts[b] - topCounts[a] || a - b);
   const top = topRanked.slice(0,6);
@@ -1910,17 +1989,57 @@ function withAllPatterns(){
   if(prev !== 'all'){ setAnType('all', true); analyze(); }
   return () => { if(prev !== 'all' && anType === 'all'){ setAnType(prev, true); analyze(); } };
 }
-// 지금 보고 있는 패턴(동끝·연번·사각·막대·전체 적용)과 보기(패턴 있는 용지만/전체 용지)를 화면과 같은 색·표시로 인쇄
-function printAnalysis(){
+/* ---------- 패턴별 인쇄: 실물 용지처럼 (공 그림 없이 숫자) ----------
+   연번 = 옅은 회색 형광펜 · 막대 = 옅은 노란 형광펜 · 사각 = 사각 띠 · 동끝 = 붉은 동그라미 테 · 연번 인접수 = 점선 테(연번 탭만) */
+function marksOf(res, type){
+  const subs = type === 'all' ? Object.entries(res.sub || {}) : [[type, res]];
+  const m = {dong: new Set(), run: new Set(), nb: new Set(), bar: new Set(), sq: []};
+  subs.forEach(([ty, r]) => {
+    if(ty === 'digit') r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(/^dg/.test(v)) m.dong.add(i + ',' + pos); }));
+    if(ty === 'run') r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(v === 'rn') m.run.add(i + ',' + pos); else if(v === 'nb') m.nb.add(i + ',' + pos); }));
+    if(ty === 'sq') r.rects.forEach(q => { if(q.cls === 'sq') m.sq.push(q); });
+    if(ty === 'bar') r.rects.forEach(q => { if(/^bar/.test(q.cls)) for(let i = q.r; i < q.r + q.h; i++) m.bar.add(i + ',' + q.c); });
+  });
+  m.run.forEach(k => m.nb.delete(k));
+  if(type !== 'run') m.nb.clear();   // 연번 인접수 점선은 연번 탭 인쇄에서만
+  return m;
+}
+function ticketPrintHtml(t, showLabel){
+  const {rows, res} = t, first = rows[0], m = marksOf(res, anType);
+  const label = showLabel ? `<div class="ptk-label">${first.round ? escapeHtml(first.round) + '회' : '회차 없음'}${first.day ? ' ' + escapeHtml(first.day) + '요일' : ''}${first.ta ? ' · <b>' + escapeHtml(first.ta) + '타</b>' : ''}</div>` : '';
+  const left = rows.map(r => `<div class="ptk-l">${escapeHtml(r.col || '-')}</div><div class="ptk-m">${escapeHtml(MODE_LABEL[r.modeKey] || r.mode || '')}</div>`).join('');
+  const cells = rows.map((r, i) => Array.from({length: 6}, (_, pos) => {
+    const x = r.numbers[pos], k = i + ',' + pos;
+    if(!isNum(x)) return `<div class="pc"></div>`;
+    const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
+                 m.dong.has(k) ? 'dong' : '', m.nb.has(k) ? 'nb' : '', r.picks.includes(x) ? 'pk' : '', res.ex?.[i]?.has(pos) ? 'ex' : ''].filter(Boolean).join(' ');
+    return `<div class="${cls}"><span>${pad(x)}</span></div>`;
+  }).join('')).join('');
+  const sq = m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 0.7mm);top:calc(${q.r} * (var(--ch) + var(--gy)) - 0.6mm);` +
+    `width:calc(2 * var(--cw) + var(--gx) + 1.4mm);height:calc(2 * var(--ch) + var(--gy) + 1.2mm)"></span>`).join('');
+  return `<div class="ptk">${label}<div class="ptk-body"><div class="ptk-left">${left}</div><div class="ptk-grid">${cells}${sq}</div></div></div>`;
+}
+// 패턴별 인쇄 (칼라/흑백): 지금 고른 패턴과 보기(패턴 있는 용지만/전체 용지) 그대로
+// 구간 분석은 공 그림 + 구간 표를 화면 그대로 인쇄
+function printAnalysis(bw){
   if($('pageAnalysis').hidden) showPage('analysis');
   analyze();
+  if(!analysisTickets.length){ alert(`인쇄할 용지가 없습니다. ${anView === 'hit' ? '"전체 용지"로 보거나 ' : ''}조건을 바꿔 보세요.`); return; }
+  const ticketStyle = anType !== 'zone';
+  if(ticketStyle){
+    const key = t => [t.rows[0].round, t.rows[0].day, t.rows[0].ta].join('|');
+    $('anPrint').innerHTML = analysisTickets.map((t, id) => ticketPrintHtml(t, id === 0 || key(t) !== key(analysisTickets[id - 1]))).join('');
+  }
   const pageStyle = document.createElement('style');
   pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:8mm}}';   // 이 인쇄만 A4
   document.head.appendChild(pageStyle);
   document.body.classList.add('print-analysis');
+  document.body.classList.toggle('print-ticket', ticketStyle);
+  document.body.classList.toggle('print-bw', !!bw);
   let finished = false;
   const done = () => { if(finished) return; finished = true;
-    document.body.classList.remove('print-analysis'); pageStyle.remove(); window.removeEventListener('afterprint', done);
+    document.body.classList.remove('print-analysis', 'print-ticket', 'print-bw'); pageStyle.remove(); $('anPrint').innerHTML = '';
+    window.removeEventListener('afterprint', done);
   };
   window.addEventListener('afterprint', done);
   setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
@@ -1964,6 +2083,7 @@ const lineOf = (r, tail) => `${r.round ? r.round + '회 ' : ''}${r.col || ''} ${
 const hitList = () => analysisTickets.filter(t => t.res.count);
 function patternTitle(){
   const nd = `${$('anN').value}개 이상 ${DIR_LABEL[$('anDir').value]}`;
+  if(anType === 'zone') return '구간 분석';
   if(anType === 'all') return `전체 패턴 (동끝·연번 ${nd}${excluded.size ? ' · 동끝 제외수 뺌' : ''} · 사각 · 막대)`;
   return anType === 'digit' ? `동끝 ${nd}${excluded.size ? ' (제외수 뺌)' : ''}` : anType === 'run' ? `연번 ${nd}` : anType === 'sq' ? '사각 패턴' : '막대 패턴';
 }
@@ -1983,16 +2103,7 @@ async function copyHotList(){
   try{ await navigator.clipboard.writeText(hotListText()); toast(`용지 ${list.length}장을 복사했습니다.`); }
   catch(e){ alert('복사하지 못했습니다.'); }
 }
-// 패턴별 인쇄 · 흑백: 지금 고른 패턴·보기 그대로, 숫자 표로 (패턴 자리 = 밑줄, 직접 고른 번호 = 회색 바탕)
-function printPatternBW(){
-  if($('pageAnalysis').hidden) showPage('analysis');
-  analyze();
-  const list = analysisTickets;
-  if(!list.length){ alert(`인쇄할 용지가 없습니다. ${anView === 'hit' ? '"전체 용지"로 보거나 ' : ''}조건을 바꿔 보세요.`); return; }
-  const rows = list.flatMap(t => t.rows.map((r, i) => ({...r, sqPos: [...t.res.under[i]]})));
-  const legend = {digit: '동끝 번호', run: '연번', sq: '사각 패턴 자리', bar: '막대 패턴 자리', all: '패턴(동끝·연번·사각·막대) 자리'}[anType];
-  buildPrint(rows, {title: patternTitle(), countText: `용지 ${list.length}장`, markLegend: legend});
-}
+function printPatternBW(){ printAnalysis(true); }
 
 /* ============================================================
    인쇄
@@ -2010,15 +2121,16 @@ function renderChunkTable(chunkRows, chunkNum, opts = {}){
     <div class="print-block">
       <div class="print-block-title">${headerTitle}${firstItem.src ? ' · ' + escapeHtml(firstItem.src) : ''} · ${chunkRows.length}게임</div>
       <table class="print-table">
-        <colgroup><col style="width:${opts.list ? 13 : 7}mm"><col><col style="width:6.5mm"></colgroup>
-        <thead><tr><th>행</th><th>로또 번호</th><th>방식</th></tr></thead>
+        <colgroup><col style="width:${opts.list ? 13 : 7}mm"><col style="width:13mm"><col></colgroup>
         <tbody>`;
   chunkRows.forEach(item => {
     const picks = item.picks || [], sqPos = item.sqPos || [];
     const numsHtml = item.numbers.map((n,pos) =>
       `<span class="print-num${picks.includes(n) ? ' picked' : ''}${sqPos.includes(pos) ? ' sq' : ''}">${pad(n)}</span>`).join('');
     const label = opts.list ? `${item.round ? escapeHtml(item.round) + ' ' : ''}${escapeHtml(item.col || '')}` : (escapeHtml(item.col) || '-');
-    html += `<tr><td class="print-row-num">${label}</td><td>${numsHtml}</td><td>${item.mode || '-'}</td></tr>`;
+    // 실물 용지처럼: A  자동  01 10 25 …
+    const modeWord = MODE_LABEL[item.modeKey || LABEL_TO_MODE[item.mode]] || item.mode || '';
+    html += `<tr><td class="print-row-num">${label}</td><td class="print-mode">${escapeHtml(modeWord)}</td><td class="print-nums">${numsHtml}</td></tr>`;
   });
   // 덩어리 높이를 항상 같게 (빈 줄로 채움) → 페이지 위 간격이 일정
   for(let i = chunkRows.length; i < size; i++) html += `<tr><td></td><td></td><td></td></tr>`;
