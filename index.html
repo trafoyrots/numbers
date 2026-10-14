@@ -374,6 +374,10 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .pc.dong.nb span{border-color:#b9787c}
 .pc.pk span{text-decoration:underline;text-decoration-thickness:.35mm;text-underline-offset:.6mm}
 .pc.ex span{color:#b5b5b5}
+.pc.dup span{color:#d23b3b;font-weight:900}
+body.print-bw .pc.dup span{color:#000;text-decoration:underline double;text-underline-offset:.5mm}
+.an-tag.dup{background:#fdecec;color:#c62f2f;font-weight:800}
+.nb-list .dupx{color:#d23b3b;border-color:#f0c4c4}
 .pc{position:relative}
 .pc.star::after{content:'★';position:absolute;top:-1.2mm;right:-.6mm;color:#d23b3b;font-size:9pt;line-height:1}
 .tk.tkt .pc.star::after{top:-6px;right:-3px;font-size:14px}
@@ -730,6 +734,7 @@ body.print-bw .ptk-sq{border-color:#222}
       <div class="seg" id="anType">
         <button type="button" data-type="digit" class="on">🔥 동끝</button>
         <button type="button" data-type="run">🔗 연번</button>
+        <button type="button" data-type="dup" title="한 용지(5게임) 안에서 같은 번호가 여러 번 나온 것">🔁 중복</button>
         <button type="button" data-type="sq">▦ 사각</button>
         <button type="button" data-type="bar">▮ 막대</button>
         <button type="button" data-type="zone" title="1~10 · 11~20 · 21~30 · 31~40 · 41~45 구간별로 나온 번호와 안 나온 번호">📊 구간</button>
@@ -737,6 +742,7 @@ body.print-bw .ptk-sq{border-color:#222}
       </div>
       <label data-for="digit run all"><select id="anN" class="meta-input"><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>
         <span id="anNUnit">개 이상</span></label>
+      <label data-for="dup" title="한 용지 안에서 같은 번호가 몇 번 이상 나왔는지">같은 번호 <select id="anDup" class="meta-input"><option value="3" selected>3번</option><option value="4">4번</option><option value="5">5번</option></select> 이상 중복</label>
       <label data-for="run sq bar" title="한 용지 안에 이 패턴이 몇 개 이상 있는 용지만 보기">용지당 <select id="anPer" class="meta-input"></select></label>
       <label data-for="digit run all"><select id="anDir" class="meta-input"><option value="h">가로행</option><option value="v">세로행</option><option value="hv">가로+세로</option></select></label>
       <div class="seg" id="anView">
@@ -1441,7 +1447,7 @@ function goToRow(i){
 const AN_KEY = 'lotto_analysis_settings', EX_KEY = 'lotto_excluded';
 let anView = 'hit', anType = 'digit', analysisTickets = [];
 let excluded = new Set();
-const TYPE_LABEL = {digit: '동끝 패턴', run: '연번 패턴', sq: '사각 패턴', bar: '막대 패턴', zone: '구간 분석', all: '패턴'};
+const TYPE_LABEL = {digit: '동끝 패턴', run: '연번 패턴', dup: '중복 번호', sq: '사각 패턴', bar: '막대 패턴', zone: '구간 분석', all: '패턴'};
 const DIR_LABEL = {h: '가로행', v: '세로행', hv: '가로+세로'};
 function setAnView(v, silent){
   anView = v === 'all' ? 'all' : 'hit';
@@ -1464,7 +1470,7 @@ function refreshTypeOptions(){
   }
 }
 function setAnType(t, silent){
-  anType = ['run','sq','bar','zone','all'].includes(t) ? t : 'digit';
+  anType = ['run','dup','sq','bar','zone','all'].includes(t) ? t : 'digit';
   refreshTypeOptions();
   document.querySelectorAll('#anType button').forEach(b => b.classList.toggle('on', b.dataset.type === anType));
   $('anFilters').dataset.type = anType;
@@ -1473,7 +1479,7 @@ function setAnType(t, silent){
 }
 function saveAnSettings(){
   try{ localStorage.setItem(AN_KEY, JSON.stringify({v: 2, n: $('anN').value, dir: $('anDir').value, view: anView, type: anType, per: anPerVal,
-    mark: $('anMark').checked, barOne: $('anBarOne').checked})); }catch(e){}
+    mark: $('anMark').checked, barOne: $('anBarOne').checked, dup: $('anDup').value})); }catch(e){}
 }
 function loadAnSettings(){
   try{
@@ -1483,6 +1489,7 @@ function loadAnSettings(){
     if(st.dir) $('anDir').value = ['h','v','hv'].includes(st.dir) ? st.dir : 'h';
     if(typeof st.mark === 'boolean') $('anMark').checked = st.mark;
     if(typeof st.barOne === 'boolean') $('anBarOne').checked = st.barOne;
+    if(['3','4','5'].includes(String(st.dup))) $('anDup').value = String(st.dup);
     if(st.view) setAnView(st.view, true);
     setAnType(st.type || 'digit', true);
   }catch(e){ setAnType('digit', true); }
@@ -1496,7 +1503,7 @@ document.addEventListener('click', e => {
   const x = e.target.closest('#exSlip .slip-num'); if(x) return toggleExcluded(+x.dataset.n);
 });
 let anMultiSrc = false;
-['anN','anDir','anMark','anMode','anRound','anSrc','anBarOne'].forEach(id => $(id).addEventListener('change', () => { saveAnSettings(); analyze(); }));
+['anN','anDir','anMark','anMode','anRound','anSrc','anBarOne','anDup'].forEach(id => $(id).addEventListener('change', () => { saveAnSettings(); analyze(); }));
 $('anPer').addEventListener('change', () => { if(PER_MAX[anType]) anPerVal[anType] = $('anPer').value; saveAnSettings(); analyze(); });
 
 /* ---------- 제외수 ---------- */
@@ -1773,6 +1780,17 @@ function analyzeTicket(rows, type, opt){
     if(!complete) res.head.push(`<span class="an-tag">5행이 다 채워진 용지만 막대를 봅니다</span>`);
   }
   if(type === 'zone'){ res.zone = zoneOf(rows); res.count = 1; }   // 구간 분석은 모든 용지가 대상
+  if(type === 'dup'){
+    // 한 용지 안에서 같은 번호가 opt.dup번 이상 나온 것
+    const cnt = {};
+    rows.forEach(r => r.numbers.forEach(x => { if(isNum(x)) cnt[x] = (cnt[x] || 0) + 1; }));
+    const dups = Object.keys(cnt).map(Number).filter(x => cnt[x] >= (opt.dup || 3)).sort((a, b) => cnt[b] - cnt[a] || a - b);
+    const set = new Set(dups);
+    rows.forEach((r, i) => r.numbers.forEach((x, pos) => { if(set.has(x)){ res.under[i].add(pos); res.rowOn[i] = true; } }));
+    rows.forEach((r, i) => { const d = r.numbers.filter(x => set.has(x)); if(d.length) res.tags[i].push(`<span class="an-tag dup">중복 ${d.map(pad).join(' ')}</span>`); });
+    res.dups = dups.map(x => [x, cnt[x]]); res.count = dups.length;
+    if(dups.length) res.head.push(`<span class="an-tag dup">🔁 ${opt.dup}번 이상 중복 ${dups.map(x => `${pad(x)}×${cnt[x]}`).join(' · ')}</span>`);
+  }
   return res;
 }
 
@@ -1862,7 +1880,7 @@ function ticketHtml(tk, id, showLabel){
       if(!isNum(x)) return `<div class="pc"></div>`;
       const pk = r.picks.includes(x), ex = res.ex[i].has(pos);
       const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
-                   m.dong.has(k) ? 'dong ' + m.dong.get(k) : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', pk ? 'pk' : '', ex ? 'ex' : '', res.dim[i] ? 'tk-dim' : ''].filter(Boolean).join(' ');
+                   m.dong.has(k) ? 'dong ' + m.dong.get(k) : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', m.dup.has(k) ? 'dup' : '', pk ? 'pk' : '', ex ? 'ex' : '', res.dim[i] ? 'tk-dim' : ''].filter(Boolean).join(' ');
       return `<div class="${cls}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : ''}><span>${pad(x)}</span></div>`;
     }).join('')).join('') + m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 3px);top:calc(${q.r} * (var(--ch) + var(--gy)) - 3px);` +
       `width:calc(2 * var(--cw) + var(--gx) + 6px);height:calc(2 * var(--ch) + var(--gy) + 6px)"></span>`).join('') : '';
@@ -1914,7 +1932,7 @@ function analyze(){
   sel.innerHTML = '<option value="">전체</option>' + rounds.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}회</option>`).join('');
   sel.value = rounds.includes(cur) ? cur : '';
 
-  const opt = {n: +$('anN').value || 2, dir: ['h','v','hv'].includes($('anDir').value) ? $('anDir').value : 'h', mode: anType === 'digit' ? $('anMode').value : '',
+  const opt = {dup: Math.min(5, Math.max(3, +$('anDup').value || 3)), n: +$('anN').value || 2, dir: ['h','v','hv'].includes($('anDir').value) ? $('anDir').value : 'h', mode: anType === 'digit' ? $('anMode').value : '',
                barOne: $('anBarOne').checked, ex: anType === 'digit' ? excluded : new Set()};
   const exTxt = excluded.size ? ` · 제외수 ${excluded.size}개 빼고` : '';
   $('anHelpDigit').textContent = {
@@ -1955,7 +1973,7 @@ function analyze(){
   clearInputMarks();
   if($('anMark').checked){
     const MARK = {digit: ['hot-row','hit-digit'], run: ['run-row','run-hit'], sq: ['sq-row','sq-hit'], bar: ['bar-row','bar-hit']};
-    if(anType !== 'zone') hitTickets.forEach(t => (anType === 'all' ? Object.entries(t.res.sub) : [[anType, t.res]]).forEach(([ty, res]) => {
+    if(anType !== 'zone' && anType !== 'dup') hitTickets.forEach(t => (anType === 'all' ? Object.entries(t.res.sub) : [[anType, t.res]]).forEach(([ty, res]) => {
       const [rowCls, cellCls] = MARK[ty];
       t.rows.forEach((r, i) => {
         if(!res.under[i].size) return;
@@ -1976,12 +1994,16 @@ function analyze(){
     : `<div class="empty">${TYPE_LABEL[anType]}이 있는 용지가 없습니다. 조건을 바꾸거나 "전체 용지"로 보세요.</div>`;
   $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt)
     : anType === 'all' ? mostHitHtml(hitTickets) + digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt)
-    : anType === 'zone' ? zoneSummaryHtml(analysisTickets) : '';
+    : anType === 'zone' ? zoneSummaryHtml(analysisTickets)
+    : anType === 'dup' ? dupSummaryHtml(hitTickets, opt) : '';
 
   // 요약
   const statRows = tickets.flatMap(t => t.rows).filter(r => !opt.mode || r.modeKey === opt.mode);
   let patChips = [];
-  if(anType === 'zone'){
+  if(anType === 'dup'){
+    const k = hitTickets.reduce((s, t) => s + t.res.count, 0);
+    patChips = [`한 용지에 ${opt.dup}번 이상 나온 번호 <b>${k}</b>개 <small>(용지 ${hitTickets.length}장)</small>`];
+  } else if(anType === 'zone'){
     patChips = [`구간 분석 <small>1~10 · 11~20 · 21~30 · 31~40 · 41~45</small>`];
   } else if(anType === 'all'){
     const sum = (ty, f) => tickets.reduce((s, t) => s + f(t.res.sub[ty]), 0);
@@ -2132,6 +2154,20 @@ function mostHitHtml(list){
   return `<div class="an-group most"><h3>★ 패턴에 가장 많이 걸린 수 <small>동끝·연번·사각·막대에 걸린 횟수 합계 · ★ = 가장 많음 · 위 ${shown.length}개</small></h3>
     <div class="mh-list">${shown.map(row).join('')}</div></div>`;
 }
+// 중복: 용지별로 여러 번 나온 번호
+function dupSummaryHtml(list, opt){
+  const items = list.filter(t => (t.res.dups || []).length);
+  if(!items.length) return '';
+  const cnt = {};
+  items.forEach(t => t.res.dups.forEach(([x]) => { cnt[x] = (cnt[x] || 0) + 1; }));
+  const ns = Object.keys(cnt).map(Number).sort((a,b) => cnt[b] - cnt[a] || a - b);
+  const lines = items.map(t => { const f = t.rows[0];
+    return `<div><span class="an-meta">${f.round ? escapeHtml(f.round) + '회 ' : ''}${t.rows[0].index}–${t.rows[t.rows.length-1].index}행</span> ` +
+      t.res.dups.map(([x, c]) => `<span class="nbx dupx">${pad(x)}</span><small>×${c}번</small>`).join(' ') + `</div>`; }).join('');
+  return `<div class="an-group dupg"><h3>🔁 중복 번호 <small>한 용지(5게임) 안에서 ${opt.dup}번 이상 나온 번호 · 용지 ${items.length}장 · ×는 그 번호가 중복된 용지 수</small></h3>
+    <div class="nb-sum">${ns.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${cnt[x]}</span>`).join('')}</div>
+    <div class="nb-list">${lines}</div></div>`;
+}
 // 동끝 3개 이상일 때 그 사이에 끼인 수
 function betweenCounts(list){
   const cnt = {};
@@ -2167,7 +2203,7 @@ function withAllPatterns(){
    연번 = 옅은 회색 형광펜 · 막대 = 옅은 노란 형광펜 · 사각 = 사각 띠 · 동끝 = 붉은 동그라미 테 · 연번 인접수 = 옅은 붉은 실선 테(연번 탭만) */
 function marksOf(res, type){
   const subs = type === 'all' ? Object.entries(res.sub || {}) : [[type, res]];
-  const m = {dong: new Map(), run: new Set(), nb: new Set(), bar: new Set(), sq: [], star: new Set()};
+  const m = {dong: new Map(), run: new Set(), nb: new Set(), bar: new Set(), sq: [], star: new Set(), dup: new Set()};
   subs.forEach(([ty, r]) => {
     if(ty === 'digit') r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(/^dg/.test(v)){ const k = i + ',' + pos; m.dong.set(k, r.dongCls?.get(k) || 'd2a'); } }));
     if(ty === 'run'){
@@ -2175,6 +2211,7 @@ function marksOf(res, type){
       (r.star || []).forEach(k => m.star.add(k));
     }
     if(ty === 'sq') r.rects.forEach(q => { if(q.cls === 'sq') m.sq.push(q); });
+    if(ty === 'dup') r.under.forEach((st, i) => st.forEach(pos => m.dup.add(i + ',' + pos)));
     if(ty === 'bar') r.rects.forEach(q => { if(/^bar/.test(q.cls)) for(let i = q.r; i < q.r + q.h; i++) m.bar.add(i + ',' + q.c); });
   });
   m.nb.clear();   // 연번 인접수는 용지에 표시하지 않음 (아래 분석·통계에서 알려 줌)
@@ -2188,7 +2225,7 @@ function ticketPrintHtml(t, showLabel){
     const x = r.numbers[pos], k = i + ',' + pos;
     if(!isNum(x)) return `<div class="pc"></div>`;
     const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
-                 m.dong.has(k) ? 'dong ' + m.dong.get(k) : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', r.picks.includes(x) ? 'pk' : '', res.ex?.[i]?.has(pos) ? 'ex' : ''].filter(Boolean).join(' ');
+                 m.dong.has(k) ? 'dong ' + m.dong.get(k) : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', m.dup.has(k) ? 'dup' : '', r.picks.includes(x) ? 'pk' : '', res.ex?.[i]?.has(pos) ? 'ex' : ''].filter(Boolean).join(' ');
     return `<div class="${cls}"><span>${pad(x)}</span></div>`;
   }).join('')).join('');
   const sq = m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 0.7mm);top:calc(${q.r} * (var(--ch) + var(--gy)) - 0.6mm);` +
@@ -2260,6 +2297,7 @@ const hitList = () => analysisTickets.filter(t => t.res.count);
 function patternTitle(){
   const nd = `${$('anN').value}개 이상 ${DIR_LABEL[$('anDir').value]}`;
   if(anType === 'zone') return '구간 분석';
+  if(anType === 'dup') return `중복 번호 (한 용지에 ${$('anDup').value}번 이상)`;
   if(anType === 'all') return `전체 패턴 (동끝·연번 ${nd}${excluded.size ? ' · 동끝 제외수 뺌' : ''} · 사각 · 막대)`;
   return anType === 'digit' ? `동끝 ${nd}${excluded.size ? ' (제외수 뺌)' : ''}` : anType === 'run' ? `연번 ${nd}` : anType === 'sq' ? '사각 패턴' : '막대 패턴';
 }
