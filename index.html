@@ -350,7 +350,9 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .zn small{font-size:10px;margin-left:1px;opacity:.9}
 .zn.yellow{background:#e0a91b}.zn.blue{background:#4a7fd0}.zn.red{background:#d65552}.zn.gray{background:#8d9198}.zn.green{background:#3d9c66}
 /* 패턴별 인쇄: 용지 모양 */
-.ptk{--cw:10mm;--ch:7.2mm;--gx:1.2mm;--gy:.9mm;display:inline-block;vertical-align:top;text-align:left;font-size:12px;margin:0 3mm 3mm;
+.ptk-wrap{display:inline-block;vertical-align:top;text-align:left;margin:0 3mm 3mm;break-inside:avoid;page-break-inside:avoid}
+.ptk-title{display:block;text-align:left;font-size:10pt;font-weight:800;color:#111;line-height:1.2;margin:0 3mm 1.2mm;break-after:avoid;page-break-after:avoid}
+.ptk{--cw:10mm;--ch:7.2mm;--gx:1.2mm;--gy:.9mm;display:block;text-align:left;font-size:12px;margin:0;
   border:.3mm solid #cfd3d8;border-radius:2mm;padding:1.6mm 2.5mm 2.2mm;break-inside:avoid;page-break-inside:avoid;background:#fff;color:#111}
 .ptk-label{font-size:10pt;font-weight:600;color:#222;margin:0 0 1.2mm}
 .ptk-label b{font-weight:800}
@@ -2268,7 +2270,8 @@ function diagSvg(lines, nRows){
 }
 function ticketPrintHtml(t, showLabel){
   const {rows, res} = t, first = rows[0], m = marksOf(res, anType);
-  const label = showLabel ? `<div class="ptk-label">${first.round ? escapeHtml(first.round) + '회' : '회차 없음'}${first.day ? ' ' + escapeHtml(first.day) + '요일' : ''}${first.ta ? ' · <b>' + escapeHtml(first.ta) + '타</b>' : ''}</div>` : '';
+  // 회차 줄이 없는 용지도 같은 높이만큼 비워 둠 → 옆 용지와 번호 줄이 나란히 맞음
+  const label = `<div class="ptk-label"${showLabel ? '' : ' style="visibility:hidden"'}>${first.round ? escapeHtml(first.round) + '회' : '회차 없음'}${first.day ? ' ' + escapeHtml(first.day) + '요일' : ''}${first.ta ? ' · <b>' + escapeHtml(first.ta) + '타</b>' : ''}</div>`;
   const left = rows.map(r => `<div class="ptk-l">${escapeHtml(r.col || '-')}</div><div class="ptk-m">${escapeHtml(MODE_LABEL[r.modeKey] || r.mode || '')}</div>`).join('');
   const cells = rows.map((r, i) => Array.from({length: 6}, (_, pos) => {
     const x = r.numbers[pos], k = i + ',' + pos;
@@ -2279,7 +2282,7 @@ function ticketPrintHtml(t, showLabel){
   }).join('')).join('');
   const sq = m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 0.7mm);top:calc(${q.r} * (var(--ch) + var(--gy)) - 0.6mm);` +
     `width:calc(2 * var(--cw) + var(--gx) + 1.4mm);height:calc(2 * var(--ch) + var(--gy) + 1.2mm)"></span>`).join('');
-  return `<div class="ptk">${label}<div class="ptk-body"><div class="ptk-left">${left}</div><div class="ptk-grid">${cells}${sq}${diagSvg(m.diag, rows.length)}</div></div></div>`;
+  return `<div class="ptk-wrap"><div class="ptk">${label}<div class="ptk-body"><div class="ptk-left">${left}</div><div class="ptk-grid">${cells}${sq}${diagSvg(m.diag, rows.length)}</div></div></div></div>`;
 }
 // 패턴별 인쇄 (칼라/흑백): 지금 고른 패턴과 보기(패턴 있는 용지만/전체 용지) 그대로
 // 구간 분석은 공 그림 + 구간 표를 화면 그대로 인쇄
@@ -2290,7 +2293,11 @@ function printAnalysis(bw){
   const ticketStyle = anType !== 'zone';
   if(ticketStyle){
     const key = t => [t.rows[0].round, t.rows[0].day, t.rows[0].ta].join('|');
-    $('anPrint').innerHTML = analysisTickets.map((t, id) => ticketPrintHtml(t, id === 0 || key(t) !== key(analysisTickets[id - 1]))).join('');
+    // 파일(자료) 이름은 페이지 제목처럼 맨 위에 한 번만 (여러 파일을 합친 경우에만 파일이 바뀌는 곳에 한 번 더)
+    const srcOf = t => t.rows[0].src || '직접 입력';
+    $('anPrint').innerHTML = analysisTickets.map((t, id) =>
+      (id === 0 || srcOf(t) !== srcOf(analysisTickets[id - 1]) ? `<div class="ptk-title">${escapeHtml(srcOf(t))}</div>` : '') +
+      ticketPrintHtml(t, id === 0 || key(t) !== key(analysisTickets[id - 1]))).join('');
   }
   const pageStyle = document.createElement('style');
   pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:8mm}}';   // 이 인쇄만 A4
