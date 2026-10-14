@@ -60,7 +60,9 @@ button:active{transform:translateY(1px)}
 .ins{padding:9px 11px;background:#edf0f3;color:#555;font-weight:800}
 
 /* 자동/수동 칩 */
-.mode-chip{height:40px;width:58px;padding:0 4px;border-radius:8px;font-size:13px;font-weight:800;white-space:nowrap;flex:none}
+.mshort{display:none}
+@media(max-width:700px){ .mfull{display:none} .mshort{display:inline} }
+.mode-chip{height:40px;width:66px;padding:0 4px;border-radius:8px;font-size:13px;font-weight:800;white-space:nowrap;flex:none}
 .mode-chip.auto{background:#e8f0fe;color:#2f6fed}
 .mode-chip.manual{background:#fdecec;color:#d9363e}
 .mode-chip.semi{background:#e6f6ec;color:#2a8a57}
@@ -233,7 +235,15 @@ button.slip-num{cursor:pointer}
 .tk-lab{display:flex;align-items:center;gap:6px;cursor:pointer;padding-left:6px;border-left:4px solid transparent;border-radius:3px}
 .tk-lab.on.t-digit{border-left-color:#e6a100}.tk-lab.on.t-sq{border-left-color:#0d9488}
 .tk-letter{width:18px;font-weight:800;color:#4a5568}
-.tk-lab .an-mode{width:26px;text-align:center}
+.tk-lab .an-mode{width:46px;text-align:center}
+/* 분석 화면: 실물 용지 모양 (인쇄와 같은 표시) */
+.tk.tkt{--b:30px;--gy:6px;--gx:6px;--cw:46px;--ch:30px}
+.tk.tkt .tkt-grid{grid-template-columns:repeat(6,var(--cw));grid-auto-rows:var(--ch);gap:var(--gy) var(--gx)}
+.tk.tkt .pc span{width:40px;height:27px;font-size:17px}
+.tk.tkt .pc.dong span{border-width:2px}
+.tk.tkt .pc.nb span{outline-width:1.5px}
+.tk.tkt .ptk-sq{border-width:2.5px;border-radius:7px}
+.tk.tkt .pc.tk-dim{opacity:.35}
 .tk-dim{opacity:.35}
 .tk-grid{position:relative;display:grid;grid-template-columns:repeat(6,var(--b));grid-auto-rows:var(--b);gap:var(--gy) var(--gx);flex:none}
 .tk-grid .ball{width:var(--b);height:var(--b);font-size:14px}
@@ -453,6 +463,8 @@ body.print-bw .ptk-sq{border-color:#222}
   .tk-body{padding:10px 8px;gap:8px}
   .tk-lab{gap:3px;padding-left:3px}
   .tk-lab .an-mode{width:22px;font-size:11px;padding:2px 0}
+  .tk.tkt{--cw:38px;--ch:28px;--b:28px;--gx:4px;--gy:5px}
+  .tk.tkt .pc span{width:34px;height:25px;font-size:15px}
   .tk-letter{width:13px;font-size:13px}
   .tk-grid .ball{font-size:12px}
   .tk-tags{display:none}
@@ -491,6 +503,7 @@ body.print-bw .ptk-sq{border-color:#222}
 #pageAnalysis .tk-lab.on.t-all{border-left-color:#8a8f98}
 .an-legend .lg{display:inline-block;width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 3px var(--c);vertical-align:-1px;margin:0 2px 0 6px}
 .an-legend .lg.sq{border-radius:3px}
+.an-legend .lgx{display:inline-block;width:16px;height:12px;vertical-align:-1px;margin:0 3px 0 8px;border-radius:3px;box-sizing:border-box}
 #pageAnalysis .tk-lab.on.t-sq{border-left-color:var(--m-sq)}#pageAnalysis .tk-lab.on.t-bar{border-left-color:var(--m-bar)}
 #pageAnalysis .an-group,#pageAnalysis .an-group.hot,#pageAnalysis .an-group.run,#pageAnalysis .an-group.sq,#pageAnalysis .an-group.bar{border-color:var(--m-line)}
 #pageAnalysis .an-group > h3,#pageAnalysis .an-group.hot > h3,#pageAnalysis .an-group.run > h3,#pageAnalysis .an-group.sq > h3,
@@ -595,9 +608,9 @@ body.print-bw .ptk-sq{border-color:#222}
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;">
         <span class="meta-label" style="font-size:12px;">새 행 방식</span>
         <div class="seg" id="modeSeg">
-          <button type="button" data-mode="auto" class="on">자<kbd>A</kbd></button>
-          <button type="button" data-mode="manual">수<kbd>S</kbd></button>
-          <button type="button" data-mode="semi">반<kbd>D</kbd></button>
+          <button type="button" data-mode="auto" class="on"><span class="mfull">자동</span><span class="mshort">자</span><kbd>A</kbd></button>
+          <button type="button" data-mode="manual"><span class="mfull">수동</span><span class="mshort">수</span><kbd>S</kbd></button>
+          <button type="button" data-mode="semi"><span class="mfull">반자동</span><span class="mshort">반</span><kbd>D</kbd></button>
         </div>
         <span class="meta-label" style="font-size:12px;margin-left:6px;">새 용지 타</span>
         <select id="defaultTa" class="meta-input meta-ta" title="새로 시작하는 용지(A행)에 넣을 타 · 비워 두면 미기입"><option value="">미기입</option><option value="1">1타</option><option value="2">2타</option><option value="3">3타</option><option value="4">4타</option><option value="5">5타</option><option value="6">6타</option><option value="7">7타</option><option value="8">8타</option><option value="9">9타</option><option value="10">10타</option></select>
@@ -705,10 +718,11 @@ body.print-bw .ptk-sq{border-color:#222}
         <button type="button" data-view="all">전체 용지</button>
       </div>
       <label data-for="bar all"><input type="checkbox" id="anBarOne"> 끝수 1개짜리만</label>
-      <span data-for="all" class="meta-label an-legend" style="font-size:12px;">한 용지에 모두 표시 ·
-        <i class="lg" style="--c:var(--m-dg)"></i>가로 동끝 <i class="lg" style="--c:var(--m-dgv)"></i>세로 동끝
-        <i class="lg" style="--c:var(--m-run)"></i>연번 <i class="lg" style="--c:var(--m-sq)"></i>사각 <i class="lg sq" style="--c:var(--m-bar)"></i>막대
-        · 여러 패턴이 겹치면 테가 여러 겹</span>
+      <span data-for="all" class="meta-label an-legend" style="font-size:12px;">표시:
+        <i class="lgx" style="border:2px solid #b9787c;border-radius:50%"></i>동끝
+        <i class="lgx" style="background:#e4e4e4"></i>연번
+        <i class="lgx" style="background:#f8ecaa"></i>막대
+        <i class="lgx" style="border:2px solid #4f7a74;border-radius:3px"></i>사각</span>
       <span data-for="digit" class="meta-label" id="anHelpDigit" style="font-size:12px;"></span>
       <span data-for="run" class="meta-label" id="anHelpRun" style="font-size:12px;"></span>
       <span data-for="bar" class="meta-label" style="font-size:12px;">한 용지 A~E 5행 · 같은 자리를 위에서 아래로 본 끝수가 1~2종류</span>
@@ -716,7 +730,7 @@ body.print-bw .ptk-sq{border-color:#222}
       <label id="anSrcWrap" hidden>자료 <select id="anSrc" class="meta-input"><option value="">전체 (합쳐서)</option></select></label>
       <label>회차 <select id="anRound" class="meta-input"><option value="">전체</option></select></label>
       <label data-for="digit">방식
-        <select id="anMode" class="meta-input"><option value="">전체</option><option value="auto">자</option><option value="manual">수</option><option value="semi">반</option></select></label>
+        <select id="anMode" class="meta-input"><option value="">전체</option><option value="auto">자동</option><option value="manual">수동</option><option value="semi">반자동</option></select></label>
       <label><input type="checkbox" id="anMark" checked> 입력 화면에도 표시</label>
     </div>
     <div id="anChips" class="an-chips"></div>
@@ -769,6 +783,8 @@ function escapeHtml(v){
 const MODE_LABEL = {auto:'자동', manual:'수동', semi:'반자동'};        // 저장 파일용 (예전 파일과 호환)
 const MODE_SHORT = {auto:'자', manual:'수', semi:'반'};                 // 화면·인쇄 표시용 한 글자
 const MODE_ORDER = ['auto','manual','semi'];
+// 방식 글자: 넓은 화면은 자동/수동/반자동, 휴대폰(좁은 화면)은 자/수/반
+const modeHtml = k => `<span class="mfull">${MODE_LABEL[k] || ''}</span><span class="mshort">${MODE_SHORT[k] || ''}</span>`;
 const LABEL_TO_MODE = {'자동':'auto','수동':'manual','반자동':'semi','자':'auto','수':'manual','반':'semi'};
 // event.code 기준이라 한/영 상태와 무관 (A=ㅁ, S=ㄴ, D=ㅇ, W=ㅈ, T=ㅅ, Q=ㅂ)
 const MODE_KEYS = {
@@ -882,7 +898,7 @@ function paintMode(row, mode, uncertain){
   const chip = row.querySelector('.mode-chip');
   const k = mode === 'semi' ? row.querySelectorAll('.num-input.picked').length : 0;
   chip.className = 'mode-chip ' + mode + (uncertain ? ' uncertain' : '');
-  chip.textContent = MODE_SHORT[mode] + (k ? ` ✋${k}` : '') + (uncertain ? '?' : '');
+  chip.innerHTML = modeHtml(mode) + (k ? ` ✋${k}` : '') + (uncertain ? '?' : '');
   chip.title = '눌러서 변경 · 번호 칸에서 A/S/D 키' + (mode === 'semi' ? ' · 직접 고른 번호는 더블클릭 또는 F 키' : '');
 }
 function setSticky(mode){
@@ -1760,8 +1776,19 @@ function ticketHtml(tk, id, showLabel){
       ${anMultiSrc ? `<span class="an-tag src">📚 ${escapeHtml(first.src || '직접 입력')}</span>` : ''}
       ${res.head.join('')}</div>`;
   const labels = rows.map((r, i) => `<div class="tk-lab${res.rowOn[i] ? ' on t-' + anType : ''}${res.dim[i] ? ' tk-dim' : ''}" onclick="goToTicket(${id},${i})" title="입력 화면에서 이 행 보기">
-      <span class="tk-letter">${escapeHtml(r.col || '-')}</span><span class="an-mode ${r.modeKey}">${r.mode}</span></div>`).join('');
-  const balls = rows.map((r, i) => Array.from({length: 6}, (_, pos) => {
+      <span class="tk-letter">${escapeHtml(r.col || '-')}</span><span class="an-mode ${r.modeKey}">${modeHtml(r.modeKey)}</span></div>`).join('');
+  // 구간 분석은 공 그림, 나머지 패턴은 실물 용지처럼 숫자 + 형광펜·테 (인쇄와 같은 표시)
+  const m = res.zone ? null : marksOf(res, anType);
+  const ticketCells = m ? rows.map((r, i) => Array.from({length: 6}, (_, pos) => {
+      const x = r.numbers[pos], k = i + ',' + pos;
+      if(!isNum(x)) return `<div class="pc"></div>`;
+      const pk = r.picks.includes(x), ex = res.ex[i].has(pos);
+      const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
+                   m.dong.has(k) ? 'dong' : '', m.nb.has(k) ? 'nb' : '', pk ? 'pk' : '', ex ? 'ex' : '', res.dim[i] ? 'tk-dim' : ''].filter(Boolean).join(' ');
+      return `<div class="${cls}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : ''}><span>${pad(x)}</span></div>`;
+    }).join('')).join('') + m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 3px);top:calc(${q.r} * (var(--ch) + var(--gy)) - 3px);` +
+      `width:calc(2 * var(--cw) + var(--gx) + 6px);height:calc(2 * var(--ch) + var(--gy) + 6px)"></span>`).join('') : '';
+  const balls = m ? '' : rows.map((r, i) => Array.from({length: 6}, (_, pos) => {
       const x = r.numbers[pos];
       if(!isNum(x)) return `<div class="ball blank"></div>`;
       let ring = res.ring[i].get(pos), st = '';
@@ -1773,7 +1800,7 @@ function ticketHtml(tk, id, showLabel){
       const pk = r.picks.includes(x), ex = res.ex[i].has(pos);
       return `<div${st} class="ball ${ballClass(x)}${ring ? ' ' + ring : ''}${pk ? ' picked' : ''}${res.dim[i] ? ' tk-dim' : ''}${ex ? ' ex' : ''}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : ''}>${x}</div>`;
     }).join('')).join('');
-  const rects = res.rects.map(q => {
+  const rects = m ? '' : res.rects.map(q => {
     const inset = q.cls === 'sq' ? 5 : 3;
     return `<span class="tk-rect ${q.cls}" style="left:calc(${q.c} * (var(--b) + var(--gx)) - ${inset}px);top:calc(${q.r} * (var(--b) + var(--gy)) - ${inset}px);` +
       `width:calc(${q.w} * var(--b) + ${q.w - 1} * var(--gx) + ${inset * 2}px);height:calc(${q.h} * var(--b) + ${q.h - 1} * var(--gy) + ${inset * 2}px)"></span>`;
@@ -1781,9 +1808,9 @@ function ticketHtml(tk, id, showLabel){
   const tags = rows.map((_, i) => `<div class="tk-tagrow">${res.tags[i].join('')}</div>`).join('');
   const notes = rows.map((r, i) => res.tags[i].length ? `<div><b>${escapeHtml(r.col || '-')}</b>${res.tags[i].join('')}</div>` : '').join('');
   const side = res.zone ? `<div class="tk-zone">${zoneTableHtml(res.zone, rows.length)}</div>` : `<div class="tk-col tk-tags">${tags}</div>`;
-  return `<div class="tk${res.count ? ' tk-hit' : ''} t-${anType}">${plabel}${head}
+  return `<div class="tk${res.count ? ' tk-hit' : ''} t-${anType}${m ? ' tkt' : ''}">${plabel}${head}
     <div class="tk-body"><div class="tk-col">${labels}</div>
-      <div class="tk-grid">${balls}${rects}</div>
+      <div class="tk-grid${m ? ' tkt-grid' : ''}">${m ? ticketCells : balls + rects}</div>
       ${side}</div>${notes && !res.zone ? `<div class="tk-notes">${notes}</div>` : ''}</div>`;
 }
 function goToTicket(id, i){
@@ -1902,7 +1929,7 @@ function analyze(){
   $('anChips').innerHTML = allRows.length ? [
     `용지 <b>${tickets.length}</b>장 <small>(${statRows.length}행)</small>`,
     ...patChips,
-    `자 <b>${mc.auto||0}</b> · 수 <b>${mc.manual||0}</b> · 반 <b>${mc.semi||0}</b>`,
+    `${modeHtml('auto')} <b>${mc.auto||0}</b> · ${modeHtml('manual')} <b>${mc.manual||0}</b> · ${modeHtml('semi')} <b>${mc.semi||0}</b>`,
     ...(pickRows.length ? [`✋ 직접 고른 번호 <b>${pickNums}</b>개 <small>(반 ${pickRows.length}행)</small>`] : [])
   ].map(t => `<div class="an-chip">${t}</div>`).join('') : '';
 
@@ -1932,7 +1959,7 @@ function analyze(){
     : '<div class="empty">모든 번호가 한 번 이상 나왔습니다.</div>';
   $('info').innerHTML =
     `분석 행: <b>${statRows.length}</b>개<br>유효 번호: <b>${total}</b>개<br>최다 출현: <b>${max}회</b><br>` +
-    `방식: 자 <b>${mc.auto||0}</b> · 수 <b>${mc.manual||0}</b> · 반 <b>${mc.semi||0}</b>`;
+    `방식: 자동 <b>${mc.auto||0}</b> · 수동 <b>${mc.manual||0}</b> · 반자동 <b>${mc.semi||0}</b>`;
   // 출현 횟수: 로또 용지 배열, 번호 아래에 횟수
   // 출현 횟수별 번호 (같은 횟수끼리 한 줄)
   const byCount = {};
@@ -3235,7 +3262,7 @@ async function startOCR(src){
 
     renderOCRRows(games);
     const mc = {}; games.forEach(g => mc[g.mode] = (mc[g.mode]||0) + 1);
-    const modeSummary = MODE_ORDER.filter(k => mc[k]).map(k => `${MODE_SHORT[k]} ${mc[k]}`).join(' · ');
+    const modeSummary = MODE_ORDER.filter(k => mc[k]).map(k => `${MODE_LABEL[k]} ${mc[k]}`).join(' · ');
     const needCheck = games.filter(g => g.warn.length || g.modeUncertain).length;
     const labels = games.map(g => g.label).filter(Boolean);
     const lastIdx = Math.max(...labels.map(l => COLS.indexOf(l)));
