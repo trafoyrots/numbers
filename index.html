@@ -374,8 +374,9 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .pc.dong.nb span{border-color:#b9787c}
 .pc.pk span{text-decoration:underline;text-decoration-thickness:.35mm;text-underline-offset:.6mm}
 .pc.ex span{color:#b5b5b5}
-.pc.dup span{color:#d23b3b;font-weight:900}
-body.print-bw .pc.dup span{color:#000;text-decoration:underline double;text-underline-offset:.5mm}
+.pc .dupn{position:absolute;top:-1.1mm;right:.2mm;color:#d23b3b;font-size:9pt;font-weight:900;line-height:1}
+.tk.tkt .pc .dupn{top:-5px;right:1px;font-size:13px}
+body.print-bw .pc .dupn{color:#000}
 .an-tag.dup{background:#fdecec;color:#c62f2f;font-weight:800}
 .nb-list .dupx{color:#d23b3b;border-color:#f0c4c4}
 .pc{position:relative}
@@ -1786,7 +1787,8 @@ function analyzeTicket(rows, type, opt){
     rows.forEach(r => r.numbers.forEach(x => { if(isNum(x)) cnt[x] = (cnt[x] || 0) + 1; }));
     const dups = Object.keys(cnt).map(Number).filter(x => cnt[x] >= (opt.dup || 3)).sort((a, b) => cnt[b] - cnt[a] || a - b);
     const set = new Set(dups);
-    rows.forEach((r, i) => r.numbers.forEach((x, pos) => { if(set.has(x)){ res.under[i].add(pos); res.rowOn[i] = true; } }));
+    res.dupAt = new Map();
+    rows.forEach((r, i) => r.numbers.forEach((x, pos) => { if(set.has(x)){ res.under[i].add(pos); res.rowOn[i] = true; res.dupAt.set(i + ',' + pos, cnt[x]); } }));
     rows.forEach((r, i) => { const d = r.numbers.filter(x => set.has(x)); if(d.length) res.tags[i].push(`<span class="an-tag dup">중복 ${d.map(pad).join(' ')}</span>`); });
     res.dups = dups.map(x => [x, cnt[x]]); res.count = dups.length;
     if(dups.length) res.head.push(`<span class="an-tag dup">🔁 ${opt.dup}번 이상 중복 ${dups.map(x => `${pad(x)}×${cnt[x]}`).join(' · ')}</span>`);
@@ -1881,7 +1883,7 @@ function ticketHtml(tk, id, showLabel){
       const pk = r.picks.includes(x), ex = res.ex[i].has(pos);
       const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
                    m.dong.has(k) ? 'dong ' + m.dong.get(k) : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', m.dup.has(k) ? 'dup' : '', pk ? 'pk' : '', ex ? 'ex' : '', res.dim[i] ? 'tk-dim' : ''].filter(Boolean).join(' ');
-      return `<div class="${cls}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : ''}><span>${pad(x)}</span></div>`;
+      return `<div class="${cls}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : m.dup.has(k) ? ` title="이 용지에서 ${m.dup.get(k)}번 나옴"` : ''}><span>${pad(x)}</span>${m.dup.has(k) ? `<sup class="dupn">${m.dup.get(k)}</sup>` : ''}</div>`;
     }).join('')).join('') + m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 3px);top:calc(${q.r} * (var(--ch) + var(--gy)) - 3px);` +
       `width:calc(2 * var(--cw) + var(--gx) + 6px);height:calc(2 * var(--ch) + var(--gy) + 6px)"></span>`).join('') : '';
   const balls = m ? '' : rows.map((r, i) => Array.from({length: 6}, (_, pos) => {
@@ -2203,7 +2205,7 @@ function withAllPatterns(){
    연번 = 옅은 회색 형광펜 · 막대 = 옅은 노란 형광펜 · 사각 = 사각 띠 · 동끝 = 붉은 동그라미 테 · 연번 인접수 = 옅은 붉은 실선 테(연번 탭만) */
 function marksOf(res, type){
   const subs = type === 'all' ? Object.entries(res.sub || {}) : [[type, res]];
-  const m = {dong: new Map(), run: new Set(), nb: new Set(), bar: new Set(), sq: [], star: new Set(), dup: new Set()};
+  const m = {dong: new Map(), run: new Set(), nb: new Set(), bar: new Set(), sq: [], star: new Set(), dup: new Map()};
   subs.forEach(([ty, r]) => {
     if(ty === 'digit') r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(/^dg/.test(v)){ const k = i + ',' + pos; m.dong.set(k, r.dongCls?.get(k) || 'd2a'); } }));
     if(ty === 'run'){
@@ -2211,7 +2213,7 @@ function marksOf(res, type){
       (r.star || []).forEach(k => m.star.add(k));
     }
     if(ty === 'sq') r.rects.forEach(q => { if(q.cls === 'sq') m.sq.push(q); });
-    if(ty === 'dup') r.under.forEach((st, i) => st.forEach(pos => m.dup.add(i + ',' + pos)));
+    if(ty === 'dup') (r.dupAt || new Map()).forEach((c, k) => m.dup.set(k, c));   // 칸 → 그 번호가 이 용지에서 나온 횟수
     if(ty === 'bar') r.rects.forEach(q => { if(/^bar/.test(q.cls)) for(let i = q.r; i < q.r + q.h; i++) m.bar.add(i + ',' + q.c); });
   });
   m.nb.clear();   // 연번 인접수는 용지에 표시하지 않음 (아래 분석·통계에서 알려 줌)
@@ -2226,7 +2228,7 @@ function ticketPrintHtml(t, showLabel){
     if(!isNum(x)) return `<div class="pc"></div>`;
     const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
                  m.dong.has(k) ? 'dong ' + m.dong.get(k) : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', m.dup.has(k) ? 'dup' : '', r.picks.includes(x) ? 'pk' : '', res.ex?.[i]?.has(pos) ? 'ex' : ''].filter(Boolean).join(' ');
-    return `<div class="${cls}"><span>${pad(x)}</span></div>`;
+    return `<div class="${cls}"><span>${pad(x)}</span>${m.dup.has(k) ? `<sup class="dupn">${m.dup.get(k)}</sup>` : ''}</div>`;
   }).join('')).join('');
   const sq = m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 0.7mm);top:calc(${q.r} * (var(--ch) + var(--gy)) - 0.6mm);` +
     `width:calc(2 * var(--cw) + var(--gx) + 1.4mm);height:calc(2 * var(--ch) + var(--gy) + 1.2mm)"></span>`).join('');
