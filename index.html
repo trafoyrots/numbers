@@ -369,6 +369,13 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .pc.dong.nb span{border-color:#b9787c}
 .pc.pk span{text-decoration:underline;text-decoration-thickness:.35mm;text-underline-offset:.6mm}
 .pc.ex span{color:#b5b5b5}
+.pc{position:relative}
+.pc.star::after{content:'★';position:absolute;top:-1.2mm;right:-.6mm;color:#d23b3b;font-size:9pt;line-height:1}
+.tk.tkt .pc.star::after{top:-6px;right:-3px;font-size:14px}
+.an-tag.star{background:#fdecec;color:#c62f2f;font-weight:800}
+.nb-list .starx,.nb-star .starx{color:#d23b3b;font-weight:800}
+.nb-star{padding:10px 14px;border-bottom:1px solid #f0f2f5;font-size:13px;line-height:1.9;background:#fffafa}
+body.print-bw .pc.star::after{color:#000}
 .ptk-sq{position:absolute;pointer-events:none;border:.6mm solid #4f7a74;border-radius:1.6mm}
 body.print-bw .pc.hl-bar{background:repeating-linear-gradient(135deg,#c4c4c4 0 .45mm,#fff .45mm 1.3mm)}
 body.print-bw .pc.hl-both{background:repeating-linear-gradient(135deg,#b8b8b8 0 .45mm,#e2e2e2 .45mm 1.3mm)}
@@ -711,8 +718,9 @@ body.print-bw .ptk-sq{border-color:#222}
         <button type="button" data-type="zone" title="1~10 · 11~20 · 21~30 · 31~40 · 41~45 구간별로 나온 번호와 안 나온 번호">📊 구간</button>
         <button type="button" data-type="all" title="동끝·연번·사각·막대를 한 용지에 모두 표시">🧩 전체 적용</button>
       </div>
-      <label data-for="digit run all"><select id="anN" class="meta-input"><option selected>2</option><option>3</option><option>4</option><option>5</option></select>
-        개 이상</label>
+      <label data-for="digit run all"><select id="anN" class="meta-input"><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>
+        <span id="anNUnit">개 이상</span></label>
+      <label data-for="run sq bar" title="한 용지 안에 이 패턴이 몇 개 이상 있는 용지만 보기">용지당 <select id="anPer" class="meta-input"></select></label>
       <label data-for="digit run all"><select id="anDir" class="meta-input"><option value="h">가로행</option><option value="v">세로행</option><option value="hv">가로+세로</option></select></label>
       <div class="seg" id="anView">
         <button type="button" data-view="hit" class="on">패턴 있는 용지만</button>
@@ -748,7 +756,7 @@ body.print-bw .ptk-sq{border-color:#222}
         <div id="top6" class="balls"><div class="empty">아직 분석하지 않았습니다.</div></div>
       </div>
       <div class="stat-box">
-        <h3>전혀 나오지 않은 번호</h3>
+        <h3 id="zeroTitle">전혀 나오지 않은 번호</h3>
         <div id="zero" class="balls"><div class="empty">아직 분석하지 않았습니다.</div></div>
       </div>
       <div class="stat-box">
@@ -1422,21 +1430,38 @@ function setAnView(v, silent){
   document.querySelectorAll('#anView button').forEach(b => b.classList.toggle('on', b.dataset.view === anView));
   if(!silent){ saveAnSettings(); analyze(); }
 }
+// 용지당 패턴 개수 (제한 없음 = 0): 연번 2~10, 사각 2~7, 막대 2~5
+let anPerVal = {run: '', sq: '', bar: ''};
+const PER_MAX = {run: 10, sq: 7, bar: 5}, PER_WORD = {run: '연번', sq: '사각', bar: '막대'};
+function refreshTypeOptions(){
+  // 연번은 '이어진 수의 개수'(2연번·3연번…), 동끝은 '끝수가 같은 번호 개수'
+  const isRun = anType === 'run';
+  [...$('anN').options].forEach(o => { o.textContent = isRun ? `${o.value}연번` : o.value; });
+  $('anNUnit').textContent = isRun ? '이상' : '개 이상';
+  if(PER_MAX[anType]){
+    const cur = anPerVal[anType] || '';
+    $('anPer').innerHTML = `<option value="">제한 없음</option>` +
+      Array.from({length: PER_MAX[anType] - 1}, (_, i) => `<option value="${i + 2}">${PER_WORD[anType]} ${i + 2}개 이상</option>`).join('');
+    $('anPer').value = cur;
+  }
+}
 function setAnType(t, silent){
   anType = ['run','sq','bar','zone','all'].includes(t) ? t : 'digit';
+  refreshTypeOptions();
   document.querySelectorAll('#anType button').forEach(b => b.classList.toggle('on', b.dataset.type === anType));
   $('anFilters').dataset.type = anType;
   document.querySelectorAll('#anFilters [data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(anType); });
   if(!silent){ saveAnSettings(); analyze(); }
 }
 function saveAnSettings(){
-  try{ localStorage.setItem(AN_KEY, JSON.stringify({v: 2, n: $('anN').value, dir: $('anDir').value, view: anView, type: anType,
+  try{ localStorage.setItem(AN_KEY, JSON.stringify({v: 2, n: $('anN').value, dir: $('anDir').value, view: anView, type: anType, per: anPerVal,
     mark: $('anMark').checked, barOne: $('anBarOne').checked})); }catch(e){}
 }
 function loadAnSettings(){
   try{
     const st = JSON.parse(localStorage.getItem(AN_KEY) || '{}');
-    if(st.n && st.v === 2) $('anN').value = Math.min(5, Math.max(2, +st.n));   // 예전 설정(기본 3개)은 무시
+    if(st.n && st.v === 2) $('anN').value = Math.min(6, Math.max(2, +st.n));   // 예전 설정(기본 3개)은 무시
+    if(st.per && typeof st.per === 'object') Object.keys(anPerVal).forEach(k => { if(/^\d*$/.test(String(st.per[k] ?? ''))) anPerVal[k] = String(st.per[k] ?? ''); });
     if(st.dir) $('anDir').value = ['h','v','hv'].includes(st.dir) ? st.dir : 'h';
     if(typeof st.mark === 'boolean') $('anMark').checked = st.mark;
     if(typeof st.barOne === 'boolean') $('anBarOne').checked = st.barOne;
@@ -1454,6 +1479,7 @@ document.addEventListener('click', e => {
 });
 let anMultiSrc = false;
 ['anN','anDir','anMark','anMode','anRound','anSrc','anBarOne'].forEach(id => $(id).addEventListener('change', () => { saveAnSettings(); analyze(); }));
+$('anPer').addEventListener('change', () => { if(PER_MAX[anType]) anPerVal[anType] = $('anPer').value; saveAnSettings(); analyze(); });
 
 /* ---------- 제외수 ---------- */
 function saveExcluded(){ try{ localStorage.setItem(EX_KEY, JSON.stringify([...excluded].sort((a,b) => a-b))); }catch(e){} }
@@ -1605,6 +1631,12 @@ function analyzeTicket(rows, type, opt){
         res.tags[i] = groups.map(g => { const k = g.nums.filter(x => r.picks.includes(x)).length;
           return `<span class="an-tag hot">가로 끝수 ${g.digit} ×${g.nums.length}${k ? ` (✋${k})` : ''}</span>`; });
         groups.forEach(g => res.dg.push(g));
+        // 동끝 3개 이상: 그 사이(맨 왼쪽~맨 오른쪽 동끝 사이)에 끼인 수
+        groups.filter(g => g.nums.length >= 3).forEach(g => {
+          const ps = cells.filter(c => c.x % 10 === g.digit).map(c => c.pos), lo = Math.min(...ps), hi = Math.max(...ps);
+          const mids = []; for(let p = lo + 1; p < hi; p++) if(!ps.includes(p) && isNum(r.numbers[p])) mids.push(r.numbers[p]);
+          (res.between = res.between || []).push({row: r, where: `가로 ${r.col}행`, digit: g.digit, nums: g.nums, mids});
+        });
         hc++;
       });
       if(hc) res.head.push(`<span class="an-tag hot">가로 동끝 ${opt.n}개+ ${hc}행</span>`);
@@ -1618,6 +1650,11 @@ function analyzeTicket(rows, type, opt){
           if(list.length < opt.n) return;
           list.forEach(c => mark(c.i, k, 'dgv'));
           res.dg.push({digit: +d, nums: list.map(c => c.x)});
+          if(list.length >= 3){   // 세로 동끝 3개 이상: 위~아래 사이에 끼인 수
+            const is = list.map(c => c.i), lo = Math.min(...is), hi = Math.max(...is), mids = [];
+            for(let i = lo + 1; i < hi; i++) if(!is.includes(i) && isNum(rows[i].numbers[k])) mids.push(rows[i].numbers[k]);
+            (res.between = res.between || []).push({row: rows[lo], where: `세로 ${k + 1}번째 자리 ${rows[lo].col}~${rows[hi].col}`, digit: +d, nums: list.map(c => c.x), mids});
+          }
           res.head.push(`<span class="an-tag hotv">세로 ${k + 1}번째 자리 끝수 ${d} ×${list.length}</span>`);
           vc++;
         });
@@ -1631,6 +1668,13 @@ function analyzeTicket(rows, type, opt){
     const nbCell = (i, pos) => (i >= 0 && i < rows.length && pos >= 0 && pos < 6 && isNum(rows[i].numbers[pos])) ? {i, pos, x: rows[i].numbers[pos]} : null;
     const markNb = cs => cs.forEach(c => { if(c && !res.ring[c.i].has(c.pos)) res.ring[c.i].set(c.pos, 'nb'); });
     const xs = cs => cs.map(c => c ? c.x : null);
+    // ★ 3연번 이상인데 양쪽 끝에 붙은 두 수의 끝수가 같으면(동끝) 두 수에 붉은 별표
+    res.star = new Set();
+    const starEnds = (vals, A, B) => {
+      if(vals.length < 3 || !A || !B || A.x % 10 !== B.x % 10) return false;
+      res.star.add(A.i + ',' + A.pos); res.star.add(B.i + ',' + B.pos);
+      return true;
+    };
     let hc = 0;
     if(opt.dir.includes('h')){
       rows.forEach((r, i) => rowRuns(r.numbers, opt.n).forEach(({s, e}) => {
@@ -1639,12 +1683,13 @@ function analyzeTicket(rows, type, opt){
         const vals = r.numbers.slice(s, e + 1), L = nbCell(i, s - 1), R = nbCell(i, e + 1);
         const span = Array.from({length: e - s + 1}, (_, j) => s + j);
         const up = span.map(p => nbCell(i - 1, p)), dn = span.map(p => nbCell(i + 1, p));
-        res.tags[i].push(`<span class="an-tag run2">연번 ${vals.map(pad).join('-')}</span>`);
-        res.nb.push({row: r, vals, before: L && L.x, after: R && R.x, side1: xs(up), side2: xs(dn)});
+        const st = starEnds(vals, L, R);
+        res.tags[i].push(`<span class="an-tag run2">연번 ${vals.map(pad).join('-')}</span>` + (st ? `<span class="an-tag star">★ 양끝 동끝 ${pad(L.x)}·${pad(R.x)}</span>` : ''));
+        res.nb.push({row: r, vals, before: L && L.x, after: R && R.x, side1: xs(up), side2: xs(dn), star: st});
         res.count++; hc++;
         res._nb = (res._nb || []).concat([L, R, ...up, ...dn]);
       }));
-      if(hc) res.head.push(`<span class="an-tag run2">가로 연번 ${opt.n}개+ ${hc}개</span>`);
+      if(hc) res.head.push(`<span class="an-tag run2">가로 ${opt.n}연번 이상 ${hc}개</span>`);
     }
     if(opt.dir.includes('v')){
       for(let k = 0; k < 6; k++) colRuns(rows, k, opt.n).forEach(({s, e}) => {
@@ -1653,8 +1698,9 @@ function analyzeTicket(rows, type, opt){
         const vals = rows.slice(s, e + 1).map(r => r.numbers[k]), U = nbCell(s - 1, k), D = nbCell(e + 1, k);
         const span = Array.from({length: e - s + 1}, (_, j) => s + j);
         const lf = span.map(i => nbCell(i, k - 1)), rt = span.map(i => nbCell(i, k + 1));
-        res.head.push(`<span class="an-tag runv">세로 ${k + 1}번째 자리 ${rows[s].col}~${rows[e].col} 연번 ${vals.map(pad).join('→')}</span>`);
-        res.nb.push({row: rows[s], rowEnd: rows[e], k, vals, before: U && U.x, after: D && D.x, side1: xs(lf), side2: xs(rt)});
+        const st = starEnds(vals, U, D);
+        res.head.push(`<span class="an-tag runv">세로 ${k + 1}번째 자리 ${rows[s].col}~${rows[e].col} 연번 ${vals.map(pad).join('→')}</span>` + (st ? `<span class="an-tag star">★ 양끝 동끝 ${pad(U.x)}·${pad(D.x)}</span>` : ''));
+        res.nb.push({row: rows[s], rowEnd: rows[e], k, vals, before: U && U.x, after: D && D.x, side1: xs(lf), side2: xs(rt), star: st});
         res.count++;
         res._nb = (res._nb || []).concat([U, D, ...lf, ...rt]);
       });
@@ -1712,7 +1758,7 @@ function analyzeAll(rows, opt){
   };
   const res = {multi: true, sub, ring: rows.map(() => new Map()), tags: rows.map(() => []), under: rows.map(() => new Set()),
     ex: sub.digit.ex, rowOn: rows.map(() => false), dim: rows.map(() => false), rects: [], head: [], count: 0,
-    stat: {}, nb: sub.run.nb, dg: sub.digit.dg};
+    stat: {}, nb: sub.run.nb, dg: sub.digit.dg, between: sub.digit.between};
   Object.values(sub).forEach(s => {
     rows.forEach((_, i) => {
       s.ring[i].forEach((v, pos) => {
@@ -1785,7 +1831,7 @@ function ticketHtml(tk, id, showLabel){
       if(!isNum(x)) return `<div class="pc"></div>`;
       const pk = r.picks.includes(x), ex = res.ex[i].has(pos);
       const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
-                   m.dong.has(k) ? 'dong' : '', m.nb.has(k) ? 'nb' : '', pk ? 'pk' : '', ex ? 'ex' : '', res.dim[i] ? 'tk-dim' : ''].filter(Boolean).join(' ');
+                   m.dong.has(k) ? 'dong' : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', pk ? 'pk' : '', ex ? 'ex' : '', res.dim[i] ? 'tk-dim' : ''].filter(Boolean).join(' ');
       return `<div class="${cls}"${ex ? ' title="제외수"' : pk ? ' title="직접 고른 번호"' : ''}><span>${pad(x)}</span></div>`;
     }).join('')).join('') + m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 3px);top:calc(${q.r} * (var(--ch) + var(--gy)) - 3px);` +
       `width:calc(2 * var(--cw) + var(--gx) + 6px);height:calc(2 * var(--ch) + var(--gy) + 6px)"></span>`).join('') : '';
@@ -1845,9 +1891,9 @@ function analyze(){
     v: `세로: 같은 자리를 A~E로 내려 볼 때 끝수가 같은 번호 ${opt.n}개 이상${exTxt}`,
     hv: `가로(갈색 테)와 세로(회청색 테)를 함께 표시 · 둘 다 해당하면 겹테 · ${opt.n}개 이상${exTxt}`}[opt.dir];
   $('anHelpRun').textContent = {
-    h: `가로: 한 행에서 이웃한 자리가 1씩 이어지는 번호 ${opt.n}개 이상 (예: 14 15 16) · 점선 = 인접수(좌우 + 위아래)`,
-    v: `세로: 같은 자리에서 위·아래 행으로 1씩 이어지는 번호 ${opt.n}개 이상 (예: 12→13→14) · 점선 = 인접수(위아래 + 좌우)`,
-    hv: `가로·세로 연번을 함께 표시 · ${opt.n}개 이상 · 점선 = 연번 인접수(좌우·위아래)`}[opt.dir];
+    h: `가로: 한 행에서 이웃한 자리가 1씩 이어지는 ${opt.n}연번 이상 (예: 14 15 16 = 3연번) · 붉은 테 = 인접수 · ★ = 3연번 이상 양끝의 끝수가 같은 수`,
+    v: `세로: 같은 자리에서 위·아래로 1씩 이어지는 ${opt.n}연번 이상 (예: 12→13→14) · 붉은 테 = 인접수 · ★ = 3연번 이상 양끝의 끝수가 같은 수`,
+    hv: `가로·세로 ${opt.n}연번 이상 · 붉은 테 = 연번 인접수 · ★ = 3연번 이상 양끝의 끝수가 같은 수`}[opt.dir];
   // 자료(파일) 필터
   const srcSel = $('anSrc'), srcCur = srcSel.value;
   const srcs = [...new Set(allRows.map(r => r.src))];
@@ -1860,7 +1906,8 @@ function analyze(){
     .filter(srcOk)
     .filter(rows => !sel.value || rows[0].round === sel.value)
     .map(rows => ({rows, res: anType === 'all' ? analyzeAll(rows, opt) : analyzeTicket(rows, anType, opt)}));
-  const hitTickets = tickets.filter(t => t.res.count);
+  const per = +(anPerVal[anType] || 0);   // 용지당 개수 조건
+  const hitTickets = tickets.filter(t => t.res.count && (!per || t.res.count >= per));
   // 제외수 판: 지금 고른 패턴과 상관없이, 남은 번호로 동끝을 바로 분석
   const exRes = ticketsOf(allRows).filter(srcOk).filter(rows => !sel.value || rows[0].round === sel.value)
     .map(rows => analyzeTicket(rows, 'digit', {...opt, mode: '', ex: excluded}));
@@ -1869,7 +1916,7 @@ function analyze(){
   renderExSlip(dgCnt);
   $('exResult').innerHTML = exResultHtml(dgCnt, {n: opt.n, dir: opt.dir, tickets: exRes.length,
     hit: exRes.filter(r => r.count).length, count: exRes.reduce((s, r) => s + r.count, 0)});
-  analysisTickets = anView === 'all' ? tickets : hitTickets;
+  analysisTickets = anView === 'all' && !per ? tickets : hitTickets;   // 용지당 개수를 고르면 그 조건에 맞는 용지만
   analysisRows = tickets.flatMap(t => t.rows);
   $('tabCount').textContent = hitTickets.length || '';
 
@@ -1915,14 +1962,14 @@ function analyze(){
   } else if(anType === 'digit' || anType === 'run'){
     const cnt = hitTickets.reduce((s, t) => s + t.res.count, 0);
     const what = anType === 'digit' ? '동끝' : '연번', unit = '개';
-    patChips = [`${what} ${opt.n}개+ ${DIR_LABEL[opt.dir]} <b>${cnt}</b>${unit} <small>(용지 ${hitTickets.length}장)</small>`];
+    patChips = [`${anType === 'run' ? `${opt.n}연번 이상` : `${what} ${opt.n}개+`} ${DIR_LABEL[opt.dir]} <b>${cnt}</b>${unit} <small>(용지 ${hitTickets.length}장${per ? ` · 용지당 ${per}개 이상` : ''})</small>`];
     if(anType === 'digit' && excluded.size) patChips.push(`🚫 제외수 <b>${excluded.size}</b>개 적용`);
   } else if(anType === 'sq'){
     const c = hitTickets.reduce((s, t) => s + t.res.count, 0);
-    patChips = [`사각 <b>${c}</b>개 <small>(용지 ${hitTickets.length}장)</small>`];
+    patChips = [`사각 <b>${c}</b>개 <small>(용지 ${hitTickets.length}장${per ? ` · 용지당 ${per}개 이상` : ''})</small>`];
   } else {
     const comp = tickets.filter(t => t.res.stat.complete).length, cols = hitTickets.reduce((s, t) => s + t.res.count, 0);
-    patChips = [`5행 다 채운 용지 <b>${comp}</b>장`, `막대 <b>${cols}</b>줄 <small>(용지 ${hitTickets.length}장)</small>`];
+    patChips = [`5행 다 채운 용지 <b>${comp}</b>장`, `막대 <b>${cols}</b>줄 <small>(용지 ${hitTickets.length}장${per ? ` · 용지당 ${per}개 이상` : ''})</small>`];
   }
   const mc = {};
   statRows.forEach(r => mc[r.modeKey] = (mc[r.modeKey] || 0) + 1);
@@ -1955,9 +2002,18 @@ function analyze(){
     `<div title="${topCounts[x]}회"><div class="ball ${ballClass(x)}">${x}</div>
     <small style="display:block;text-align:center;margin-top:3px">${topCounts[x]}회</small></div>`).join('')
     : `<div class="empty">${TYPE_LABEL[anType]}에 들어간 번호가 없습니다.</div>`;
+  // 동끝 탭: '전혀 나오지 않은 번호' 대신 '동끝 사이에 끼인 수'
+  if(anType === 'digit'){
+    const bc = betweenCounts(hitTickets), bn = Object.keys(bc).map(Number).sort((a,b) => bc[b] - bc[a] || a - b);
+    $('zeroTitle').textContent = '동끝 사이에 끼인 수 (동끝 3개 이상)';
+    $('zero').innerHTML = bn.length ? bn.map(x => `<div title="${bc[x]}회"><div class="ball ${ballClass(x)}">${x}</div><small style="display:block;text-align:center;margin-top:3px">${bc[x]}회</small></div>`).join('')
+      : `<div class="empty">동끝 3개 이상 사이에 끼인 수가 없습니다.</div>`;
+  } else {
+  $('zeroTitle').textContent = '전혀 나오지 않은 번호';
   $('zero').innerHTML = !total ? '<div class="empty">입력된 번호가 없습니다.</div>' : zeros.length
     ? zeros.map(x => `<div class="ball gray">${x}</div>`).join('')
     : '<div class="empty">모든 번호가 한 번 이상 나왔습니다.</div>';
+  }
   $('info').innerHTML =
     `분석 행: <b>${statRows.length}</b>개<br>유효 번호: <b>${total}</b>개<br>최다 출현: <b>${max}회</b><br>` +
     `방식: 자동 <b>${mc.auto||0}</b> · 수동 <b>${mc.manual||0}</b> · 반자동 <b>${mc.semi||0}</b>`;
@@ -1984,15 +2040,22 @@ function runNeighborHtml(list, opt){
   const cnt = {};
   items.forEach(it => [it.before, it.after, ...(it.side1 || []), ...(it.side2 || [])].forEach(x => { if(isNum(x)) cnt[x] = (cnt[x] || 0) + 1; }));
   const nums = Object.keys(cnt).map(Number).sort((a,b) => cnt[b] - cnt[a] || a - b);
-  const nb = x => isNum(x) ? `<span class="nbx">${pad(x)}</span>` : '<span class="nbx" style="opacity:.3">－</span>';
-  const side = (label, arr) => (arr || []).some(isNum) ? ` <span class="an-meta">${label}</span> ${arr.map(nb).join(' ')}` : '';
+  const nb = (x, st) => isNum(x) ? `<span class="nbx${st ? ' starx' : ''}">${st ? '★' : ''}${pad(x)}</span>` : '<span class="nbx" style="opacity:.3">－</span>';
+  const side = (label, arr) => (arr || []).some(isNum) ? ` <span class="an-meta">${label}</span> ${arr.map(x => nb(x)).join(' ')}` : '';
+  const whereOf = it => it.k !== undefined ? `세로 ${it.k + 1}번째 자리 ${it.row.col}~${it.rowEnd.col}` : `가로 ${it.row.col}행`;
+  // ★ 3연번 이상 양끝 동끝
+  const stars = items.filter(it => it.star);
+  const starHtml = stars.length ? `<div class="nb-star"><b class="starx">★ 3연번 이상 양끝 동끝</b> ${stars.length}개 · ` +
+    stars.map(it => `<span class="an-meta">${it.row.round ? escapeHtml(it.row.round) + '회 ' : ''}${whereOf(it)}</span> <span class="starx">★${pad(it.before)}</span> ` +
+      `<span class="rnx">${it.vals.map(pad).join(it.k !== undefined ? '→' : ' ')}</span> <span class="starx">★${pad(it.after)}</span> <small>(끝수 ${it.before % 10})</small>`).join(' · ') + `</div>` : '';
   const lines = items.map(it => {
-    const r = it.row, vert = it.k !== undefined, where = vert ? `세로 ${it.k + 1}번째 자리 ${r.col}~${it.rowEnd.col}` : `가로 ${r.col}행`;
-    const ends = `${nb(it.before)} <span class="rnx">${it.vals.map(pad).join(vert ? '→' : ' ')}</span> ${nb(it.after)}`;
+    const r = it.row, vert = it.k !== undefined, where = whereOf(it);
+    const ends = `${nb(it.before, it.star)} <span class="rnx">${it.vals.map(pad).join(vert ? '→' : ' ')}</span> ${nb(it.after, it.star)}`;
     const sides = vert ? side('· 왼', it.side1) + side('· 오른', it.side2) : side('· 위', it.side1) + side('· 아래', it.side2);
     return `<div><span class="an-meta">${r.round ? escapeHtml(r.round) + '회 ' : ''}${where}</span> ${ends}${sides}</div>`;
   }).join('');
   return `<div class="an-group run"><h3>🔗 연번 인접수 <small>${nums.length}종류 · 연번 ${items.length}개 · 양끝 + 옆면(가로 연번은 위·아래, 세로 연번은 왼·오른) · 대각선 제외 · 많이 나온 순</small></h3>
+    ${starHtml}
     <div class="nb-sum">${nums.length ? nums.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${cnt[x]}</span>`).join('') : '<span class="empty">붙은 수가 없습니다.</span>'}</div>
     <div class="nb-list">${lines}</div></div>`;
 }
@@ -2007,7 +2070,23 @@ function digitCollectHtml(list, opt){
     return `<div class="dg-line"><b>끝수 ${d}</b>${ns.map(x => `<span class="ball ${ballClass(x)}">${x}</span><small>×${m[x]}</small>`).join('')}</div>`;
   }).join('');
   return `<div class="an-group hot"><h3>🔥 동끝 번호 모음 <small>${DIR_LABEL[opt.dir]} · ${opt.n}개 이상${excluded.size ? ` · 제외수 ${excluded.size}개 뺌` : ''} · ×는 동끝으로 묶인 횟수</small></h3>
-    <div class="dg-sum">${lines}</div></div>`;
+    <div class="dg-sum">${lines}</div></div>` + betweenHtml(list);
+}
+// 동끝 3개 이상일 때 그 사이에 끼인 수
+function betweenCounts(list){
+  const cnt = {};
+  list.flatMap(t => t.res.between || []).forEach(b => b.mids.forEach(x => { cnt[x] = (cnt[x] || 0) + 1; }));
+  return cnt;
+}
+function betweenHtml(list){
+  const items = list.flatMap(t => t.res.between || []);
+  if(!items.length) return '';
+  const cnt = betweenCounts(list), nums = Object.keys(cnt).map(Number).sort((a,b) => cnt[b] - cnt[a] || a - b);
+  const lines = items.map(b => `<div><span class="an-meta">${b.row.round ? escapeHtml(b.row.round) + '회 ' : ''}${b.where}</span> ` +
+    `<b>끝수 ${b.digit}</b> ${b.nums.map(pad).join('·')} → 끼인 수 ${b.mids.length ? b.mids.map(x => `<span class="nbx">${pad(x)}</span>`).join(' ') : '<span class="an-meta">없음(붙어 있음)</span>'}</div>`).join('');
+  return `<div class="an-group hot"><h3>🧩 동끝 사이에 끼인 수 <small>동끝 3개 이상 · ${items.length}곳 · 많이 나온 순</small></h3>
+    <div class="nb-sum">${nums.length ? nums.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${cnt[x]}</span>`).join('') : '<span class="empty">끼인 수가 없습니다 (동끝끼리 붙어 있음).</span>'}</div>
+    <div class="nb-list">${lines}</div></div>`;
 }
 
 // 분석 인쇄 (A4 세로): 설명 없이 번호 + 패턴 표시만, 용지 2열
@@ -2021,10 +2100,13 @@ function withAllPatterns(){
    연번 = 옅은 회색 형광펜 · 막대 = 옅은 노란 형광펜 · 사각 = 사각 띠 · 동끝 = 붉은 동그라미 테 · 연번 인접수 = 옅은 붉은 실선 테(연번 탭만) */
 function marksOf(res, type){
   const subs = type === 'all' ? Object.entries(res.sub || {}) : [[type, res]];
-  const m = {dong: new Set(), run: new Set(), nb: new Set(), bar: new Set(), sq: []};
+  const m = {dong: new Set(), run: new Set(), nb: new Set(), bar: new Set(), sq: [], star: new Set()};
   subs.forEach(([ty, r]) => {
     if(ty === 'digit') r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(/^dg/.test(v)) m.dong.add(i + ',' + pos); }));
-    if(ty === 'run') r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(v === 'rn') m.run.add(i + ',' + pos); else if(v === 'nb') m.nb.add(i + ',' + pos); }));
+    if(ty === 'run'){
+      r.ring.forEach((mp, i) => mp.forEach((v, pos) => { if(v === 'rn') m.run.add(i + ',' + pos); else if(v === 'nb') m.nb.add(i + ',' + pos); }));
+      (r.star || []).forEach(k => m.star.add(k));
+    }
     if(ty === 'sq') r.rects.forEach(q => { if(q.cls === 'sq') m.sq.push(q); });
     if(ty === 'bar') r.rects.forEach(q => { if(/^bar/.test(q.cls)) for(let i = q.r; i < q.r + q.h; i++) m.bar.add(i + ',' + q.c); });
   });
@@ -2040,7 +2122,7 @@ function ticketPrintHtml(t, showLabel){
     const x = r.numbers[pos], k = i + ',' + pos;
     if(!isNum(x)) return `<div class="pc"></div>`;
     const cls = ['pc', m.run.has(k) && m.bar.has(k) ? 'hl-both' : m.run.has(k) ? 'hl-run' : m.bar.has(k) ? 'hl-bar' : '',
-                 m.dong.has(k) ? 'dong' : '', m.nb.has(k) ? 'nb' : '', r.picks.includes(x) ? 'pk' : '', res.ex?.[i]?.has(pos) ? 'ex' : ''].filter(Boolean).join(' ');
+                 m.dong.has(k) ? 'dong' : '', m.nb.has(k) ? 'nb' : '', m.star.has(k) ? 'star' : '', r.picks.includes(x) ? 'pk' : '', res.ex?.[i]?.has(pos) ? 'ex' : ''].filter(Boolean).join(' ');
     return `<div class="${cls}"><span>${pad(x)}</span></div>`;
   }).join('')).join('');
   const sq = m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 0.7mm);top:calc(${q.r} * (var(--ch) + var(--gy)) - 0.6mm);` +
