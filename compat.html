@@ -128,7 +128,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 <body>
 <div class="container">
   <h1>🔗 궁합수 찾기</h1>
-  <div class="subtitle">기준 회차 당첨번호의 3개 조합이 들어 있던 지난 회차와 그 다음 회차를 모아, 자주 나온 수·안 나온 수·궁합수를 분석합니다.</div>
+  <div class="subtitle">기준 회차 본번호의 3개 조합이 본번호에 들어 있던 지난 회차를 찾고, 그 다음 회차(보너스 포함)를 모아, 자주 나온 수·안 나온 수·궁합수를 분석합니다.</div>
 
   <div class="topbar">
     <nav class="tabs">
@@ -167,7 +167,6 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
     <h2>② 기준 회차 3개 조합으로 지난 회차 찾기</h2>
     <div class="toolbar">
       <label>기준 회차 <select id="baseRound" class="meta-input"></select></label>
-      <label><input type="checkbox" id="useBonus" checked> 보너스 번호를 넣으면 맞는 회차도 찾기</label>
       <button type="button" id="btnSearch">🔍 찾기</button>
     </div>
     <div id="baseBox"></div>
@@ -179,11 +178,6 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
     <div class="card">
       <h2>③ 걸린 지난 회차와 다음 회차</h2>
       <div class="filters">
-        <label>구분 <span class="seg" id="segType">
-          <button type="button" data-v="all" class="on">전체</button>
-          <button type="button" data-v="main">본번호만</button>
-          <button type="button" data-v="bonus">보너스 포함만</button>
-        </span></label>
         <label>동끝 <span class="seg" id="segDg">
           <button type="button" data-v="0" class="on">끔</button>
           <button type="button" data-v="2">2개+</button>
@@ -195,7 +189,6 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
           <button type="button" data-v="next">다음 회차</button>
         </span></label>
         <label>정렬 <select id="sortBy" class="meta-input">
-          <option value="type">본번호 먼저 · 최근 순</option>
           <option value="recent">최근 회차 순</option>
           <option value="old">오래된 회차 순</option>
           <option value="shared">겹친 수 많은 순</option>
@@ -213,7 +206,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
           <button type="button" data-v="next" class="on">다음 회차</button>
           <button type="button" data-v="past">지난 회차</button>
         </span></label>
-        <label><input type="checkbox" id="statBonus"> 보너스 번호도 세기</label>
+        <span class="note">지난 회차 = 본번호 6개 · 다음 회차 = 본번호 6개 + 보너스</span>
       </div>
       <div class="chips" id="statChips"></div>
       <div class="two">
@@ -456,26 +449,19 @@ let S = null;   // 검색 결과
 function search(){
   const base = byRound.get(+$('baseRound').value);
   if(!base) return;
-  const useBonus = $('useBonus').checked;
   const B = new Set(base.m);
   const combos = combos3(base.m);
-  const comboCnt = new Map(combos.map(c => [ckey(c), {c, main: 0, bonus: 0}]));
+  const comboCnt = new Map(combos.map(c => [ckey(c), {c, n: 0}]));
   const hits = [];
   draws.forEach(p => {
     if(p.r >= base.r) return;   // 기준 회차보다 앞선 회차만
-    const pm = new Set(p.m), pa = new Set([...p.m, p.b]);
-    const inMain = [], inBonus = [];
-    combos.forEach(c => {
-      if(c.every(n => pm.has(n))) inMain.push(c);
-      else if(useBonus && c.every(n => pa.has(n))) inBonus.push(c);
-    });
-    if(!inMain.length && !inBonus.length) return;
-    inMain.forEach(c => comboCnt.get(ckey(c)).main++);
-    inBonus.forEach(c => comboCnt.get(ckey(c)).bonus++);
-    hits.push({p, next: byRound.get(p.r + 1) || null, type: inMain.length ? 'main' : 'bonus',
-      shared: p.m.filter(n => B.has(n)), bonusHit: B.has(p.b), inMain, inBonus});
+    const pm = new Set(p.m);    // 찾을 때는 본번호 6개만 (보너스 제외)
+    const inCombo = combos.filter(c => c.every(n => pm.has(n)));
+    if(!inCombo.length) return;
+    inCombo.forEach(c => comboCnt.get(ckey(c)).n++);
+    hits.push({p, next: byRound.get(p.r + 1) || null, shared: p.m.filter(n => B.has(n)), inCombo});
   });
-  S = {base, useBonus, hits, comboCnt: [...comboCnt.values()]};
+  S = {base, hits, comboCnt: [...comboCnt.values()]};
   comboFilter = null; hitShown = 30; pickN = null;
   renderBase(); renderResults();
   $('resultArea').hidden = false;
@@ -487,14 +473,14 @@ function renderBase(){
   const {base, hits, comboCnt} = S;
   $('baseBox').innerHTML = `<div class="base-box">
       <b>제 ${base.r}회</b><span class="note">${escapeHtml(base.d)}</span>
-      <span class="balls">${base.m.map(n => ball(n, 'big')).join('')}<span class="plus">+</span>${ball(base.b, 'big dim')}</span>
+      <span class="balls">${base.m.map(n => ball(n, 'big')).join('')}</span>
       <span class="note">본번호 6개로 만든 3개 조합 <b>20</b>개 → 지난 회차 <b>${hits.length}</b>개에 들어 있음</span>
     </div>`;
   $('comboBox').innerHTML = `<h3 style="margin-top:6px">3개 조합별 걸린 회차 수 <small class="note">(누르면 그 조합이 들어 있는 회차만 봅니다)</small></h3>
-    <div class="combo-grid">${comboCnt.slice().sort((a, b) => (b.main + b.bonus) - (a.main + a.bonus)).map(o => {
-      const k = ckey(o.c), tot = o.main + o.bonus;
-      return `<button type="button" class="combo${tot ? '' : ' zero'}${comboFilter === k ? ' on' : ''}" data-combo="${k}" ${tot ? '' : 'disabled'}>
-        <span>${k}</span><small>${o.main}회${o.bonus ? ` +보 ${o.bonus}` : ''}</small></button>`;
+    <div class="combo-grid">${comboCnt.slice().sort((a, b) => b.n - a.n).map(o => {
+      const k = ckey(o.c);
+      return `<button type="button" class="combo${o.n ? '' : ' zero'}${comboFilter === k ? ' on' : ''}" data-combo="${k}" ${o.n ? '' : 'disabled'}>
+        <span>${k}</span><small>${o.n}회</small></button>`;
     }).join('')}</div>`;
 }
 $('comboBox').addEventListener('click', e => {
@@ -508,10 +494,11 @@ $('comboBox').addEventListener('click', e => {
 /* ============================================================
    ③ 목록 필터 (구분 · 동끝 · 조합) + ④ 통계
    ============================================================ */
-let ui = {type: 'all', dg: 0, dgOn: 'past', sort: 'type', target: 'next', statBonus: false};
+let ui = {dg: 0, dgOn: 'past', sort: 'recent', target: 'next'};
 let comboFilter = null, hitShown = 30, pickN = null;
 
-// 동끝: 본번호 6개 중 끝수가 같은 번호가 n개 이상인 묶음 → 해당 번호들
+// 동끝: 끝수가 같은 번호가 n개 이상인 묶음 → 해당 번호들
+// (지난 회차 = 본번호 6개, 다음 회차 = 본번호 6개 + 보너스)
 function dgNums(nums, n){
   if(!n) return [];
   const g = {};
@@ -521,49 +508,46 @@ function dgNums(nums, n){
 function filteredHits(){
   if(!S) return [];
   let list = S.hits.filter(h => {
-    if(ui.type !== 'all' && h.type !== ui.type) return false;
-    if(comboFilter && ![...h.inMain, ...h.inBonus].some(c => ckey(c) === comboFilter)) return false;
+    if(comboFilter && !h.inCombo.some(c => ckey(c) === comboFilter)) return false;
     if(ui.dg){
-      const src = ui.dgOn === 'next' ? h.next : h.p;
-      if(!src || !dgNums(src.m, ui.dg).length) return false;
+      const nums = ui.dgOn === 'next' ? nextNums(h) : h.p.m;
+      if(!nums || !dgNums(nums, ui.dg).length) return false;
     }
     return true;
   });
   const by = {
-    type: (a, b) => (a.type === b.type ? 0 : a.type === 'main' ? -1 : 1) || b.p.r - a.p.r,
     recent: (a, b) => b.p.r - a.p.r,
     old: (a, b) => a.p.r - b.p.r,
-    shared: (a, b) => (b.shared.length + b.bonusHit) - (a.shared.length + a.bonusHit) || b.p.r - a.p.r
-  }[ui.sort];
+    shared: (a, b) => b.shared.length - a.shared.length || b.p.r - a.p.r
+  }[ui.sort] || ((a, b) => b.p.r - a.p.r);
   return list.sort(by);
 }
 
-function drawBalls(x, B, dg){
+// 다음 회차는 보너스까지 7개
+const nextNums = h => h.next ? [...h.next.m, h.next.b] : null;
+function drawBalls(x, B, dg, withBonus){
   const D = new Set(dg);
   const one = n => ball(n, [B && B.has(n) ? 'hit' : '', D.has(n) ? 'dg' : ''].join(' '));
-  return `<span class="balls">${x.m.map(one).join('')}<span class="plus">+</span>${one(x.b)}</span>`;
+  return `<span class="balls">${x.m.map(one).join('')}${withBonus ? `<span class="plus">+</span>${one(x.b)}` : ''}</span>`;
 }
 function renderResults(){
   const list = filteredHits();
   const B = new Set(S.base.m);
   const chips = [`<span class="chip">걸린 회차 <b>${list.length}</b> / ${S.hits.length}개</span>`];
-  const nMain = list.filter(h => h.type === 'main').length;
-  chips.push(`<span class="chip">본번호 일치 <b>${nMain}</b> · 보너스 포함 <b>${list.length - nMain}</b></span>`);
   if(comboFilter) chips.push(`<span class="chip">조합 <b>${comboFilter}</b><button type="button" data-clear="combo" title="조합 필터 해제">✕</button></span>`);
   if(ui.dg) chips.push(`<span class="chip">${ui.dgOn === 'next' ? '다음 회차' : '지난 회차'}에 동끝 <b>${ui.dg}개 이상</b></span>`);
   chips.push(`<span class="chip">${ball(7, 'hit')} 기준 회차 번호 · ${ball(17, 'dg')} 동끝(끝수 같은 수 ${ui.dg || 2}개+)</span>`);
   $('hitChips').innerHTML = chips.join('');
 
   $('hitList').innerHTML = list.length ? list.slice(0, hitShown).map(h => {
-    const cs = [...h.inMain.map(c => ckey(c)), ...h.inBonus.map(c => ckey(c) + '(보)')];
-    const dgP = dgNums(h.p.m, ui.dg || 2), dgN = h.next ? dgNums(h.next.m, ui.dg || 2) : [];
+    const cs = h.inCombo.map(c => ckey(c));
+    const dgP = dgNums(h.p.m, ui.dg || 2), dgN = h.next ? dgNums(nextNums(h), ui.dg || 2) : [];
     return `<div class="hit">
       <div class="hit-head"><b>제 ${h.p.r}회</b>
-        <span class="tag ${h.type}">${h.type === 'main' ? '본번호 일치' : '보너스 포함 일치'}</span>
-        <span>겹친 수 ${h.shared.length}개${h.bonusHit ? ' + 보너스' : ''} · 3개 조합 ${cs.length}개</span>
+        <span>겹친 수 ${h.shared.length}개 · 3개 조합 ${cs.length}개</span>
         <span class="combos-in">${cs.join(', ')}</span></div>
-      <div class="hit-line"><span>지난 회차 ${escapeHtml(h.p.d)}</span>${drawBalls(h.p, B, ui.dgOn === 'past' ? dgP : [])}</div>
-      <div class="hit-line"><span>다음 ${h.next ? `제 ${h.next.r}회` : '회차'}</span>${h.next ? drawBalls(h.next, B, ui.dgOn === 'next' ? dgN : []) : '<span class="note">다음 회차 정보 없음</span>'}</div>
+      <div class="hit-line"><span>지난 회차 ${escapeHtml(h.p.d)}</span>${drawBalls(h.p, B, ui.dgOn === 'past' ? dgP : [], false)}</div>
+      <div class="hit-line"><span>다음 ${h.next ? `제 ${h.next.r}회` : '회차'}</span>${h.next ? drawBalls(h.next, B, ui.dgOn === 'next' ? dgN : [], true) : '<span class="note">다음 회차 정보 없음</span>'}</div>
     </div>`;
   }).join('') : '<div class="empty">조건에 맞는 회차가 없습니다.</div>';
   $('hitMore').innerHTML = list.length > hitShown ? `<button type="button" class="secondary small" id="btnHitMore">더 보기 (${list.length - hitShown}개 남음)</button>` : '';
@@ -577,12 +561,11 @@ $('hitChips').addEventListener('click', e => {
 /* ---------- ④ 번호 통계 · 궁합수 ---------- */
 function renderStats(list){
   // 분석할 번호 묶음: 걸린 회차마다 다음 회차(또는 지난 회차) 번호
-  const sets = list.map(h => ui.target === 'next' ? h.next : h.p).filter(Boolean)
-    .map(x => ui.statBonus ? [...x.m, x.b] : x.m);
+  const sets = list.map(h => ui.target === 'next' ? nextNums(h) : h.p.m).filter(Boolean);
   const B = new Set(S.base.m);
   const cnt = Array(46).fill(0);
   sets.forEach(s => s.forEach(n => cnt[n]++));
-  $('statChips').innerHTML = `<span class="chip">${ui.target === 'next' ? '다음 회차' : '지난 회차'} <b>${sets.length}</b>개 · 번호 ${ui.statBonus ? '7' : '6'}개씩</span>
+  $('statChips').innerHTML = `<span class="chip">${ui.target === 'next' ? '다음 회차' : '지난 회차'} <b>${sets.length}</b>개 · 번호 ${ui.target === 'next' ? '7개씩 (보너스 포함)' : '6개씩 (본번호)'}</span>
     <span class="chip">테두리 = 기준 회차(제 ${S.base.r}회) 번호</span>`;
   if(!sets.length){
     ['cntGroups', 'pairList', 'pickMates'].forEach(id => $(id).innerHTML = '<div class="empty">분석할 회차가 없습니다.</div>');
@@ -654,19 +637,17 @@ function bindSeg(id, key, num){
     syncUi(); hitShown = 30; renderResults(); saveUi();
   });
 }
-bindSeg('segType', 'type'); bindSeg('segDg', 'dg', true); bindSeg('segDgOn', 'dgOn'); bindSeg('segTarget', 'target');
+bindSeg('segDg', 'dg', true); bindSeg('segDgOn', 'dgOn'); bindSeg('segTarget', 'target');
 $('sortBy').onchange = () => { ui.sort = $('sortBy').value; renderResults(); saveUi(); };
-$('statBonus').onchange = () => { ui.statBonus = $('statBonus').checked; renderResults(); saveUi(); };
-$('useBonus').onchange = () => { if(S) search(); };
 $('baseRound').onchange = () => { if(S) search(); };
 
 function syncUi(){
   const seg = (id, v) => $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v)));
-  seg('segType', ui.type); seg('segDg', ui.dg); seg('segDgOn', ui.dgOn); seg('segTarget', ui.target);
-  $('sortBy').value = ui.sort; $('statBonus').checked = ui.statBonus;
+  seg('segDg', ui.dg); seg('segDgOn', ui.dgOn); seg('segTarget', ui.target);
+  $('sortBy').value = ui.sort;
 }
 function saveUi(){
-  try{ localStorage.setItem(UI_KEY, JSON.stringify({...ui, useBonus: $('useBonus').checked, searched: !!S})); }catch(e){}
+  try{ localStorage.setItem(UI_KEY, JSON.stringify(ui)); }catch(e){}
 }
 
 /* ---------- 시작 ---------- */
@@ -674,8 +655,8 @@ loadDb();
 renderDb();
 let saved = {};
 try{ saved = JSON.parse(localStorage.getItem(UI_KEY) || '{}'); }catch(e){}
-['type', 'dg', 'dgOn', 'sort', 'target', 'statBonus'].forEach(k => { if(saved[k] !== undefined) ui[k] = saved[k]; });
-if(saved.useBonus === false) $('useBonus').checked = false;
+['dg', 'dgOn', 'sort', 'target'].forEach(k => { if(saved[k] !== undefined) ui[k] = saved[k]; });
+if(!['recent', 'old', 'shared'].includes(ui.sort)) ui.sort = 'recent';
 syncUi();
 if(draws.length) search();   // 기본: 최신 회차로 바로 찾아 둠
 </script>
