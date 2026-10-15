@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>궁합수 찾기</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#f4f6f9;color:#20242a}
+.container{max-width:1100px;margin:0 auto;padding:28px 18px 50px}
+h1{margin:0 0 8px;font-size:30px}
+.subtitle{color:#68707a;margin-bottom:25px}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 5px 20px rgba(0,0,0,.07)}
+h2{font-size:20px;margin:0 0 15px}
+h3{font-size:15px;margin:0 0 10px}
+button{border:0;border-radius:10px;padding:11px 16px;cursor:pointer;background:#252a31;color:#fff;font-weight:700;font-family:inherit;font-size:14px}
+button.secondary{background:#e9edf2;color:#252a31}
+button.blue{background:#2f6fed}
+button.small{padding:6px 10px;font-size:12.5px;border-radius:8px}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.45;cursor:default}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.meta-input{height:40px;padding:6px 8px;border:1px solid #d4d9df;border-radius:8px;outline:none;font-size:14px;font-weight:700;background:#fff;font-family:inherit}
+.meta-input:focus{border-color:#2f6fed;box-shadow:0 0 0 3px rgba(47,111,237,.12)}
+label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.note{font-size:13px;color:#717983;line-height:1.6}
+.empty{color:#7c848e;padding:12px 0}
+.status{font-size:13px;color:#69727d;margin-top:9px;min-height:18px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#252a31;color:#fff;padding:11px 18px;border-radius:10px;
+  font-size:14px;font-weight:bold;opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:90vw;text-align:center}
+.toast.show{opacity:1}
+
+/* 페이지 탭 (index.html과 같은 모양, 링크로 이동) */
+.topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.tabs{display:flex;gap:6px;background:#e9edf2;padding:4px;border-radius:12px;width:fit-content;max-width:100%;flex-wrap:wrap}
+.tabs a{color:#5b636d;padding:10px 18px;border-radius:9px;font-size:15px;font-weight:700;text-decoration:none}
+.tabs a.on{background:#fff;color:#20242a;box-shadow:0 1px 5px rgba(0,0,0,.12)}
+
+/* 공 */
+.balls{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.ball{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:#777;flex:none}
+.ball.yellow{background:#c9a24a}.ball.blue{background:#5f86bf}.ball.red{background:#c46e6e}.ball.green{background:#5f9a7e}.ball.gray{background:#8c919a}
+.ball.big{width:42px;height:42px;font-size:16px}
+.ball.dim{opacity:.28}
+.ball.hit{box-shadow:0 0 0 3px #fff,0 0 0 5px #252a31}
+.ball.dg{outline:3px solid #7a6239;outline-offset:2px}
+.ball.pick{cursor:pointer}
+.ball.sel{box-shadow:0 0 0 3px #fff,0 0 0 5px #2f6fed}
+.plus{color:#9aa0a8;font-weight:800;margin:0 2px}
+
+/* 당첨번호 목록 */
+.db-head{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.db-chip{background:#f4f6f9;border-radius:10px;padding:8px 12px;font-size:13px;color:#4a5568}
+.db-chip b{color:#20242a}
+.add-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px;background:#f7f8fa;border-radius:12px;margin:12px 0}
+#addRound{width:80px}#addDate{width:118px}#addNums{flex:1;min-width:230px}
+.draw-list{display:flex;flex-direction:column;gap:5px}
+.draw-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 10px;border:1px solid #eceef0;border-radius:10px}
+.draw-line .rd{width:70px;font-weight:800;font-size:14px}
+.draw-line .dt{width:84px;font-size:12px;color:#7b838d}
+.draw-line .ball{width:28px;height:28px;font-size:12px}
+.draw-line.mine{border-color:#c9dafb;background:#f6f9ff}
+.tag{font-size:11px;font-weight:700;padding:3px 7px;border-radius:5px;white-space:nowrap;background:#eef1f5;color:#4a5160}
+.tag.main{background:#e6f1ec;color:#2f6b52}
+.tag.bonus{background:#f6efdf;color:#7a5d22}
+.tag.mine{background:#e5edfc;color:#2f5bb5}
+
+/* 기준 회차 + 조합 */
+.base-box{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:14px;background:#f7f8fa;border-radius:12px;margin:12px 0}
+.combo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-top:10px}
+.combo{background:#fff;color:#3d434c;border:1px solid #e3e6ea;border-radius:9px;padding:7px 9px;font-size:13px;display:flex;justify-content:space-between;gap:6px;font-weight:700}
+.combo small{color:#8a9099;font-weight:600}
+.combo.zero{opacity:.45}
+.combo.on{border-color:#2f6fed;background:#f3f7ff;color:#1f56c9}
+
+/* 분석 필터 */
+.filters{display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center;padding:12px;background:#f7f8fa;border-radius:12px;margin-bottom:12px}
+.seg{display:inline-flex;background:#e9edf2;border-radius:10px;padding:3px;gap:3px;flex-wrap:wrap}
+.seg button{background:transparent;color:#5b636d;padding:6px 10px;border-radius:8px;font-size:13px}
+.seg button.on{background:#fff;color:#20242a;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px}
+.chip{background:#f4f6f9;border-radius:10px;padding:8px 12px;font-size:13px;color:#4a5568}
+.chip b{color:#20242a}
+.chip .ball{width:22px;height:22px;font-size:10px;margin:0 6px 0 4px;vertical-align:middle}
+.chip button{background:transparent;color:#8a8f98;padding:0 0 0 6px;font-size:14px}
+
+/* 일치 회차 목록 */
+.hits{display:flex;flex-direction:column;gap:8px}
+.hit{border:1px solid #e4e8ed;border-radius:12px;padding:10px 12px;background:#fff}
+.hit-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;font-size:13px;color:#4a5058}
+.hit-head > b{font-size:15px;color:#20242a}
+.hit-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:3px 0}
+.hit-line > span:first-child{width:92px;font-size:12px;color:#7b838d;font-weight:700}
+.combos-in{font-size:12px;color:#5b636d}
+.more{margin-top:10px;text-align:center}
+
+/* 번호 통계 */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stat-box{background:#f7f8fa;border-radius:13px;padding:14px}
+.cnt-groups{display:flex;flex-direction:column;gap:6px}
+.cnt-line{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:6px 10px;border:1px solid #eceef0;border-radius:9px;background:#fff}
+.cnt-line > b{width:44px;font-size:13px;color:#3d434c;text-align:right;margin-right:4px}
+.cnt-line > small{font-size:11px;color:#9aa0a8;width:34px}
+.cnt-line .ball{width:30px;height:30px;font-size:12.5px}
+.cnt-line.zero > b{color:#b5473f}
+.pair-list{display:flex;flex-direction:column;gap:5px}
+.pair{display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid #eceef0;border-radius:9px;background:#fff;font-size:13px}
+.pair .ball{width:28px;height:28px;font-size:12px}
+.pair .bar{flex:1;height:7px;background:#eef0f3;border-radius:5px;overflow:hidden;min-width:40px}
+.pair .bar i{display:block;height:100%;background:#7a8cab}
+.pair b{width:44px;text-align:right}
+.mate-table{width:100%;border-collapse:collapse;font-size:13px}
+.mate-table td{padding:6px 4px;border-bottom:1px solid #eceef0;vertical-align:middle}
+.mate-table td:first-child{width:46px}
+.mate-table .ball{width:28px;height:28px;font-size:12px}
+.mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
+.mate small{color:#7b838d;font-weight:700}
+@media(max-width:760px){
+  .container{padding:20px 12px 40px}
+  h1{font-size:24px}
+  .two{grid-template-columns:1fr}
+  .draw-line .dt{display:none}
+  .hit-line > span:first-child{width:100%}
+  .tabs a{padding:9px 12px;font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔗 궁합수 찾기</h1>
+  <div class="subtitle">기준 회차 당첨번호의 3개 조합이 들어 있던 지난 회차와 그 다음 회차를 모아, 자주 나온 수·안 나온 수·궁합수를 분석합니다.</div>
+
+  <div class="topbar">
+    <nav class="tabs">
+      <a href="index.html">✏️ 번호 입력</a>
+      <a href="index.html#analysis">📊 패턴 분석</a>
+      <a href="compat.html" class="on">🔗 궁합수 찾기</a>
+    </nav>
+  </div>
+
+  <!-- ① 당첨번호 목록 -->
+  <div class="card">
+    <h2>① 역대 당첨번호</h2>
+    <div class="db-head" id="dbHead"></div>
+    <div class="toolbar">
+      <button type="button" class="blue" id="btnFetch">🌐 최신 회차 자동으로 가져오기</button>
+      <button type="button" class="secondary" id="btnAddToggle">✏️ 직접 추가</button>
+      <button type="button" class="secondary" id="btnExport" title="GitHub에 올릴 lotto_draws.js 파일을 만듭니다">💾 파일로 내보내기</button>
+      <button type="button" class="secondary" id="btnList">📜 목록 보기</button>
+    </div>
+    <div class="add-row" id="addRow" hidden>
+      <label>회차 <input id="addRound" class="meta-input" type="text" inputmode="numeric"></label>
+      <label>추첨일 <input id="addDate" class="meta-input" type="text" placeholder="2026/10/17"></label>
+      <input id="addNums" class="meta-input" type="text" inputmode="numeric" placeholder="번호 6개 + 보너스 (예: 4 5 25 28 32 42 12)">
+      <button type="button" id="btnAdd">추가</button>
+    </div>
+    <div class="status" id="dbStatus"></div>
+    <div id="drawListWrap" hidden>
+      <div class="draw-list" id="drawList"></div>
+      <div class="more"><button type="button" class="secondary small" id="btnListMore">더 보기</button></div>
+    </div>
+    <div class="note">직접 추가하거나 자동으로 가져온 회차는 이 브라우저에 저장됩니다. 다른 기기에서도 쓰려면 <b>파일로 내보내기</b>로 받은 <code>lotto_draws.js</code>를 GitHub의 같은 이름 파일에 덮어 올리세요.</div>
+  </div>
+
+  <!-- ② 기준 회차 3개 조합 검색 -->
+  <div class="card">
+    <h2>② 기준 회차 3개 조합으로 지난 회차 찾기</h2>
+    <div class="toolbar">
+      <label>기준 회차 <select id="baseRound" class="meta-input"></select></label>
+      <label><input type="checkbox" id="useBonus" checked> 보너스 번호를 넣으면 맞는 회차도 찾기</label>
+      <button type="button" id="btnSearch">🔍 찾기</button>
+    </div>
+    <div id="baseBox"></div>
+    <div id="comboBox"></div>
+  </div>
+
+  <!-- ③ 결과 · 패턴 분석 -->
+  <div id="resultArea" hidden>
+    <div class="card">
+      <h2>③ 걸린 지난 회차와 다음 회차</h2>
+      <div class="filters">
+        <label>구분 <span class="seg" id="segType">
+          <button type="button" data-v="all" class="on">전체</button>
+          <button type="button" data-v="main">본번호만</button>
+          <button type="button" data-v="bonus">보너스 포함만</button>
+        </span></label>
+        <label>동끝 <span class="seg" id="segDg">
+          <button type="button" data-v="0" class="on">끔</button>
+          <button type="button" data-v="2">2개+</button>
+          <button type="button" data-v="3">3개+</button>
+          <button type="button" data-v="4">4개+</button>
+        </span></label>
+        <label>동끝 볼 곳 <span class="seg" id="segDgOn">
+          <button type="button" data-v="past" class="on">지난 회차</button>
+          <button type="button" data-v="next">다음 회차</button>
+        </span></label>
+        <label>정렬 <select id="sortBy" class="meta-input">
+          <option value="type">본번호 먼저 · 최근 순</option>
+          <option value="recent">최근 회차 순</option>
+          <option value="old">오래된 회차 순</option>
+          <option value="shared">겹친 수 많은 순</option>
+        </select></label>
+      </div>
+      <div class="chips" id="hitChips"></div>
+      <div class="hits" id="hitList"></div>
+      <div class="more" id="hitMore"></div>
+    </div>
+
+    <div class="card">
+      <h2>④ 번호 통계 · 궁합수</h2>
+      <div class="filters">
+        <label>분석할 번호 <span class="seg" id="segTarget">
+          <button type="button" data-v="next" class="on">다음 회차</button>
+          <button type="button" data-v="past">지난 회차</button>
+        </span></label>
+        <label><input type="checkbox" id="statBonus"> 보너스 번호도 세기</label>
+      </div>
+      <div class="chips" id="statChips"></div>
+      <div class="two">
+        <div class="stat-box">
+          <h3>🔥 나온 횟수별 번호 <small class="note">(맨 아래 0회 = 한 번도 안 나온 수)</small></h3>
+          <div class="cnt-groups" id="cntGroups"></div>
+        </div>
+        <div class="stat-box">
+          <h3>🤝 함께 자주 나온 두 수 (궁합 쌍)</h3>
+          <div class="pair-list" id="pairList"></div>
+        </div>
+      </div>
+      <div class="two" style="margin-top:14px">
+        <div class="stat-box">
+          <h3>🎯 고른 번호의 궁합수 <small class="note">(왼쪽 공을 누르면 바뀝니다)</small></h3>
+          <div id="pickMates"></div>
+        </div>
+        <div class="stat-box">
+          <h3>📚 기준 번호의 역대 궁합수 <small class="note">(1회부터 전체 회차, 본번호 기준)</small></h3>
+          <div id="baseMates"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="lotto_draws.js"></script>
+<script>
+/* ============================================================
+   공통
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const isNum = n => Number.isInteger(n) && n >= 1 && n <= 45;
+function escapeHtml(v){
+  return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function ballClass(n){
+  if(n <= 10) return 'yellow';
+  if(n <= 20) return 'blue';
+  if(n <= 30) return 'red';
+  if(n <= 40) return 'green';
+  return 'gray';
+}
+const ball = (n, cls = '') => `<span class="ball ${ballClass(n)} ${cls}" data-n="${n}">${pad(n)}</span>`;
+let toastTimer = null;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+// 날짜: "2026/10/10" ↔ UTC 시각
+function parseDate(v){
+  const m = String(v || '').match(/(20\d{2})\s*[\/.\-년]?\s*(\d{1,2})\s*[\/.\-월]?\s*(\d{1,2})/);
+  if(!m) return null;
+  const t = Date.UTC(+m[1], +m[2] - 1, +m[3]);
+  return new Date(t).getUTCDate() === +m[3] ? t : null;
+}
+function fmtDate(t){ const d = new Date(t); return `${d.getUTCFullYear()}/${pad(d.getUTCMonth() + 1)}/${pad(d.getUTCDate())}`; }
+
+/* ============================================================
+   당첨번호 저장소
+   기본 = lotto_draws.js (GitHub에 올린 파일)
+   추가분 = 이 브라우저 localStorage (같은 회차면 추가분이 우선)
+   한 회차 = {r: 회차, d: 추첨일, m: [번호 6개, 작은 순], b: 보너스}
+   ============================================================ */
+const DB_KEY = 'lottoCompatDraws', UI_KEY = 'lottoCompatUi';
+const BASE_ROWS = Array.isArray(window.LOTTO_DRAWS) ? window.LOTTO_DRAWS : [];
+const toDraw = a => ({r: a[0], d: a[1], m: a.slice(2, 8), b: a[8]});
+const toRow = x => [x.r, x.d, ...x.m, x.b];
+const sameDraw = (x, y) => x.d === y.d && x.b === y.b && x.m.join() === y.m.join();
+
+let baseMap = new Map(), localMap = new Map();
+let draws = [], byRound = new Map();   // 합친 결과 (회차 오름차순)
+
+function validDraw(x){
+  return Number.isInteger(x.r) && x.r >= 1 && Array.isArray(x.m) && x.m.length === 6 && x.m.every(isNum)
+    && isNum(x.b) && new Set([...x.m, x.b]).size === 7;
+}
+function loadDb(){
+  BASE_ROWS.forEach(a => { const x = toDraw(a); if(validDraw(x)) baseMap.set(x.r, x); });
+  try{
+    (JSON.parse(localStorage.getItem(DB_KEY) || '[]')).forEach(a => {
+      const x = toDraw(a);
+      // 이미 GitHub 파일에 같은 내용이 들어갔으면 추가분에서 정리
+      if(validDraw(x) && !(baseMap.has(x.r) && sameDraw(baseMap.get(x.r), x))) localMap.set(x.r, x);
+    });
+  }catch(e){}
+  rebuild(); saveLocal();
+}
+function saveLocal(){
+  try{ localStorage.setItem(DB_KEY, JSON.stringify([...localMap.values()].sort((a, b) => a.r - b.r).map(toRow))); }catch(e){}
+}
+function rebuild(){
+  const all = new Map(baseMap);
+  localMap.forEach((x, r) => all.set(r, x));
+  draws = [...all.values()].sort((a, b) => a.r - b.r);
+  byRound = all;
+}
+const latest = () => draws[draws.length - 1];
+
+function putDraw(x){
+  x.m = [...x.m].sort((a, b) => a - b);
+  if(!validDraw(x)) return false;
+  if(baseMap.has(x.r) && sameDraw(baseMap.get(x.r), x)) localMap.delete(x.r);
+  else localMap.set(x.r, x);
+  return true;
+}
+
+/* ---------- 목록 화면 ---------- */
+let listShown = 0;
+function renderDb(){
+  const L = latest();
+  $('dbHead').innerHTML = draws.length
+    ? `<span class="db-chip">저장된 회차 <b>${draws.length.toLocaleString()}</b>개</span>
+       <span class="db-chip">최신 <b>제 ${L.r}회</b> (${escapeHtml(L.d)})</span>
+       ${localMap.size ? `<span class="db-chip">이 브라우저에 추가한 회차 <b>${localMap.size}</b>개</span>` : ''}
+       <span class="balls">${L.m.map(n => ball(n)).join('')}<span class="plus">+</span>${ball(L.b)}</span>`
+    : `<span class="empty">당첨번호가 없습니다. lotto_draws.js 파일이 같은 폴더에 있는지 확인하거나 자동으로 가져오기를 눌러 주세요.</span>`;
+  // 추가 칸 기본값: 다음 회차 · 일주일 뒤
+  if(L){
+    $('addRound').placeholder = L.r + 1;
+    const t = parseDate(L.d);
+    $('addDate').placeholder = t == null ? '' : fmtDate(t + 7 * 864e5);
+  }
+  if(!$('drawListWrap').hidden) renderList();
+  renderBaseSelect();
+}
+function renderList(){
+  const rows = draws.slice().reverse().slice(0, listShown);
+  $('drawList').innerHTML = rows.map(x => `<div class="draw-line${localMap.has(x.r) ? ' mine' : ''}">
+      <span class="rd">${x.r}회</span><span class="dt">${escapeHtml(x.d)}</span>
+      <span class="balls">${x.m.map(n => ball(n)).join('')}<span class="plus">+</span>${ball(x.b)}</span>
+      ${localMap.has(x.r) ? `<span class="tag mine">추가함</span><button type="button" class="secondary small" data-del="${x.r}">삭제</button>` : ''}
+    </div>`).join('');
+  $('btnListMore').hidden = listShown >= draws.length;
+}
+$('btnList').onclick = () => {
+  const w = $('drawListWrap');
+  w.hidden = !w.hidden;
+  $('btnList').textContent = w.hidden ? '📜 목록 보기' : '📜 목록 닫기';
+  if(!w.hidden){ listShown = 20; renderList(); }
+};
+$('btnListMore').onclick = () => { listShown += 50; renderList(); };
+$('drawList').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]');
+  if(!b) return;
+  const r = +b.dataset.del;
+  if(!confirm(`제 ${r}회를 이 브라우저 목록에서 지울까요?`)) return;
+  localMap.delete(r); rebuild(); saveLocal(); renderDb();
+  toast(baseMap.has(r) ? `제 ${r}회를 원래 파일 내용으로 되돌렸습니다` : `제 ${r}회를 지웠습니다`);
+});
+
+/* ---------- 직접 추가 ---------- */
+$('btnAddToggle').onclick = () => { $('addRow').hidden = !$('addRow').hidden; if(!$('addRow').hidden) $('addNums').focus(); };
+function addFromForm(){
+  const r = parseInt($('addRound').value || $('addRound').placeholder, 10);
+  const t = parseDate($('addDate').value || $('addDate').placeholder);
+  const nums = ($('addNums').value.match(/\d+/g) || []).map(Number);
+  if(!Number.isInteger(r) || r < 1) return status('회차를 확인해 주세요.');
+  if(t == null) return status('추첨일을 2026/10/17 처럼 넣어 주세요.');
+  if(nums.length !== 7) return status(`번호는 본번호 6개 + 보너스 1개, 모두 7개를 넣어 주세요. (지금 ${nums.length}개)`);
+  if(!nums.every(isNum)) return status('번호는 1~45 사이여야 합니다.');
+  if(new Set(nums).size !== 7) return status('같은 번호가 두 번 들어 있습니다.');
+  const old = byRound.get(r);
+  if(old && !confirm(`제 ${r}회가 이미 있습니다.\n${old.m.map(pad).join(' ')} + ${pad(old.b)}\n새 번호로 바꿀까요?`)) return;
+  putDraw({r, d: fmtDate(t), m: nums.slice(0, 6), b: nums[6]});
+  rebuild(); saveLocal(); renderDb();
+  $('addRound').value = $('addDate').value = $('addNums').value = '';
+  status(`제 ${r}회를 추가했습니다.`);
+  toast(`제 ${r}회 추가`);
+}
+$('btnAdd').onclick = addFromForm;
+['addRound', 'addDate', 'addNums'].forEach(id => $(id).addEventListener('keydown', e => { if(e.key === 'Enter') addFromForm(); }));
+function status(msg){ $('dbStatus').textContent = msg; }
+
+/* ---------- 동행복권에서 자동으로 가져오기 ---------- */
+const API = 'https://www.dhlottery.co.kr/lt645/selectPstLt645Info.do?srchLtEpsd=';
+async function fetchRound(r){
+  const res = await fetch(API + r, {cache: 'no-store'});
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const it = (await res.json())?.data?.list?.[0];
+  if(!it) return null;   // 아직 추첨 전
+  const d = String(it.ltRflYmd);
+  return {r: it.ltEpsd, d: `${d.slice(0, 4)}/${d.slice(4, 6)}/${d.slice(6, 8)}`,
+    m: [it.tm1WnNo, it.tm2WnNo, it.tm3WnNo, it.tm4WnNo, it.tm5WnNo, it.tm6WnNo], b: it.bnsWnNo};
+}
+$('btnFetch').onclick = async () => {
+  const btn = $('btnFetch');
+  btn.disabled = true;
+  let r = (latest()?.r || 0) + 1, added = [];
+  try{
+    for(let i = 0; i < 60; i++, r++){   // 한 번에 최대 60회차
+      status(`제 ${r}회 확인 중…`);
+      const x = await fetchRound(r);
+      if(!x) break;
+      if(putDraw(x)) added.push(x.r);
+    }
+    rebuild(); saveLocal(); renderDb();
+    status(added.length ? `제 ${added[0]}회${added.length > 1 ? ` ~ ${added[added.length - 1]}회` : ''}를 가져왔습니다.` : `이미 최신입니다. (제 ${latest()?.r}회 다음 추첨 결과가 아직 없습니다)`);
+    if(added.length) toast(`${added.length}개 회차를 가져왔습니다`);
+  }catch(e){
+    rebuild(); saveLocal(); renderDb();
+    status(`동행복권 사이트에서 가져오지 못했습니다 (${e.message}). ✏️ 직접 추가로 넣어 주세요.` + (added.length ? ` (그 전까지 ${added.length}개는 저장됨)` : ''));
+  }finally{ btn.disabled = false; }
+};
+
+/* ---------- 파일로 내보내기 (GitHub 업로드용) ---------- */
+$('btnExport').onclick = () => {
+  const body = '// 로또 6/45 역대 당첨번호: [회차, 추첨일, 번호1~6(작은 순), 보너스]\n'
+    + "// 궁합수 찾기 페이지의 '파일로 내보내기'로 최신 상태를 다시 만들 수 있음\n"
+    + 'window.LOTTO_DRAWS = [\n' + draws.map(x => JSON.stringify(toRow(x))).join(',\n') + '\n];\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([body], {type: 'text/javascript'}));
+  a.download = 'lotto_draws.js';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`lotto_draws.js 저장 (제 1~${latest()?.r}회)`);
+};
+
+/* ============================================================
+   ② 기준 회차 3개 조합 검색
+   ============================================================ */
+function combos3(arr){
+  const out = [];
+  for(let i = 0; i < arr.length; i++) for(let j = i + 1; j < arr.length; j++) for(let k = j + 1; k < arr.length; k++) out.push([arr[i], arr[j], arr[k]]);
+  return out;
+}
+const ckey = c => c.map(pad).join('·');
+
+function renderBaseSelect(){
+  const sel = $('baseRound'), cur = sel.value;
+  sel.innerHTML = draws.slice().reverse().map(x => `<option value="${x.r}">제 ${x.r}회 (${escapeHtml(x.d)})</option>`).join('');
+  if(cur && byRound.has(+cur)) sel.value = cur;
+}
+
+let S = null;   // 검색 결과
+function search(){
+  const base = byRound.get(+$('baseRound').value);
+  if(!base) return;
+  const useBonus = $('useBonus').checked;
+  const B = new Set(base.m);
+  const combos = combos3(base.m);
+  const comboCnt = new Map(combos.map(c => [ckey(c), {c, main: 0, bonus: 0}]));
+  const hits = [];
+  draws.forEach(p => {
+    if(p.r >= base.r) return;   // 기준 회차보다 앞선 회차만
+    const pm = new Set(p.m), pa = new Set([...p.m, p.b]);
+    const inMain = [], inBonus = [];
+    combos.forEach(c => {
+      if(c.every(n => pm.has(n))) inMain.push(c);
+      else if(useBonus && c.every(n => pa.has(n))) inBonus.push(c);
+    });
+    if(!inMain.length && !inBonus.length) return;
+    inMain.forEach(c => comboCnt.get(ckey(c)).main++);
+    inBonus.forEach(c => comboCnt.get(ckey(c)).bonus++);
+    hits.push({p, next: byRound.get(p.r + 1) || null, type: inMain.length ? 'main' : 'bonus',
+      shared: p.m.filter(n => B.has(n)), bonusHit: B.has(p.b), inMain, inBonus});
+  });
+  S = {base, useBonus, hits, comboCnt: [...comboCnt.values()]};
+  comboFilter = null; hitShown = 30; pickN = null;
+  renderBase(); renderResults();
+  $('resultArea').hidden = false;
+  saveUi();
+}
+$('btnSearch').onclick = search;
+
+function renderBase(){
+  const {base, hits, comboCnt} = S;
+  $('baseBox').innerHTML = `<div class="base-box">
+      <b>제 ${base.r}회</b><span class="note">${escapeHtml(base.d)}</span>
+      <span class="balls">${base.m.map(n => ball(n, 'big')).join('')}<span class="plus">+</span>${ball(base.b, 'big dim')}</span>
+      <span class="note">본번호 6개로 만든 3개 조합 <b>20</b>개 → 지난 회차 <b>${hits.length}</b>개에 들어 있음</span>
+    </div>`;
+  $('comboBox').innerHTML = `<h3 style="margin-top:6px">3개 조합별 걸린 회차 수 <small class="note">(누르면 그 조합이 들어 있는 회차만 봅니다)</small></h3>
+    <div class="combo-grid">${comboCnt.slice().sort((a, b) => (b.main + b.bonus) - (a.main + a.bonus)).map(o => {
+      const k = ckey(o.c), tot = o.main + o.bonus;
+      return `<button type="button" class="combo${tot ? '' : ' zero'}${comboFilter === k ? ' on' : ''}" data-combo="${k}" ${tot ? '' : 'disabled'}>
+        <span>${k}</span><small>${o.main}회${o.bonus ? ` +보 ${o.bonus}` : ''}</small></button>`;
+    }).join('')}</div>`;
+}
+$('comboBox').addEventListener('click', e => {
+  const b = e.target.closest('[data-combo]');
+  if(!b) return;
+  comboFilter = comboFilter === b.dataset.combo ? null : b.dataset.combo;
+  hitShown = 30; renderBase(); renderResults();
+  $('resultArea').scrollIntoView({behavior: 'smooth', block: 'start'});
+});
+
+/* ============================================================
+   ③ 목록 필터 (구분 · 동끝 · 조합) + ④ 통계
+   ============================================================ */
+let ui = {type: 'all', dg: 0, dgOn: 'past', sort: 'type', target: 'next', statBonus: false};
+let comboFilter = null, hitShown = 30, pickN = null;
+
+// 동끝: 본번호 6개 중 끝수가 같은 번호가 n개 이상인 묶음 → 해당 번호들
+function dgNums(nums, n){
+  if(!n) return [];
+  const g = {};
+  nums.forEach(x => (g[x % 10] ||= []).push(x));
+  return Object.values(g).filter(a => a.length >= n).flat();
+}
+function filteredHits(){
+  if(!S) return [];
+  let list = S.hits.filter(h => {
+    if(ui.type !== 'all' && h.type !== ui.type) return false;
+    if(comboFilter && ![...h.inMain, ...h.inBonus].some(c => ckey(c) === comboFilter)) return false;
+    if(ui.dg){
+      const src = ui.dgOn === 'next' ? h.next : h.p;
+      if(!src || !dgNums(src.m, ui.dg).length) return false;
+    }
+    return true;
+  });
+  const by = {
+    type: (a, b) => (a.type === b.type ? 0 : a.type === 'main' ? -1 : 1) || b.p.r - a.p.r,
+    recent: (a, b) => b.p.r - a.p.r,
+    old: (a, b) => a.p.r - b.p.r,
+    shared: (a, b) => (b.shared.length + b.bonusHit) - (a.shared.length + a.bonusHit) || b.p.r - a.p.r
+  }[ui.sort];
+  return list.sort(by);
+}
+
+function drawBalls(x, B, dg){
+  const D = new Set(dg);
+  const one = n => ball(n, [B && B.has(n) ? 'hit' : '', D.has(n) ? 'dg' : ''].join(' '));
+  return `<span class="balls">${x.m.map(one).join('')}<span class="plus">+</span>${one(x.b)}</span>`;
+}
+function renderResults(){
+  const list = filteredHits();
+  const B = new Set(S.base.m);
+  const chips = [`<span class="chip">걸린 회차 <b>${list.length}</b> / ${S.hits.length}개</span>`];
+  const nMain = list.filter(h => h.type === 'main').length;
+  chips.push(`<span class="chip">본번호 일치 <b>${nMain}</b> · 보너스 포함 <b>${list.length - nMain}</b></span>`);
+  if(comboFilter) chips.push(`<span class="chip">조합 <b>${comboFilter}</b><button type="button" data-clear="combo" title="조합 필터 해제">✕</button></span>`);
+  if(ui.dg) chips.push(`<span class="chip">${ui.dgOn === 'next' ? '다음 회차' : '지난 회차'}에 동끝 <b>${ui.dg}개 이상</b></span>`);
+  chips.push(`<span class="chip">${ball(7, 'hit')} 기준 회차 번호 · ${ball(17, 'dg')} 동끝(끝수 같은 수 ${ui.dg || 2}개+)</span>`);
+  $('hitChips').innerHTML = chips.join('');
+
+  $('hitList').innerHTML = list.length ? list.slice(0, hitShown).map(h => {
+    const cs = [...h.inMain.map(c => ckey(c)), ...h.inBonus.map(c => ckey(c) + '(보)')];
+    const dgP = dgNums(h.p.m, ui.dg || 2), dgN = h.next ? dgNums(h.next.m, ui.dg || 2) : [];
+    return `<div class="hit">
+      <div class="hit-head"><b>제 ${h.p.r}회</b>
+        <span class="tag ${h.type}">${h.type === 'main' ? '본번호 일치' : '보너스 포함 일치'}</span>
+        <span>겹친 수 ${h.shared.length}개${h.bonusHit ? ' + 보너스' : ''} · 3개 조합 ${cs.length}개</span>
+        <span class="combos-in">${cs.join(', ')}</span></div>
+      <div class="hit-line"><span>지난 회차 ${escapeHtml(h.p.d)}</span>${drawBalls(h.p, B, ui.dgOn === 'past' ? dgP : [])}</div>
+      <div class="hit-line"><span>다음 ${h.next ? `제 ${h.next.r}회` : '회차'}</span>${h.next ? drawBalls(h.next, B, ui.dgOn === 'next' ? dgN : []) : '<span class="note">다음 회차 정보 없음</span>'}</div>
+    </div>`;
+  }).join('') : '<div class="empty">조건에 맞는 회차가 없습니다.</div>';
+  $('hitMore').innerHTML = list.length > hitShown ? `<button type="button" class="secondary small" id="btnHitMore">더 보기 (${list.length - hitShown}개 남음)</button>` : '';
+  renderStats(list);
+}
+$('hitMore').addEventListener('click', e => { if(e.target.id === 'btnHitMore'){ hitShown += 50; renderResults(); } });
+$('hitChips').addEventListener('click', e => {
+  if(e.target.closest('[data-clear=combo]')){ comboFilter = null; renderBase(); renderResults(); }
+});
+
+/* ---------- ④ 번호 통계 · 궁합수 ---------- */
+function renderStats(list){
+  // 분석할 번호 묶음: 걸린 회차마다 다음 회차(또는 지난 회차) 번호
+  const sets = list.map(h => ui.target === 'next' ? h.next : h.p).filter(Boolean)
+    .map(x => ui.statBonus ? [...x.m, x.b] : x.m);
+  const B = new Set(S.base.m);
+  const cnt = Array(46).fill(0);
+  sets.forEach(s => s.forEach(n => cnt[n]++));
+  $('statChips').innerHTML = `<span class="chip">${ui.target === 'next' ? '다음 회차' : '지난 회차'} <b>${sets.length}</b>개 · 번호 ${ui.statBonus ? '7' : '6'}개씩</span>
+    <span class="chip">테두리 = 기준 회차(제 ${S.base.r}회) 번호</span>`;
+  if(!sets.length){
+    ['cntGroups', 'pairList', 'pickMates'].forEach(id => $(id).innerHTML = '<div class="empty">분석할 회차가 없습니다.</div>');
+    renderBaseMates(); return;
+  }
+  // 나온 횟수별
+  const groups = new Map();
+  for(let n = 1; n <= 45; n++){ if(!groups.has(cnt[n])) groups.set(cnt[n], []); groups.get(cnt[n]).push(n); }
+  const pct = c => Math.round(c / sets.length * 100);
+  $('cntGroups').innerHTML = [...groups.keys()].sort((a, b) => b - a).map(c =>
+    `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b><small>${c ? pct(c) + '%' : '없음'}</small>
+      ${groups.get(c).map(n => ball(n, 'pick' + (B.has(n) ? ' hit' : '') + (pickN === n ? ' sel' : ''))).join('')}</div>`).join('')
+    + (cnt.slice(1).every(c => c) ? '<div class="cnt-line zero"><b>0회</b><small>없음</small><span class="note">1~45 모두 한 번 이상 나왔습니다</span></div>' : '');
+
+  // 궁합 쌍: 같은 회차에 함께 나온 두 수
+  const pc = new Map();
+  sets.forEach(s => { for(let i = 0; i < s.length; i++) for(let j = i + 1; j < s.length; j++){
+    const a = Math.min(s[i], s[j]), b = Math.max(s[i], s[j]), k = a * 100 + b;
+    pc.set(k, (pc.get(k) || 0) + 1);
+  }});
+  const pairs = [...pc.entries()].filter(([, c]) => c >= 2).sort((x, y) => y[1] - x[1] || x[0] - y[0]).slice(0, 15);
+  const top = pairs[0]?.[1] || 1;
+  $('pairList').innerHTML = pairs.length ? pairs.map(([k, c]) => {
+    const a = Math.floor(k / 100), b = k % 100;
+    return `<div class="pair">${ball(a, B.has(a) ? 'hit' : '')}${ball(b, B.has(b) ? 'hit' : '')}
+      <span class="bar"><i style="width:${c / top * 100}%"></i></span><b>${c}회</b></div>`;
+  }).join('') : '<div class="empty">두 번 이상 함께 나온 쌍이 없습니다.</div>';
+
+  // 고른 번호의 궁합수
+  if(pickN == null || !cnt[pickN]) pickN = cnt.indexOf(Math.max(...cnt.slice(1)));
+  const mates = Array(46).fill(0);
+  sets.filter(s => s.includes(pickN)).forEach(s => s.forEach(n => { if(n !== pickN) mates[n]++; }));
+  const mg = new Map();
+  for(let n = 1; n <= 45; n++) if(mates[n]){ if(!mg.has(mates[n])) mg.set(mates[n], []); mg.get(mates[n]).push(n); }
+  $('pickMates').innerHTML = `<div class="toolbar" style="margin-bottom:8px">${ball(pickN, 'big' + (B.has(pickN) ? ' hit' : ''))}
+      <span class="note"><b>${pad(pickN)}</b>번이 나온 ${cnt[pickN]}개 회차에서 같이 나온 수</span></div>
+    <div class="cnt-groups">${[...mg.keys()].sort((a, b) => b - a).slice(0, 6).map(c =>
+      `<div class="cnt-line"><b>${c}회</b><small></small>${mg.get(c).map(n => ball(n, B.has(n) ? 'hit' : '')).join('')}</div>`).join('')
+      || '<div class="empty">같이 나온 수가 없습니다.</div>'}</div>`;
+  // 왼쪽 횟수 목록에서 고른 공 표시 갱신
+  $('cntGroups').querySelectorAll('.ball').forEach(el => el.classList.toggle('sel', +el.dataset.n === pickN));
+  renderBaseMates();
+}
+$('cntGroups').addEventListener('click', e => {
+  const b = e.target.closest('.ball[data-n]');
+  if(!b) return;
+  pickN = +b.dataset.n; renderResults();
+});
+
+// 기준 번호 6개 각각: 1회부터 전체 회차에서 함께 가장 많이 나온 수 (본번호끼리)
+function renderBaseMates(){
+  const base = S.base;
+  const pool = draws.filter(x => x.r <= base.r);
+  $('baseMates').innerHTML = `<table class="mate-table">${base.m.map(n => {
+    const c = Array(46).fill(0); let seen = 0;
+    pool.forEach(x => { if(x.m.includes(n)){ seen++; x.m.forEach(y => { if(y !== n) c[y]++; }); } });
+    const top = c.map((v, i) => [i, v]).slice(1).filter(a => a[1]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 5);
+    return `<tr><td>${ball(n)}</td><td><span class="note">${seen}회 출현 · </span>${top.map(([m, v]) =>
+      `<span class="mate">${ball(m, base.m.includes(m) ? 'hit' : '')}<small>${v}</small></span>`).join('')}</td></tr>`;
+  }).join('')}</table>`;
+}
+
+/* ---------- 필터 버튼 ---------- */
+function bindSeg(id, key, num){
+  $(id).addEventListener('click', e => {
+    const b = e.target.closest('button[data-v]');
+    if(!b) return;
+    ui[key] = num ? +b.dataset.v : b.dataset.v;
+    syncUi(); hitShown = 30; renderResults(); saveUi();
+  });
+}
+bindSeg('segType', 'type'); bindSeg('segDg', 'dg', true); bindSeg('segDgOn', 'dgOn'); bindSeg('segTarget', 'target');
+$('sortBy').onchange = () => { ui.sort = $('sortBy').value; renderResults(); saveUi(); };
+$('statBonus').onchange = () => { ui.statBonus = $('statBonus').checked; renderResults(); saveUi(); };
+$('useBonus').onchange = () => { if(S) search(); };
+$('baseRound').onchange = () => { if(S) search(); };
+
+function syncUi(){
+  const seg = (id, v) => $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v)));
+  seg('segType', ui.type); seg('segDg', ui.dg); seg('segDgOn', ui.dgOn); seg('segTarget', ui.target);
+  $('sortBy').value = ui.sort; $('statBonus').checked = ui.statBonus;
+}
+function saveUi(){
+  try{ localStorage.setItem(UI_KEY, JSON.stringify({...ui, useBonus: $('useBonus').checked, searched: !!S})); }catch(e){}
+}
+
+/* ---------- 시작 ---------- */
+loadDb();
+renderDb();
+let saved = {};
+try{ saved = JSON.parse(localStorage.getItem(UI_KEY) || '{}'); }catch(e){}
+['type', 'dg', 'dgOn', 'sort', 'target', 'statBonus'].forEach(k => { if(saved[k] !== undefined) ui[k] = saved[k]; });
+if(saved.useBonus === false) $('useBonus').checked = false;
+syncUi();
+if(draws.length) search();   // 기본: 최신 회차로 바로 찾아 둠
+</script>
+</body>
+</html>
