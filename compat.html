@@ -64,6 +64,9 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .tag.main{background:#e6f1ec;color:#2f6b52}
 .tag.bonus{background:#f6efdf;color:#7a5d22}
 .tag.mine{background:#e5edfc;color:#2f5bb5}
+.tag.dup,.chip.dup{background:#fdf0e1;color:#9a5a12}
+.chip.dup b{color:#9a5a12}
+.hit.dup{border-color:#ecc89c;box-shadow:inset 3px 0 0 #d9902f}
 
 /* 기준 회차 + 조합 */
 .base-box{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:14px;background:#f7f8fa;border-radius:12px;margin:12px 0}
@@ -229,6 +232,24 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
           <div id="baseMates"></div>
         </div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>⑤ 적게 걸린 조합의 다음 회차만 모아 보기</h2>
+      <div class="filters">
+        <label>지난 회차에 <span class="seg" id="segCn">
+          <button type="button" data-v="1" class="on">1회</button>
+          <button type="button" data-v="2">2회</button>
+          <button type="button" data-v="3">3회</button>
+        </span> 만 걸린 3개 조합</label>
+        <span class="note">②의 조합별 걸린 회차 수 기준 · ③의 동끝·조합 필터와 상관없이 따로 셉니다</span>
+      </div>
+      <div class="chips" id="rareChips"></div>
+      <div class="stat-box" style="margin-bottom:12px">
+        <h3>🔥 이 다음 회차들에서 나온 횟수별 번호 <small class="note">(본번호 6개 + 보너스)</small></h3>
+        <div class="cnt-groups" id="rareCnt"></div>
+      </div>
+      <div class="hits" id="rareList"></div>
     </div>
   </div>
 </div>
@@ -494,7 +515,7 @@ $('comboBox').addEventListener('click', e => {
 /* ============================================================
    ③ 목록 필터 (구분 · 동끝 · 조합) + ④ 통계
    ============================================================ */
-let ui = {dg: 0, dgOn: 'past', sort: 'recent', target: 'next'};
+let ui = {dg: 0, dgOn: 'past', sort: 'recent', target: 'next', cn: 1};
 let comboFilter = null, hitShown = 30, pickN = null;
 
 // 동끝: 끝수가 같은 번호가 n개 이상인 묶음 → 해당 번호들
@@ -530,6 +551,32 @@ function drawBalls(x, B, dg, withBonus){
   const one = n => ball(n, [B && B.has(n) ? 'hit' : '', D.has(n) ? 'dg' : ''].join(' '));
   return `<span class="balls">${x.m.map(one).join('')}${withBonus ? `<span class="plus">+</span>${one(x.b)}` : ''}</span>`;
 }
+// 걸린 회차 카드: 지난 회차(본번호 6개) + 다음 회차(보너스 포함). only = 머리에 보여 줄 조합만 (없으면 전부)
+function hitCard(h, B, only){
+  const cs = (only || h.inCombo).map(c => ckey(c));
+  const dgP = dgNums(h.p.m, ui.dg || 2), dgN = h.next ? dgNums(nextNums(h), ui.dg || 2) : [];
+  return `<div class="hit${only && cs.length > 1 ? ' dup' : ''}">
+      <div class="hit-head"><b>제 ${h.p.r}회</b>
+        <span>겹친 수 ${h.shared.length}개 · 3개 조합 ${h.inCombo.length}개</span>
+        ${only && cs.length > 1 ? `<span class="tag dup">⚠ 조합 ${cs.length}개가 같은 회차 · 1번만 셈</span>` : ''}
+        <span class="combos-in">${only ? '이 조합: ' : ''}${cs.join(', ')}</span></div>
+      <div class="hit-line"><span>지난 회차 ${escapeHtml(h.p.d)}</span>${drawBalls(h.p, B, ui.dgOn === 'past' ? dgP : [], false)}</div>
+      <div class="hit-line"><span>다음 ${h.next ? `제 ${h.next.r}회` : '회차'}</span>${h.next ? drawBalls(h.next, B, ui.dgOn === 'next' ? dgN : [], true) : '<span class="note">다음 회차 정보 없음</span>'}</div>
+    </div>`;
+}
+// 나온 횟수별 번호 줄 (많이 나온 순, 0회 = 안 나온 수)
+function countLines(sets, B, pickable){
+  const cnt = Array(46).fill(0);
+  sets.forEach(s => s.forEach(n => cnt[n]++));
+  const groups = new Map();
+  for(let n = 1; n <= 45; n++){ if(!groups.has(cnt[n])) groups.set(cnt[n], []); groups.get(cnt[n]).push(n); }
+  const pct = c => Math.round(c / sets.length * 100);
+  const html = [...groups.keys()].sort((a, b) => b - a).map(c =>
+    `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b><small>${c ? pct(c) + '%' : '없음'}</small>
+      ${groups.get(c).map(n => ball(n, (pickable ? 'pick' : '') + (B.has(n) ? ' hit' : '') + (pickable && pickN === n ? ' sel' : ''))).join('')}</div>`).join('')
+    + (cnt.slice(1).every(c => c) ? '<div class="cnt-line zero"><b>0회</b><small>없음</small><span class="note">1~45 모두 한 번 이상 나왔습니다</span></div>' : '');
+  return {cnt, html};
+}
 function renderResults(){
   const list = filteredHits();
   const B = new Set(S.base.m);
@@ -539,19 +586,10 @@ function renderResults(){
   chips.push(`<span class="chip">${ball(7, 'hit')} 기준 회차 번호 · ${ball(17, 'dg')} 동끝(끝수 같은 수 ${ui.dg || 2}개+)</span>`);
   $('hitChips').innerHTML = chips.join('');
 
-  $('hitList').innerHTML = list.length ? list.slice(0, hitShown).map(h => {
-    const cs = h.inCombo.map(c => ckey(c));
-    const dgP = dgNums(h.p.m, ui.dg || 2), dgN = h.next ? dgNums(nextNums(h), ui.dg || 2) : [];
-    return `<div class="hit">
-      <div class="hit-head"><b>제 ${h.p.r}회</b>
-        <span>겹친 수 ${h.shared.length}개 · 3개 조합 ${cs.length}개</span>
-        <span class="combos-in">${cs.join(', ')}</span></div>
-      <div class="hit-line"><span>지난 회차 ${escapeHtml(h.p.d)}</span>${drawBalls(h.p, B, ui.dgOn === 'past' ? dgP : [], false)}</div>
-      <div class="hit-line"><span>다음 ${h.next ? `제 ${h.next.r}회` : '회차'}</span>${h.next ? drawBalls(h.next, B, ui.dgOn === 'next' ? dgN : [], true) : '<span class="note">다음 회차 정보 없음</span>'}</div>
-    </div>`;
-  }).join('') : '<div class="empty">조건에 맞는 회차가 없습니다.</div>';
+  $('hitList').innerHTML = list.length ? list.slice(0, hitShown).map(h => hitCard(h, B)).join('') : '<div class="empty">조건에 맞는 회차가 없습니다.</div>';
   $('hitMore').innerHTML = list.length > hitShown ? `<button type="button" class="secondary small" id="btnHitMore">더 보기 (${list.length - hitShown}개 남음)</button>` : '';
   renderStats(list);
+  renderRare();
 }
 $('hitMore').addEventListener('click', e => { if(e.target.id === 'btnHitMore'){ hitShown += 50; renderResults(); } });
 $('hitChips').addEventListener('click', e => {
@@ -563,8 +601,7 @@ function renderStats(list){
   // 분석할 번호 묶음: 걸린 회차마다 다음 회차(또는 지난 회차) 번호
   const sets = list.map(h => ui.target === 'next' ? nextNums(h) : h.p.m).filter(Boolean);
   const B = new Set(S.base.m);
-  const cnt = Array(46).fill(0);
-  sets.forEach(s => s.forEach(n => cnt[n]++));
+  const {cnt, html: cntHtml} = countLines(sets, B, true);
   $('statChips').innerHTML = `<span class="chip">${ui.target === 'next' ? '다음 회차' : '지난 회차'} <b>${sets.length}</b>개 · 번호 ${ui.target === 'next' ? '7개씩 (보너스 포함)' : '6개씩 (본번호)'}</span>
     <span class="chip">테두리 = 기준 회차(제 ${S.base.r}회) 번호</span>`;
   if(!sets.length){
@@ -572,13 +609,7 @@ function renderStats(list){
     renderBaseMates(); return;
   }
   // 나온 횟수별
-  const groups = new Map();
-  for(let n = 1; n <= 45; n++){ if(!groups.has(cnt[n])) groups.set(cnt[n], []); groups.get(cnt[n]).push(n); }
-  const pct = c => Math.round(c / sets.length * 100);
-  $('cntGroups').innerHTML = [...groups.keys()].sort((a, b) => b - a).map(c =>
-    `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b><small>${c ? pct(c) + '%' : '없음'}</small>
-      ${groups.get(c).map(n => ball(n, 'pick' + (B.has(n) ? ' hit' : '') + (pickN === n ? ' sel' : ''))).join('')}</div>`).join('')
-    + (cnt.slice(1).every(c => c) ? '<div class="cnt-line zero"><b>0회</b><small>없음</small><span class="note">1~45 모두 한 번 이상 나왔습니다</span></div>' : '');
+  $('cntGroups').innerHTML = cntHtml;
 
   // 궁합 쌍: 같은 회차에 함께 나온 두 수
   const pc = new Map();
@@ -628,6 +659,27 @@ function renderBaseMates(){
   }).join('')}</table>`;
 }
 
+/* ---------- ⑤ n회만 걸린 조합의 다음 회차 ---------- */
+function renderRare(){
+  const B = new Set(S.base.m);
+  const cs = S.comboCnt.filter(o => o.n === ui.cn).map(o => o.c);
+  const keys = new Set(cs.map(ckey));
+  // 이 조합들이 들어 있던 지난 회차 (한 회차에 여러 조합이 걸려도 한 번만)
+  const list = S.hits.filter(h => h.inCombo.some(c => keys.has(ckey(c)))).sort((a, b) => b.p.r - a.p.r);
+  const sets = list.map(nextNums).filter(Boolean);
+  const dups = list.filter(h => h.inCombo.filter(c => keys.has(ckey(c))).length > 1).length;
+  $('rareChips').innerHTML = `<span class="chip">${ui.cn}회 걸린 조합 <b>${cs.length}</b>개</span>`
+    + cs.map(c => `<span class="chip"><b>${ckey(c)}</b></span>`).join('')
+    + `<span class="chip">다음 회차 <b>${sets.length}</b>개 · 번호 7개씩</span>`
+    + (dups ? `<span class="chip dup">⚠ 조합 여러 개가 같은 회차 <b>${dups}</b>개 → 1번만 셈 (조합 ${cs.length}개 × ${ui.cn}회 = ${cs.length * ui.cn}개 → ${list.length}개)</span>` : '');
+  if(!sets.length){
+    $('rareCnt').innerHTML = $('rareList').innerHTML = `<div class="empty">${ui.cn}회만 걸린 조합이 없습니다.</div>`;
+    return;
+  }
+  $('rareCnt').innerHTML = countLines(sets, B, false).html;
+  $('rareList').innerHTML = list.map(h => hitCard(h, B, h.inCombo.filter(c => keys.has(ckey(c))))).join('');
+}
+
 /* ---------- 필터 버튼 ---------- */
 function bindSeg(id, key, num){
   $(id).addEventListener('click', e => {
@@ -637,13 +689,13 @@ function bindSeg(id, key, num){
     syncUi(); hitShown = 30; renderResults(); saveUi();
   });
 }
-bindSeg('segDg', 'dg', true); bindSeg('segDgOn', 'dgOn'); bindSeg('segTarget', 'target');
+bindSeg('segDg', 'dg', true); bindSeg('segDgOn', 'dgOn'); bindSeg('segTarget', 'target'); bindSeg('segCn', 'cn', true);
 $('sortBy').onchange = () => { ui.sort = $('sortBy').value; renderResults(); saveUi(); };
 $('baseRound').onchange = () => { if(S) search(); };
 
 function syncUi(){
   const seg = (id, v) => $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === String(v)));
-  seg('segDg', ui.dg); seg('segDgOn', ui.dgOn); seg('segTarget', ui.target);
+  seg('segDg', ui.dg); seg('segDgOn', ui.dgOn); seg('segTarget', ui.target); seg('segCn', ui.cn);
   $('sortBy').value = ui.sort;
 }
 function saveUi(){
@@ -655,7 +707,7 @@ loadDb();
 renderDb();
 let saved = {};
 try{ saved = JSON.parse(localStorage.getItem(UI_KEY) || '{}'); }catch(e){}
-['dg', 'dgOn', 'sort', 'target'].forEach(k => { if(saved[k] !== undefined) ui[k] = saved[k]; });
+['dg', 'dgOn', 'sort', 'target', 'cn'].forEach(k => { if(saved[k] !== undefined) ui[k] = saved[k]; });
 if(!['recent', 'old', 'shared'].includes(ui.sort)) ui.sort = 'recent';
 syncUi();
 if(draws.length) search();   // 기본: 최신 회차로 바로 찾아 둠
