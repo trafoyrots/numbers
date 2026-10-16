@@ -121,6 +121,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate-table .ball{width:28px;height:28px;font-size:12px}
 .mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
 .mate small{color:#7b838d;font-weight:700}
+.mate .ball.hit{margin-right:4px}
 .mate-sub{font-size:13px;font-weight:800;color:#3d434c;margin:12px 0 4px}
 .mate-sub:first-child{margin-top:0}
 /* 당번·모의번호 x 표시 */
@@ -148,10 +149,13 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
   #matesPrint .pm-sec.keep{break-inside:avoid}
   #matesPrint .mate-table td.mn{width:36px}
   #matesPrint .mate-table td .note{font-size:11px}
-  #matesPrint .mate-table .ball{width:23px;height:23px;font-size:10.5px}
-  #matesPrint .mate{gap:1px;margin:1px 3px 1px 0}
-  #matesPrint .mate small{font-size:9.5px}
+  /* 인쇄: 15개를 줄 너비에 고르게 나눠 오른쪽 빈자리 없이 */
+  #matesPrint .mate-row{display:grid;grid-template-columns:repeat(15,1fr);align-items:center}
+  #matesPrint .mate-table .ball{width:27px;height:27px;font-size:11.5px}
+  #matesPrint .mate{gap:1px;margin:1px 0}
+  #matesPrint .mate small{font-size:10px}
   #matesPrint .mate-table .ball.hit{box-shadow:0 0 0 1.5px #fff,0 0 0 3px #252a31}
+  #matesPrint .mate .ball.hit{margin-right:3px}
   #matesPrint .pm-legend{break-inside:avoid}
   #matesPrint .cnt-line{padding:4px 10px}
   #matesPrint .cnt-line,#matesPrint .pair,#matesPrint .mate-table tbody,#matesPrint .base-box,#matesPrint .combo-grid{break-inside:avoid}
@@ -711,8 +715,8 @@ function renderBaseMates(){
     `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('');
   // 번호마다 1~15위 줄 바로 아래 16~30위 줄
   $('baseMates').innerHTML = `<table class="mate-table">${rows.map(r =>
-    `<tbody><tr class="mate-a"><td class="mn" rowspan="2">${ball(r.n)}<span class="note">${r.seen}회</span></td><td>${mates(r.top.slice(0, 15))}</td></tr>
-     <tr class="mate-b"><td>${mates(r.top.slice(15, 30))}</td></tr></tbody>`).join('')}</table>`;
+    `<tbody><tr class="mate-a"><td class="mn" rowspan="2">${ball(r.n)}<span class="note">${r.seen}회</span></td><td><div class="mate-row">${mates(r.top.slice(0, 15))}</div></td></tr>
+     <tr class="mate-b"><td><div class="mate-row">${mates(r.top.slice(15, 30))}</div></td></tr></tbody>`).join('')}</table>`;
 }
 // 당번(오렌지 ✕) · 모의 번호(보라색 ✕): 각각 7칸, 위 역대 궁합수에 표시
 const MARK_KEY = 'lottoCompatMarks';
