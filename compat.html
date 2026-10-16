@@ -115,7 +115,10 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .pair b{width:44px;text-align:right}
 .mate-table{width:100%;border-collapse:collapse;font-size:13px}
 .mate-table td{padding:6px 4px;border-bottom:1px solid #eceef0;vertical-align:middle}
-.mate-table td:first-child{width:46px}
+.mate-table td.mn{width:46px}
+.mate-table tr.mate-a td:not(.mn){border-bottom:1px dashed #eceef0;padding-bottom:3px}
+.mate-table tr.mate-b td{padding-top:3px}
+.mate-table .mlab{display:inline-block;white-space:nowrap;width:92px;text-align:right;padding-right:6px;box-sizing:border-box}
 .mate-table .ball{width:28px;height:28px;font-size:12px}
 .mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
 .mate small{color:#7b838d;font-weight:700}
@@ -144,7 +147,8 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
   body.print-mates #matesPrint{display:block}
   #matesPrint *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #matesPrint .pm-sec.keep{break-inside:avoid}
-  #matesPrint .mate-table td:first-child{width:36px}
+  #matesPrint .mate-table td.mn{width:36px}
+  #matesPrint .mate-table .mlab{width:78px;font-size:10px}
   #matesPrint .mate-table td .note{font-size:11px}
   #matesPrint .mate-table .ball{width:23px;height:23px;font-size:10.5px}
   #matesPrint .mate{gap:1px;margin:1px 3px 1px 0}
@@ -152,7 +156,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
   #matesPrint .mate-table .ball.hit{box-shadow:0 0 0 1.5px #fff,0 0 0 3px #252a31}
   #matesPrint .pm-legend{break-inside:avoid}
   #matesPrint .cnt-line{padding:4px 10px}
-  #matesPrint .cnt-line,#matesPrint .pair,#matesPrint .mate-table tr,#matesPrint .base-box,#matesPrint .combo-grid{break-inside:avoid}
+  #matesPrint .cnt-line,#matesPrint .pair,#matesPrint .mate-table tbody,#matesPrint .base-box,#matesPrint .combo-grid{break-inside:avoid}
 }
 .mark-rows{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding:12px;background:#fff;border:1px solid #eceef0;border-radius:11px}
 .mark-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -705,11 +709,12 @@ function renderBaseMates(){
     return {n, seen,
       top: all.filter(a => a[1]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 30)};
   });
-  const table = (from, to) => `<table class="mate-table">${rows.map(r =>
-    `<tr><td>${ball(r.n)}</td><td><span class="note">${r.seen}회 · </span>${r.top.slice(from, to).map(([m, v]) =>
-      `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('')}</td></tr>`).join('')}</table>`;
-  $('baseMates').innerHTML = `<div class="mate-sub">⬆️ 상위 1~15위 <small class="note">(함께 가장 많이 나온 수)</small></div>${table(0, 15)}
-    <div class="mate-sub">⬆️ 상위 16~30위</div>${table(15, 30)}`;
+  const mates = list => list.map(([m, v]) =>
+    `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('');
+  // 번호마다 1~15위 줄 바로 아래 16~30위 줄
+  $('baseMates').innerHTML = `<table class="mate-table">${rows.map(r =>
+    `<tbody><tr class="mate-a"><td class="mn" rowspan="2">${ball(r.n)}</td><td><span class="note mlab">${r.seen}회 · 1~15위</span>${mates(r.top.slice(0, 15))}</td></tr>
+     <tr class="mate-b"><td><span class="note mlab">16~30위</span>${mates(r.top.slice(15, 30))}</td></tr></tbody>`).join('')}</table>`;
 }
 // 당번(오렌지 ✕) · 모의 번호(보라색 ✕): 각각 7칸, 위 역대 궁합수에 표시
 const MARK_KEY = 'lottoCompatMarks';
