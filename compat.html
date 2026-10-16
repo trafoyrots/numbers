@@ -113,16 +113,20 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .pair .bar{flex:1;height:7px;background:#eef0f3;border-radius:5px;overflow:hidden;min-width:40px}
 .pair .bar i{display:block;height:100%;background:#7a8cab}
 .pair b{width:44px;text-align:right}
-.mate-table{width:100%;border-collapse:collapse;font-size:13px}
+.mate-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
 .mate-table td{padding:6px 4px;border-bottom:1px solid #eceef0;vertical-align:middle}
-.mate-table td.mn{width:52px;text-align:center}
+.mate-table td.mn{width:56px;text-align:center}
+.mate-table td.mn .ball{width:36px;height:36px;font-size:14px}
 .mate-table tr.mate-a td:not(.mn){border-bottom:1px dashed #eceef0;padding-bottom:3px}
 .mate-table tr.mate-b td{padding-top:3px}
 .mate-table td.mn .note{display:block;font-size:11px;margin-top:3px;white-space:nowrap}
-.mate-table .ball{width:32px;height:32px;font-size:13px}
-.mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
-.mate small{color:#7b838d;font-weight:700}
-.mate .ball.hit{margin:0 3px}
+/* 궁합수 15개가 칸 너비를 꽉 채우도록: 칸 너비(cqi) 기준으로 공 크기를 정함 */
+.mate-table td.mt{container-type:inline-size}
+.mate-row{display:grid;grid-template-columns:repeat(15,1fr);align-items:center}
+.mate{display:flex;align-items:center;justify-content:center;gap:2px}
+.mate-table .mate .ball{width:min(3.9cqi,46px);height:min(3.9cqi,46px);font-size:min(1.65cqi,18px)}
+.mate small{color:#7b838d;font-weight:700;font-size:max(9px,min(1.25cqi,13px));min-width:1.3em}
+@media (max-width:700px){.mate-row{grid-template-columns:repeat(8,1fr)}.mate-table .mate .ball{width:7.5cqi;height:7.5cqi;font-size:3cqi}.mate small{font-size:max(9px,2.2cqi)}}
 .mate-sub{font-size:13px;font-weight:800;color:#3d434c;margin:12px 0 4px}
 .mate-sub:first-child{margin-top:0}
 /* 당번·모의번호 x 표시 */
@@ -150,11 +154,9 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
   #matesPrint .pm-sec.keep{break-inside:avoid}
   #matesPrint .mate-table td.mn{width:40px}
   #matesPrint .mate-table td .note{font-size:11px}
-  #matesPrint .mate-table .ball{width:27px;height:27px;font-size:11.5px}
-  #matesPrint .mate{gap:1px;margin:1px 3px 1px 0}
-  #matesPrint .mate small{font-size:9.5px}
+  #matesPrint .mate-row{grid-template-columns:repeat(15,1fr)}
+  #matesPrint .mate{gap:1px}
   #matesPrint .mate-table .ball.hit{box-shadow:0 0 0 1.5px #fff,0 0 0 3px #252a31}
-  #matesPrint .mate .ball.hit{margin:0 2px}
   #matesPrint .pm-legend{break-inside:avoid}
   #matesPrint .cnt-line{padding:4px 10px}
   #matesPrint .cnt-line,#matesPrint .pair,#matesPrint .mate-table tbody,#matesPrint .base-box,#matesPrint .combo-grid{break-inside:avoid}
@@ -714,8 +716,8 @@ function renderBaseMates(){
     `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('');
   // 번호마다 1~15위 줄 바로 아래 16~30위 줄
   $('baseMates').innerHTML = `<table class="mate-table">${rows.map(r =>
-    `<tbody><tr class="mate-a"><td class="mn" rowspan="2">${ball(r.n)}<span class="note">${r.seen}회</span></td><td>${mates(r.top.slice(0, 15))}</td></tr>
-     <tr class="mate-b"><td>${mates(r.top.slice(15, 30))}</td></tr></tbody>`).join('')}</table>`;
+    `<tbody><tr class="mate-a"><td class="mn" rowspan="2">${ball(r.n)}<span class="note">${r.seen}회</span></td><td class="mt"><div class="mate-row">${mates(r.top.slice(0, 15))}</div></td></tr>
+     <tr class="mate-b"><td class="mt"><div class="mate-row">${mates(r.top.slice(15, 30))}</div></td></tr></tbody>`).join('')}</table>`;
 }
 // 당번(오렌지 ✕) · 모의 번호(보라색 ✕): 각각 7칸, 위 역대 궁합수에 표시
 const MARK_KEY = 'lottoCompatMarks';
