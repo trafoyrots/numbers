@@ -119,6 +119,21 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate-table .ball{width:28px;height:28px;font-size:12px}
 .mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
 .mate small{color:#7b838d;font-weight:700}
+/* 당번·모의번호 x 표시 */
+.ball.xw,.ball.xm{position:relative}
+.ball.xw::after,.ball.xm::after{content:"✕";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:26px;font-weight:900;line-height:1;pointer-events:none;text-shadow:0 0 2px #fff,0 0 2px #fff}
+.ball.xw::after{color:#f28c18}
+.ball.xm::after{color:#1fa64a}
+.ball.xw.xm{outline:3px solid #1fa64a;outline-offset:1px}
+.mark-rows{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding:12px;background:#fff;border:1px solid #eceef0;border-radius:11px}
+.mark-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mark-row > b{width:72px;font-size:13px}
+.mark-row.w > b{color:#d97409}
+.mark-row.m > b{color:#178a3c}
+.mark-row input{width:48px;height:34px;text-align:center;padding:4px}
+.mark-row.w input{border-color:#f5c48c}
+.mark-row.m input{border-color:#9fd8b0}
 @media(max-width:760px){
   .container{padding:20px 12px 40px}
   h1{font-size:24px}
@@ -223,14 +238,17 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
           <div class="pair-list" id="pairList"></div>
         </div>
       </div>
-      <div class="two" style="margin-top:14px">
-        <div class="stat-box">
-          <h3>🎯 고른 번호의 궁합수 <small class="note">(왼쪽 공을 누르면 바뀝니다)</small></h3>
-          <div id="pickMates"></div>
-        </div>
-        <div class="stat-box">
-          <h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회부터 전체 회차, 본번호 기준)</small></h3>
-          <div id="baseMates"></div>
+      <div class="stat-box" style="margin-top:14px">
+        <h3>🎯 고른 번호의 궁합수 <small class="note">(왼쪽 공을 누르면 바뀝니다)</small></h3>
+        <div id="pickMates"></div>
+      </div>
+      <div class="stat-box" style="margin-top:14px">
+        <h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회부터 전체 회차, 본번호 기준 · 상위 10개)</small></h3>
+        <div id="baseMates"></div>
+        <div class="mark-rows" id="markRows">
+          <div class="mark-row w"><b>당번</b><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="0"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="1"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="2"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="3"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="4"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="5"><span class="note">오렌지 ✕</span></div>
+          <div class="mark-row m"><b>모의 번호</b><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="0"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="1"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="2"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="3"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="4"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="5"><span class="note">녹색 ✕</span>
+            <button type="button" class="secondary small" id="btnMarkClear">지우기</button></div>
         </div>
       </div>
     </div>
@@ -654,11 +672,33 @@ function renderBaseMates(){
   $('baseMates').innerHTML = `<table class="mate-table">${base.m.map(n => {
     const c = Array(46).fill(0); let seen = 0;
     pool.forEach(x => { if(x.m.includes(n)){ seen++; x.m.forEach(y => { if(y !== n) c[y]++; }); } });
-    const top = c.map((v, i) => [i, v]).slice(1).filter(a => a[1]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 5);
-    return `<tr><td>${ball(n)}</td><td><span class="note">${seen}회 출현 · </span>${top.map(([m, v]) =>
-      `<span class="mate">${ball(m, base.m.includes(m) ? 'hit' : '')}<small>${v}</small></span>`).join('')}</td></tr>`;
+    const top = c.map((v, i) => [i, v]).slice(1).filter(a => a[1]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 10);
+    return `<tr><td>${ball(n)}</td><td><span class="note">${seen}회 · </span>${top.map(([m, v]) =>
+      `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('')}</td></tr>`;
   }).join('')}</table>`;
 }
+// 당번(오렌지 ✕) · 모의 번호(녹색 ✕): 각각 6칸, 위 역대 궁합수에 표시
+const MARK_KEY = 'lottoCompatMarks';
+let marks = {w: Array(6).fill(''), m: Array(6).fill('')};
+try{ const o = JSON.parse(localStorage.getItem(MARK_KEY) || '{}'); ['w', 'm'].forEach(k => { if(Array.isArray(o[k])) marks[k] = o[k].slice(0, 6); }); }catch(e){}
+const markSet = k => new Set(marks[k].map(Number).filter(n => n >= 1 && n <= 45));
+function markCls(n){ return (markSet('w').has(n) ? ' xw' : '') + (markSet('m').has(n) ? ' xm' : ''); }
+function syncMarks(){
+  $('markRows').querySelectorAll('input[data-k]').forEach(el => { el.value = marks[el.dataset.k][+el.dataset.i] ?? ''; });
+}
+$('markRows').addEventListener('input', e => {
+  const el = e.target.closest('input[data-k]');
+  if(!el) return;
+  marks[el.dataset.k][+el.dataset.i] = el.value;
+  try{ localStorage.setItem(MARK_KEY, JSON.stringify(marks)); }catch(e){}
+  if(S) renderBaseMates();
+});
+$('btnMarkClear').onclick = () => {
+  marks = {w: Array(6).fill(''), m: Array(6).fill('')};
+  try{ localStorage.removeItem(MARK_KEY); }catch(e){}
+  syncMarks(); if(S) renderBaseMates();
+};
+syncMarks();
 
 /* ---------- ⑤ 해당 회차가 n개뿐인 조합의 다음 회차 ---------- */
 function renderRare(){
