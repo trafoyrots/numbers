@@ -246,8 +246,8 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
         <h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회부터 전체 회차, 본번호 기준 · 상위 10개)</small></h3>
         <div id="baseMates"></div>
         <div class="mark-rows" id="markRows">
-          <div class="mark-row w"><b>당번</b><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="0"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="1"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="2"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="3"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="4"><input class="meta-input" type="number" min="1" max="45" data-k="w" data-i="5"><span class="note">오렌지 ✕</span></div>
-          <div class="mark-row m"><b>모의 번호</b><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="0"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="1"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="2"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="3"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="4"><input class="meta-input" type="number" min="1" max="45" data-k="m" data-i="5"><span class="note">녹색 ✕</span>
+          <div class="mark-row w"><b>당번</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="5"><span class="note">오렌지 ✕</span></div>
+          <div class="mark-row m"><b>모의 번호</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="5"><span class="note">녹색 ✕</span>
             <button type="button" class="secondary small" id="btnMarkClear">지우기</button></div>
         </div>
       </div>
@@ -684,14 +684,56 @@ try{ const o = JSON.parse(localStorage.getItem(MARK_KEY) || '{}'); ['w', 'm'].fo
 const markSet = k => new Set(marks[k].map(Number).filter(n => n >= 1 && n <= 45));
 function markCls(n){ return (markSet('w').has(n) ? ' xw' : '') + (markSet('m').has(n) ? ' xm' : ''); }
 function syncMarks(){
-  $('markRows').querySelectorAll('input[data-k]').forEach(el => { el.value = marks[el.dataset.k][+el.dataset.i] ?? ''; });
+  markCells().forEach(el => { el.value = marks[el.dataset.k][+el.dataset.i] ?? ''; });
+}
+// 번호 칸: index.html과 같은 방식 (5~9는 바로, 1~4는 두 자리 기다림, 확정되면 다음 칸으로)
+const markCells = () => [...$('markRows').querySelectorAll('input[data-k]')];
+const MARK_ADVANCE = new Set([' ', 'Enter', ',', '.', '+']);
+function focusMark(c){ if(c){ c.focus(); c.select(); } }
+function saveMark(el){
+  marks[el.dataset.k][+el.dataset.i] = el.value;
+  try{ localStorage.setItem(MARK_KEY, JSON.stringify(marks)); }catch(e){}
+}
+function onMarkInput(cell){
+  let v = cell.value.replace(/\D/g, '');
+  if(v !== cell.value) cell.value = v;
+  let commit = null, carry = '';
+  if(v.length === 1){
+    if(v >= '5') commit = +v;                         // 5~9: 바로 확정
+  } else if(v.length >= 2){
+    const two = +v.slice(0, 2);
+    if(v[0] === '0'){ if(two >= 1){ commit = two; carry = v.slice(2); } else cell.value = '0'; }
+    else if(two <= 45){ commit = two; carry = v.slice(2); }
+    else { commit = +v[0]; carry = v.slice(1); }      // 4 다음 6 → 04 | 06
+  }
+  if(commit !== null){
+    cell.value = pad(commit);
+    const cs = markCells(), nx = cs[cs.indexOf(cell) + 1];
+    if(nx){ focusMark(nx); if(carry){ nx.value = carry; onMarkInput(nx); } }
+  }
+  saveMark(cell);
+}
+function finalizeMark(cell){
+  const n = parseInt(cell.value, 10);
+  cell.value = n >= 1 && n <= 45 ? pad(n) : '';
+  saveMark(cell);
 }
 $('markRows').addEventListener('input', e => {
   const el = e.target.closest('input[data-k]');
   if(!el) return;
-  marks[el.dataset.k][+el.dataset.i] = el.value;
-  try{ localStorage.setItem(MARK_KEY, JSON.stringify(marks)); }catch(e){}
+  onMarkInput(el);
   if(S) renderBaseMates();
+});
+$('markRows').addEventListener('keydown', e => {
+  const el = e.target.closest('input[data-k]');
+  if(!el || e.ctrlKey || e.metaKey || e.altKey) return;
+  const cs = markCells(), i = cs.indexOf(el);
+  if(MARK_ADVANCE.has(e.key)){ e.preventDefault(); finalizeMark(el); focusMark(cs[i + 1]); if(S) renderBaseMates(); }
+  else if(e.key === 'Backspace' && !el.value){ e.preventDefault(); focusMark(cs[i - 1]); }
+});
+$('markRows').addEventListener('focusout', e => {
+  const el = e.target.closest('input[data-k]');
+  if(el){ finalizeMark(el); if(S) renderBaseMates(); }
 });
 $('btnMarkClear').onclick = () => {
   marks = {w: Array(6).fill(''), m: Array(6).fill('')};
