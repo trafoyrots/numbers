@@ -123,17 +123,17 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .ball.xw,.ball.xm{--x1:transparent;--x2:transparent;text-shadow:0 0 3px #000,0 0 2px #000;
   background-image:linear-gradient(45deg,transparent 43%,var(--x1) 43%,var(--x1) 57%,transparent 57%),
                    linear-gradient(-45deg,transparent 43%,var(--x2) 43%,var(--x2) 57%,transparent 57%)}
-.ball.xw{--x1:#ff8a00;--x2:#ff8a00}
-.ball.xm{--x1:#16b84e;--x2:#16b84e}
-.ball.xw.xm{--x1:#ff8a00;--x2:#16b84e}
+.ball.xw{--x1:#cc6200;--x2:#cc6200}
+.ball.xm{--x1:#7b2fd0;--x2:#7b2fd0}
+.ball.xw.xm{--x1:#cc6200;--x2:#7b2fd0}
 .mark-rows{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding:12px;background:#fff;border:1px solid #eceef0;border-radius:11px}
 .mark-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .mark-row > b{width:72px;font-size:13px}
 .mark-row.w > b{color:#d97409}
-.mark-row.m > b{color:#178a3c}
+.mark-row.m > b{color:#6a24b8}
 .mark-row input{width:48px;height:34px;text-align:center;padding:4px}
 .mark-row.w input{border-color:#f5c48c}
-.mark-row.m input{border-color:#9fd8b0}
+.mark-row.m input{border-color:#c9a8ef}
 @media(max-width:760px){
   .container{padding:20px 12px 40px}
   h1{font-size:24px}
@@ -247,7 +247,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
         <div id="baseMates"></div>
         <div class="mark-rows" id="markRows">
           <div class="mark-row w"><b>당번</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="6"><span class="note">오렌지 ✕</span></div>
-          <div class="mark-row m"><b>모의 번호</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="6"><span class="note">녹색 ✕</span>
+          <div class="mark-row m"><b>모의 번호</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="6"><span class="note">보라색 ✕</span>
             <button type="button" class="secondary small" id="btnMarkClear">지우기</button></div>
         </div>
       </div>
@@ -677,7 +677,7 @@ function renderBaseMates(){
       `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('')}</td></tr>`;
   }).join('')}</table>`;
 }
-// 당번(오렌지 ✕) · 모의 번호(녹색 ✕): 각각 6칸, 위 역대 궁합수에 표시
+// 당번(오렌지 ✕) · 모의 번호(보라색 ✕): 각각 7칸, 위 역대 궁합수에 표시
 const MARK_KEY = 'lottoCompatMarks';
 let marks = {w: Array(7).fill(''), m: Array(7).fill('')};
 try{ const o = JSON.parse(localStorage.getItem(MARK_KEY) || '{}'); ['w', 'm'].forEach(k => { if(Array.isArray(o[k])) marks[k] = o[k].slice(0, 7); }); }catch(e){}
