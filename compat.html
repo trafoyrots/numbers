@@ -119,6 +119,8 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate-table .ball{width:28px;height:28px;font-size:12px}
 .mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
 .mate small{color:#7b838d;font-weight:700}
+.mate-sub{font-size:13px;font-weight:800;color:#3d434c;margin:12px 0 4px}
+.mate-sub:first-child{margin-top:0}
 /* 당번·모의번호 x 표시 */
 .ball.xw,.ball.xm{--x1:transparent;--x2:transparent;text-shadow:0 0 3px #000,0 0 2px #000;
   background-image:linear-gradient(45deg,transparent 43%,var(--x1) 43%,var(--x1) 57%,transparent 57%),
@@ -126,15 +128,24 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .ball.xw{--x1:#cc6200;--x2:#cc6200}
 .ball.xm{--x1:#7b2fd0;--x2:#7b2fd0}
 .ball.xw.xm{--x1:#cc6200;--x2:#7b2fd0}
-/* 궁합수 찾기 페이지 전체 인쇄 (A4): 화면 그대로, 누르는 버튼만 빼고 */
+/* 궁합수 분석 인쇄 (A4): 인쇄용으로 따로 모아 그림 */
+#matesPrint{display:none}
+#matesPrint h2{margin:0 0 4px}
+#matesPrint > .note{margin-bottom:6px}
+#matesPrint h3{margin:0 0 8px;break-after:avoid}
+#matesPrint button{display:none}
+.pm-sec{margin-top:12px;padding-top:10px;border-top:1px solid #e4e8ed}
+.pm-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pm-legend{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:10px;font-size:13px}
+.pm-legend b{margin-right:6px}
 @media print{
-  body{background:#fff}
-  .container{max-width:none;padding:0}
-  .card{box-shadow:none;border:1px solid #e4e8ed}
-  .topbar,.toast,.card .toolbar button,.more,#btnMarkClear,#addRow{display:none !important}
-  .hit,.cnt-line,.pair,.mate-table tr,.mark-rows,h2,h3{break-inside:avoid}
-  h2,h3{break-after:avoid}
-  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.print-mates{background:#fff}
+  body.print-mates > *:not(#matesPrint){display:none !important}
+  body.print-mates #matesPrint{display:block}
+  #matesPrint *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #matesPrint .pm-sec.keep{break-inside:avoid}
+  #matesPrint .cnt-line{padding:4px 10px}
+  #matesPrint .cnt-line,#matesPrint .pair,#matesPrint .mate-table tr,#matesPrint .base-box,#matesPrint .combo-grid{break-inside:avoid}
 }
 .mark-rows{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding:12px;background:#fff;border:1px solid #eceef0;border-radius:11px}
 .mark-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -165,7 +176,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
       <a href="index.html#analysis">📊 패턴 분석</a>
       <a href="compat.html" class="on">🔗 궁합수 찾기</a>
     </nav>
-    <button type="button" class="secondary" id="btnPrintPage">🖨️ 인쇄</button>
+    <button type="button" class="secondary" id="btnPrintMates">🖨️ 궁합수 분석 인쇄</button>
   </div>
 
   <!-- ① 당첨번호 목록 -->
@@ -254,7 +265,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
         <div id="pickMates"></div>
       </div>
       <div class="stat-box" style="margin-top:14px">
-        <h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회부터 전체 회차, 본번호 기준 · 상위 10개)</small></h3>
+        <h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회부터 전체 회차, 본번호 기준 · 상위·하위 10개)</small></h3>
         <div id="baseMates"></div>
         <div class="mark-rows" id="markRows">
           <div class="mark-row w"><b>당번</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="6"><span class="note">오렌지 ✕</span></div>
@@ -680,13 +691,19 @@ $('cntGroups').addEventListener('click', e => {
 function renderBaseMates(){
   const base = S.base;
   const pool = draws.filter(x => x.r <= base.r);
-  $('baseMates').innerHTML = `<table class="mate-table">${base.m.map(n => {
+  const rows = base.m.map(n => {
     const c = Array(46).fill(0); let seen = 0;
     pool.forEach(x => { if(x.m.includes(n)){ seen++; x.m.forEach(y => { if(y !== n) c[y]++; }); } });
-    const top = c.map((v, i) => [i, v]).slice(1).filter(a => a[1]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 10);
-    return `<tr><td>${ball(n)}</td><td><span class="note">${seen}회 · </span>${top.map(([m, v]) =>
-      `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('')}</td></tr>`;
-  }).join('')}</table>`;
+    const all = c.map((v, i) => [i, v]).slice(1).filter(a => a[0] !== n);
+    return {n, seen,
+      top: all.filter(a => a[1]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 10),
+      low: all.sort((a, b) => a[1] - b[1] || a[0] - b[0]).slice(0, 10)};   // 함께 가장 적게 나온 수 (0회 포함)
+  });
+  const table = key => `<table class="mate-table">${rows.map(r =>
+    `<tr><td>${ball(r.n)}</td><td><span class="note">${r.seen}회 · </span>${r[key].map(([m, v]) =>
+      `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('')}</td></tr>`).join('')}</table>`;
+  $('baseMates').innerHTML = `<div class="mate-sub">⬆️ 상위 10개 <small class="note">(함께 가장 많이 나온 수)</small></div>${table('top')}
+    <div class="mate-sub">⬇️ 하위 10개 <small class="note">(함께 가장 적게 나온 수)</small></div>${table('low')}`;
 }
 // 당번(오렌지 ✕) · 모의 번호(보라색 ✕): 각각 7칸, 위 역대 궁합수에 표시
 const MARK_KEY = 'lottoCompatMarks';
@@ -757,17 +774,43 @@ $('btnMarkClear').onclick = () => {
 };
 syncMarks();
 
-// 궁합수 찾기 페이지 전체 인쇄 (A4)
-function printPage(){
+// 궁합수 분석 인쇄 (A4): 최신 회차 · 3개 조합 · 번호 통계 · 궁합수 · 적은 조합 (화면에서 고른 조건 그대로)
+function printMates(){
+  if(!S){ toast('먼저 최신 회차를 찾아 주세요.'); return; }
+  renderResults();
+  const base = S.base, html = id => $(id).innerHTML;
+  const legend = (label, set) => set.size
+    ? `<div class="pm-legend"><b>${label}</b>${[...set].sort((a, b) => a - b).map(n => ball(n)).join('')}</div>` : '';
+  const combos = S.comboCnt.slice().sort((a, b) => b.n - a.n).map(o =>
+    `<div class="combo${o.n ? '' : ' zero'}"><span>${ckey(o.c)}</span><small>${o.n}개</small></div>`).join('');
+  $('matesPrint').innerHTML = `<h2>🔗 궁합수 분석 · 제 ${base.r}회</h2>
+    <div class="note">${escapeHtml(base.d)} 추첨 · 인쇄 ${new Date().toLocaleDateString('ko-KR')}</div>
+    <div class="base-box"><span class="balls">${base.m.map(n => ball(n, 'big')).join('')}</span>
+      <span class="note">본번호 6개로 만든 3개 조합 <b>20</b>개 → 해당 회차 <b>${S.hits.length}</b>개</span></div>
+    <div class="pm-sec keep"><h3>3개 조합별 해당 회차 수</h3><div class="combo-grid">${combos}</div></div>
+    <div class="pm-sec"><h3>번호 통계 · ${ui.target === 'next' ? '다음 회차' : '해당 회차'} 기준</h3>
+      <div class="chips"><span class="chip">해당 회차 <b>${filteredHits().length}</b> / ${S.hits.length}개</span>${ui.dg
+        ? `<span class="chip">${ui.dgOn === 'next' ? '다음 회차' : '해당 회차'}에 동끝 <b>${ui.dg}개 이상</b></span>` : ''}${html('statChips')}</div>
+      <div class="pm-two">
+        <div><h3>🔥 나온 횟수별 번호</h3><div class="cnt-groups">${html('cntGroups')}</div></div>
+        <div><h3>🤝 함께 자주 나온 두 수</h3><div class="pair-list">${html('pairList')}</div></div>
+      </div></div>
+    <div class="pm-sec keep"><h3>🎯 고른 번호의 궁합수</h3>${html('pickMates')}</div>
+    <div class="pm-sec keep"><h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회~${base.r}회 본번호 기준 · 상위·하위 10개)</small></h3>
+      ${html('baseMates')}${legend('당번 (오렌지 ✕)', markSet('w'))}${legend('모의 번호 (보라색 ✕)', markSet('m'))}</div>
+    <div class="pm-sec keep"><h3>⑤ 해당 회차가 ${ui.cn}개뿐인 조합의 다음 회차</h3>
+      <div class="chips">${html('rareChips')}</div><div class="cnt-groups">${html('rareCnt')}</div></div>`;
   const pageStyle = document.createElement('style');
   pageStyle.textContent = '@media print{@page{size:A4 portrait;margin:10mm}}';
   document.head.appendChild(pageStyle);
+  document.body.classList.add('print-mates');
   let finished = false;
-  const done = () => { if(finished) return; finished = true; pageStyle.remove(); window.removeEventListener('afterprint', done); };
+  const done = () => { if(finished) return; finished = true;
+    document.body.classList.remove('print-mates'); pageStyle.remove(); window.removeEventListener('afterprint', done); };
   window.addEventListener('afterprint', done);
   setTimeout(() => { window.print(); setTimeout(done, 1500); }, 60);
 }
-$('btnPrintPage').onclick = printPage;
+$('btnPrintMates').onclick = printMates;
 
 /* ---------- ⑤ 해당 회차가 n개뿐인 조합의 다음 회차 ---------- */
 function renderRare(){
@@ -821,8 +864,9 @@ try{ saved = JSON.parse(localStorage.getItem(UI_KEY) || '{}'); }catch(e){}
 if(!['recent', 'old', 'shared'].includes(ui.sort)) ui.sort = 'recent';
 syncUi();
 if(draws.length) search();   // 기본: 최신 회차로 바로 찾아 둠
-// index.html 인쇄 메뉴의 "궁합수 찾기 인쇄"로 열렸을 때
-if(location.hash === '#print-page'){ history.replaceState(null, '', location.pathname); setTimeout(printPage, 300); }
+// index.html 인쇄 메뉴의 "궁합수 분석 인쇄"로 열렸을 때
+if(location.hash === '#print-mates'){ history.replaceState(null, '', location.pathname); setTimeout(printMates, 300); }
 </script>
+<div id="matesPrint"></div>
 </body>
 </html>
