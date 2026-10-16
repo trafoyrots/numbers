@@ -120,12 +120,12 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate-table tr.mate-a td:not(.mn){border-bottom:1px dashed #eceef0;padding-bottom:3px}
 .mate-table tr.mate-b td{padding-top:3px}
 .mate-table td.mn .note{display:block;font-size:11px;margin-top:3px;white-space:nowrap}
-/* 궁합수 15개가 칸 너비를 꽉 채우도록: 칸 너비(cqi) 기준으로 공 크기를 정함 */
-.mate-table td.mt{container-type:inline-size}
-.mate-row{display:grid;grid-template-columns:repeat(15,1fr);align-items:center}
+/* 궁합수 15개가 칸 너비를 꽉 채우도록: 줄 너비(cqi) 기준으로 공 크기를 정함 (표 칸은 컨테이너가 될 수 없어 안쪽 div에 둠) */
+.mate-row{container-type:inline-size;display:grid;grid-template-columns:repeat(15,1fr);align-items:center}
 .mate{display:flex;align-items:center;justify-content:center;gap:2px}
 .mate-table .mate .ball{width:min(3.9cqi,46px);height:min(3.9cqi,46px);font-size:min(1.65cqi,18px)}
 .mate small{color:#7b838d;font-weight:700;font-size:max(9px,min(1.25cqi,13px));min-width:1.3em}
+.mate .ball.hit{margin-right:3px}
 @media (max-width:700px){.mate-row{grid-template-columns:repeat(8,1fr)}.mate-table .mate .ball{width:7.5cqi;height:7.5cqi;font-size:3cqi}.mate small{font-size:max(9px,2.2cqi)}}
 .mate-sub{font-size:13px;font-weight:800;color:#3d434c;margin:12px 0 4px}
 .mate-sub:first-child{margin-top:0}
