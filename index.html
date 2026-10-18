@@ -402,8 +402,17 @@ body.print-bw .pc.adj span{background:#000;color:#fff}
 .gen-form .gen-inline{display:flex;gap:6px;align-items:center}
 .gen-form .gen-inline .meta-input{flex:1;min-width:0}
 .gen-form .gen-inline button{white-space:nowrap}
-.gen-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #f0f2f5}
+.gen-view{max-width:420px;border:1px solid #e3e6ea;border-radius:14px;padding:12px 14px 14px;background:#fff;margin-bottom:10px}
+.gen-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.gen-nav b{font-size:15px}
+.gen-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;justify-items:center}
+.gen-grid .ball{width:38px;height:38px;font-size:14px}
+.gen-grid .ball.off{background:#f3f4f6;color:#a3a9b1;font-weight:600;box-shadow:inset 0 0 0 1px #e1e4e8}
+.gen-info{text-align:center;color:#5b636d;font-size:13px;font-weight:700;margin-top:12px;line-height:1.6}
+.gen-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 6px;border-bottom:1px solid #f0f2f5;cursor:pointer;border-radius:8px}
+.gen-row.on{background:#eef4ff}
 .gen-row > b{width:18px;color:#4a5568}
+@media(max-width:480px){ .gen-grid .ball{width:32px;height:32px;font-size:12.5px} }
 .gen-row small{color:#6b7280;font-size:12.5px}
 .gen-scroll{overflow-x:auto}
 .gen-tb{border-collapse:collapse;font-size:13px;width:100%}
@@ -4159,17 +4168,39 @@ function setGenBusy(busy){
   $('genStart').disabled = busy; $('genStop').disabled = !busy;
   ['genToInput', 'genCopy', 'genSave'].forEach(id => { $(id).disabled = busy || !genSets.length; });
 }
+// 한 세트씩 넘겨 보기 (예전 프로그램처럼 ◀ 이전 · 다음 ▶, 방향키) + 아래에 5세트 목록 (누르면 그 세트로)
+let genIdx = 0;
 function renderGenSets(msg){
-  $('genResult').innerHTML = genSets.map((s, i) => `<div class="gen-row"><b>${COLS[i]}</b>
+  if(genIdx >= genSets.length) genIdx = 0;
+  const cur = genSets[genIdx], sel = new Set(cur || []);
+  const view = cur ? `<div class="gen-view">
+      <div class="gen-nav"><button type="button" class="secondary small" onclick="moveGen(-1)">◀ 이전</button>
+        <b>[${genIdx + 1} / ${genSets.length}] 세트</b>
+        <button type="button" class="secondary small" onclick="moveGen(1)">다음 ▶</button></div>
+      <div class="gen-grid">${Array.from({length: 45}, (_, i) => i + 1).map(n => `<div class="ball ${sel.has(n) ? ballClass(n) : 'off'}">${n}</div>`).join('')}</div>
+      <div class="gen-info">${genInfoText(comboInfo(cur))}</div></div>` : '';
+  $('genResult').innerHTML = view + genSets.map((s, i) => `<div class="gen-row${i === genIdx ? ' on' : ''}" onclick="moveGen(${i - genIdx})"><b>${COLS[i]}</b>
       <div class="balls">${s.map(x => `<div class="ball ${ballClass(x)}">${x}</div>`).join('')}</div>
       <small>${genInfoText(comboInfo(s))}</small></div>`).join('') +
     (msg ? `<div class="empty" style="color:#c2410c">${msg}</div>` : genSets.length ? '' : '<div class="empty">아직 만든 조합이 없습니다.</div>');
 }
+function moveGen(delta){
+  if(!genSets.length) return;
+  genIdx = ((genIdx + delta) % genSets.length + genSets.length) % genSets.length;
+  renderGenSets();
+}
+// 번호 생성 화면에서 방향키로 넘기기 (입력칸에 있을 때는 커서 이동 그대로)
+document.addEventListener('keydown', e => {
+  if($('pageGen').hidden || !genSets.length || e.ctrlKey || e.altKey || e.metaKey) return;
+  if(e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+  const d = {ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1}[e.key];
+  if(d){ e.preventDefault(); moveGen(d); }
+});
 function genStart(){
   let st;
   try{ st = genSettings(); }catch(msg){ alert(msg); return; }
   saveGenSettings();
-  genSets = [];
+  genSets = []; genIdx = 0;
   let trials = 0;
   const job = genJob = {stop: false};
   setGenBusy(true); renderGenSets();
