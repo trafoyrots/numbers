@@ -392,6 +392,28 @@ body.print-bw .pc .dupn{color:#000}
 .an-tag.adj{background:#efe7fd;color:#5b2fb0;font-weight:800}
 .nb-list .adjx{background:#7c4dcc;border-color:#7c4dcc;color:#fff}
 body.print-bw .pc.adj span{background:#000;color:#fff}
+/* 번호 생성 */
+.gen-form{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px 16px;margin:14px 0 16px}
+.gen-form label{display:flex;flex-direction:column;align-items:stretch;gap:4px}
+.gen-form label small{font-weight:600;color:#8a9099;font-size:11.5px}
+.gen-form .meta-input{width:100%}
+.gen-form .gen-wide{grid-column:1/-1}
+.gen-form textarea.meta-input{height:auto;min-height:58px;resize:vertical;font-weight:600}
+.gen-form .gen-inline{display:flex;gap:6px;align-items:center}
+.gen-form .gen-inline .meta-input{flex:1;min-width:0}
+.gen-form .gen-inline button{white-space:nowrap}
+.gen-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 0;border-bottom:1px solid #f0f2f5}
+.gen-row > b{width:18px;color:#4a5568}
+.gen-row small{color:#6b7280;font-size:12.5px}
+.gen-scroll{overflow-x:auto}
+.gen-tb{border-collapse:collapse;font-size:13px;width:100%}
+.gen-tb th,.gen-tb td{border-bottom:1px solid #eef0f3;padding:6px 8px;text-align:center;white-space:nowrap}
+.gen-tb th{background:#f7f8fa;color:#4a5058}
+.gen-tb td small{color:#8a9099;margin-left:3px}
+.gen-tb .ball{width:28px;height:28px;font-size:12px;display:inline-flex;margin:0 1px}
+.gen-slip .slip-num{display:flex;align-items:center;justify-content:center;cursor:default}
+.gen-slip .slip-num.off{background:#eceef1;border-color:#d8dbe0;color:#a3a9b1;text-decoration:line-through}
+.gen-slip .slip-num.up{border-color:#2f6fed;color:#1d4ed8}
 .pc{position:relative}
 .pc.star::after{content:'★';position:absolute;top:-1.2mm;right:-.6mm;color:#d23b3b;font-size:9pt;line-height:1}
 .tk.tkt .pc.star::after{top:-6px;right:-3px;font-size:14px}
@@ -613,6 +635,7 @@ body.print-bw .ptk-sq{border-color:#222}
   <div class="tabs" id="tabs">
     <button type="button" data-page="input" class="on">✏️ 번호 입력</button>
     <button type="button" data-page="analysis">📊 패턴 분석<span id="tabCount" class="tab-count"></span></button>
+    <button type="button" data-page="gen">🎲 번호 생성</button>
     <a href="compat.html">🔗 궁합수 찾기</a>
     <a href="report.html">📄 분석 보고서</a>
   </div>
@@ -814,6 +837,55 @@ body.print-bw .ptk-sq{border-color:#222}
     <div id="countGroups" class="cnt-groups"></div>
   </div>
   </div><!-- /pageAnalysis -->
+
+  <div id="pageGen" class="page" hidden>
+  <div class="card">
+    <h2>🎲 번호 생성</h2>
+    <div class="note">조건에 맞는 6개 조합을 <b>5게임</b> 만듭니다. 칸을 비워 두면 그 조건은 쓰지 않습니다. 만든 조합은 <b>번호 입력에 넣기</b>로 한 용지(A~E)로 넣어 바로 패턴 분석할 수 있습니다.</div>
+    <div class="gen-form">
+      <label>구간 개수<input id="gRange" class="meta-input" placeholder="예: 11121 · 2*1*1"><small>1~10·11~20·21~30·31~40·41~45 개수 (* = 아무 수)</small></label>
+      <label>홀짝 비율<input id="gOE" class="meta-input" placeholder="예: 33"><small>홀수 개수·짝수 개수 (합 6)</small></label>
+      <label>대소 차이<input id="gDiff" class="meta-input" inputmode="numeric" placeholder="예: 35"><small>가장 큰 수 − 가장 작은 수 (5~44)</small></label>
+      <label>2연번 개수<input id="gRun2" class="meta-input" inputmode="numeric" placeholder="예: 1"><small>14 15처럼 2개 이어진 묶음 수 (0~3)</small></label>
+      <label>3연번 개수<input id="gRun3" class="meta-input" inputmode="numeric" placeholder="예: 0"><small>14 15 16처럼 3개 이상 이어진 묶음 수 (0~2)</small></label>
+      <label>2동끝 개수<input id="gDg2" class="meta-input" inputmode="numeric" placeholder="예: 1"><small>끝수가 같은 번호 2개 묶음 수 (예: 3·23) (0~3)</small></label>
+      <label>3동끝 개수<input id="gDg3" class="meta-input" inputmode="numeric" placeholder="예: 0"><small>끝수가 같은 번호 3개 이상 묶음 수 (0~2)</small></label>
+      <label>포함 끝수<input id="gIncDigits" class="meta-input" placeholder="예: 1 5"><small>이 끝수가 모두 들어간 조합만</small></label>
+      <label>제외 끝수<input id="gExcDigits" class="meta-input" placeholder="예: 0 9"><small>이 끝수가 하나라도 있으면 버림</small></label>
+      <label>고정 번호<input id="gFixed" class="meta-input" placeholder="예: 1 10"><small>항상 넣을 번호 (최대 6개)</small></label>
+      <label>제외 번호<span class="gen-inline"><input id="gExclude" class="meta-input" placeholder="예: 5 20"><button type="button" class="secondary small" id="gExFromAn" title="패턴 분석의 🚫 제외수를 가져옵니다">제외수 가져오기</button></span><small>절대 넣지 않을 번호</small></label>
+      <label>5줄 강제(%)<input id="gColProb" class="meta-input" inputmode="decimal" value="0" title="0 = 사용 안 함. 값을 넣으면 7열 기준 5개 세로줄에 걸치지 않는 조합을 그 확률(%)로 버립니다."><small>0 = 사용 안 함 · 7열 용지에서 세로줄 5개에 걸치지 않으면 이 확률로 버림</small></label>
+      <label class="gen-wide">샘플 번호
+        <textarea id="gSample" class="meta-input" placeholder="여기 넣은 번호는 나올 때마다 가중치가 더해집니다. 예: 3 11 24 ..."></textarea>
+        <span class="gen-inline" style="flex-wrap:wrap">
+          <label style="flex-direction:row;align-items:center"><input type="checkbox" id="gUseSample" checked> 샘플 반영</label>
+          <span class="meta-label" style="font-size:12.5px">한 번 나올 때마다 가중</span><input id="gSampleW" class="meta-input" inputmode="decimal" value="0.5" style="max-width:70px;flex:none">
+          <button type="button" class="secondary small" id="gSampleFromInput" title="번호 입력 화면에 넣은 모든 번호를 샘플로 가져옵니다">입력한 번호 가져오기</button>
+          <button type="button" class="secondary small" id="gSampleClear">비우기</button>
+        </span></label>
+    </div>
+    <div class="toolbar">
+      <button type="button" class="blue" id="genStart">기본 생성</button>
+      <button type="button" class="secondary" id="genStop" disabled>중단</button>
+      <span id="genStatus" class="meta-label" style="font-size:13px">준비</span>
+    </div>
+    <div id="genResult" style="margin-top:10px"><div class="empty">아직 만든 조합이 없습니다.</div></div>
+    <div class="toolbar" style="margin-top:12px">
+      <button type="button" id="genToInput" disabled>✏️ 번호 입력에 넣기</button>
+      <button type="button" class="secondary" id="genCopy" disabled>복사</button>
+      <button type="button" class="secondary" id="genSave" disabled>텍스트로 저장</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2>📅 최근 당첨번호 <small id="genDataInfo" class="meta-label" style="font-size:12px;font-weight:600"></small></h2>
+    <div id="genRecent" class="gen-scroll"></div>
+    <div class="note" style="margin-top:8px">당첨번호는 <a href="compat.html">궁합수 찾기</a>와 같은 자료(<code>lotto_draws.js</code> + 이 브라우저에 추가한 회차)를 씁니다. 새 회차는 궁합수 찾기에서 추가하세요.</div>
+  </div>
+  <div class="card">
+    <h2>📈 통계 <small class="meta-label" style="font-size:12px;font-weight:600">역대 당첨번호 전체</small></h2>
+    <div id="genStats"></div>
+  </div>
+  </div><!-- /pageGen -->
 </div>
 
 <div id="toast" class="toast"></div>
@@ -1444,12 +1516,15 @@ let analysisRows = [];
 function scheduleAnalyze(){ clearTimeout(analyzeTimer); analyzeTimer = setTimeout(analyze, 350); }
 
 function showPage(page){
+  page = ['analysis', 'gen'].includes(page) ? page : 'input';
   const an = page === 'analysis';
-  $('pageInput').hidden = an;
+  $('pageInput').hidden = page !== 'input';
   $('pageAnalysis').hidden = !an;
+  $('pageGen').hidden = page !== 'gen';
   document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.page === page));
-  try{ history.replaceState(null, '', an ? '#analysis' : location.pathname + location.search); }catch(e){}
+  try{ history.replaceState(null, '', page === 'input' ? location.pathname + location.search : '#' + page); }catch(e){}
   if(an) analyze();
+  if(page === 'gen') renderGenData();
   window.scrollTo({top:0});
 }
 document.addEventListener('click', e => { const t = e.target.closest('#tabs button'); if(t) showPage(t.dataset.page); });
@@ -3956,6 +4031,260 @@ addRow();
 analyze();
 if(location.hash === '#analysis') showPage('analysis');
 if(window.matchMedia?.('(pointer:fine)')?.matches) focusCell(document.querySelector('#rows .num-input'));
+</script>
+<script src="lotto_draws.js"></script>
+<script>
+/* ============================================================
+   번호 생성 (예전 LottoExpert 프로그램 numbers.cs의 기본 생성을 옮김)
+   연속 쌍수 → 2연번·3연번 개수, 끝수 개수(끝수 종류 수) → 2동끝·3동끝 개수
+   ============================================================ */
+const GEN_KEY = 'lotto_gen_settings', GEN_MAX_TRIALS = 1000000, GEN_GAMES = 5;
+const GEN_FIELDS = ['gRange','gOE','gDiff','gRun2','gRun3','gDg2','gDg3','gIncDigits','gExcDigits','gFixed','gExclude','gColProb','gSample','gSampleW'];
+let genSets = [], genJob = null;
+
+// 당첨번호: lotto_draws.js + 궁합수 찾기에서 이 브라우저에 추가한 회차 (같은 회차면 추가분 우선)
+function genDraws(){
+  const map = new Map();
+  (window.LOTTO_DRAWS || []).forEach(a => map.set(a[0], a));
+  try{ (JSON.parse(localStorage.getItem('lottoCompatDraws') || '[]')).forEach(a => { if(Array.isArray(a) && a.length >= 8) map.set(a[0], a); }); }catch(e){}
+  return [...map.values()].map(a => ({r: a[0], d: a[1], m: a.slice(2, 8).map(Number).sort((x, y) => x - y), b: a[8]}))
+    .filter(x => x.m.every(isNum)).sort((a, b) => a.r - b.r);
+}
+// 6개 조합의 특징: 연번은 이어진 묶음 길이로 2연번(2개)·3연번(3개 이상), 동끝은 끝수 같은 묶음 크기로 2동끝(2개)·3동끝(3개 이상)
+function comboInfo(nums){
+  const s = [...nums].sort((a, b) => a - b), rg = [0, 0, 0, 0, 0];
+  s.forEach(n => rg[Math.min(4, Math.floor((n - 1) / 10))]++);
+  let run2 = 0, run3 = 0, len = 1;
+  for(let i = 1; i <= s.length; i++){
+    if(i < s.length && s[i] === s[i - 1] + 1){ len++; continue; }
+    if(len === 2) run2++; else if(len >= 3) run3++;
+    len = 1;
+  }
+  const by = {};
+  s.forEach(n => { by[n % 10] = (by[n % 10] || 0) + 1; });
+  const sizes = Object.values(by);
+  return {rg: rg.join(''), odd: s.filter(n => n % 2).length, diff: s[s.length - 1] - s[0], run2, run3,
+    dg2: sizes.filter(c => c === 2).length, dg3: sizes.filter(c => c >= 3).length,
+    digits: new Set(Object.keys(by).map(Number)), cols: new Set(s.map(n => (n - 1) % 7)).size};
+}
+const genInfoText = f => `구간 ${f.rg} · 홀짝 ${f.odd}:${6 - f.odd} · 차이 ${f.diff} · 2연번 ${f.run2} · 3연번 ${f.run3} · 2동끝 ${f.dg2} · 3동끝 ${f.dg3}`;
+
+/* ---------- 입력값 읽기 ---------- */
+const genVal = id => $(id).value.trim();
+function genList(text, min, max){
+  const out = [];
+  for(const t of text.split(/[\s,]+/).filter(Boolean)){
+    const x = Number(t);
+    if(!Number.isInteger(x) || x < min || x > max) return null;
+    if(!out.includes(x)) out.push(x);
+  }
+  return out;
+}
+function genWeights(exclude){
+  const w = Array(46).fill(1); w[0] = 0;
+  if($('gUseSample').checked){
+    const k = genVal('gSampleW') === '' ? 0.5 : Number(genVal('gSampleW'));
+    if(Number.isFinite(k)) genVal('gSample').split(/[^\d]+/).forEach(t => { const x = Number(t); if(t && isNum(x)) w[x] += k; });
+  }
+  for(let n = 1; n <= 45; n++) if(w[n] < 0) w[n] = 0;
+  exclude.forEach(x => { w[x] = 0; });
+  return w;
+}
+function genSettings(){
+  const st = {};
+  const range = genVal('gRange');
+  if(range){
+    if(!/^[0-6*]{5}$/.test(range)) throw '구간 개수는 5자리(0~6 숫자 또는 *)로 입력하세요.\n예: 11121, 2*1*1';
+    if(!range.includes('*') && [...range].reduce((s, c) => s + Number(c), 0) !== 6) throw '구간 개수 5자리의 합은 6이어야 합니다.';
+    st.range = range;
+  }
+  if(genVal('gOE')){
+    const d = genVal('gOE').replace(/\D/g, '');
+    if(d.length !== 2 || Number(d[0]) + Number(d[1]) !== 6) throw "홀짝 비율은 '홀수개수 짝수개수' 2자리, 합 6으로 입력하세요.\n예: 33, 42";
+    st.odd = Number(d[0]);
+  }
+  [['gDiff', 'diff', 5, 44, '대소 차이는 5~44'], ['gRun2', 'run2', 0, 3, '2연번 개수는 0~3'], ['gRun3', 'run3', 0, 2, '3연번 개수는 0~2'],
+   ['gDg2', 'dg2', 0, 3, '2동끝 개수는 0~3'], ['gDg3', 'dg3', 0, 2, '3동끝 개수는 0~2']].forEach(([id, k, lo, hi, msg]) => {
+    const t = genVal(id); if(t === '') return;
+    const x = Number(t);
+    if(!Number.isInteger(x) || x < lo || x > hi) throw msg + ' 사이 숫자로 입력하세요.';
+    st[k] = x;
+  });
+  st.inc = genList(genVal('gIncDigits'), 0, 9); if(!st.inc) throw '포함 끝수는 0~9 숫자로 입력하세요. 예: 1 5';
+  st.exc = genList(genVal('gExcDigits'), 0, 9); if(!st.exc) throw '제외 끝수는 0~9 숫자로 입력하세요. 예: 0 9';
+  const bothD = st.inc.filter(d => st.exc.includes(d));
+  if(bothD.length) throw `끝수 ${bothD.join(', ')}이(가) 포함/제외에 동시에 들어 있습니다.`;
+  st.fixed = genList(genVal('gFixed'), 1, 45); if(!st.fixed) throw '고정 번호는 1~45 숫자로 입력하세요. 예: 1 10';
+  if(st.fixed.length > 6) throw '고정 번호는 최대 6개까지 입력할 수 있습니다.';
+  const exclude = genList(genVal('gExclude'), 1, 45); if(!exclude) throw '제외 번호는 1~45 숫자로 입력하세요. 예: 5 20';
+  const both = st.fixed.filter(x => exclude.includes(x));
+  if(both.length) throw `번호 ${both.join(', ')}이(가) 고정/제외에 동시에 들어 있습니다.`;
+  const badFixed = st.fixed.filter(x => st.exc.includes(x % 10));
+  if(badFixed.length) throw `고정 번호 ${badFixed.join(', ')}의 끝수가 제외 끝수에 포함되어 있습니다.`;
+  if($('gUseSample').checked && genVal('gSampleW') !== '' && !Number.isFinite(Number(genVal('gSampleW')))) throw '샘플 가중은 숫자로 입력하세요. 예: 0.5';
+  st.w = genWeights(exclude);
+  const available = Array.from({length: 45}, (_, i) => i + 1).filter(n => st.w[n] > 0 && !st.fixed.includes(n)).length;
+  if(available < 6 - st.fixed.length) throw '제외 번호가 너무 많아 6개를 만들 수 없습니다.';
+  const cp = genVal('gColProb') === '' ? 0 : Number(genVal('gColProb'));
+  if(!Number.isFinite(cp)) throw '5줄 강제(%)는 0~100 숫자로 입력하세요.';
+  st.colProb = Math.max(0, Math.min(1, cp / 100));
+  return st;
+}
+
+/* ---------- 생성 ----------
+   가중치 비복원 추출 (Efraimidis–Spirakis): key = -ln(U) / w 가 작은 순으로 뽑으면 가중치에 정확히 비례. 고정 번호는 먼저 넣음 */
+function genSample(st){
+  const res = [...st.fixed], need = 6 - res.length;
+  if(need > 0){
+    const keys = [];
+    for(let n = 1; n <= 45; n++){
+      if(st.w[n] <= 0 || st.fixed.includes(n)) continue;
+      keys.push([-Math.log(1 - Math.random()) / st.w[n], n]);   // 1 - random = (0, 1]
+    }
+    if(keys.length < need) return null;
+    keys.sort((a, b) => a[0] - b[0]);
+    for(let i = 0; i < need; i++) res.push(keys[i][1]);
+  }
+  return res.sort((a, b) => a - b);
+}
+function genMatch(f, st){
+  if(st.range && [...st.range].some((c, i) => c !== '*' && c !== f.rg[i])) return false;
+  if(st.odd != null && f.odd !== st.odd) return false;
+  if(st.diff != null && f.diff !== st.diff) return false;
+  if(['run2', 'run3', 'dg2', 'dg3'].some(k => st[k] != null && f[k] !== st[k])) return false;
+  if(st.inc.some(d => !f.digits.has(d))) return false;
+  if(st.exc.some(d => f.digits.has(d))) return false;
+  return true;
+}
+function setGenBusy(busy){
+  $('genStart').disabled = busy; $('genStop').disabled = !busy;
+  ['genToInput', 'genCopy', 'genSave'].forEach(id => { $(id).disabled = busy || !genSets.length; });
+}
+function renderGenSets(msg){
+  $('genResult').innerHTML = genSets.map((s, i) => `<div class="gen-row"><b>${COLS[i]}</b>
+      <div class="balls">${s.map(x => `<div class="ball ${ballClass(x)}">${x}</div>`).join('')}</div>
+      <small>${genInfoText(comboInfo(s))}</small></div>`).join('') +
+    (msg ? `<div class="empty" style="color:#c2410c">${msg}</div>` : genSets.length ? '' : '<div class="empty">아직 만든 조합이 없습니다.</div>');
+}
+function genStart(){
+  let st;
+  try{ st = genSettings(); }catch(msg){ alert(msg); return; }
+  saveGenSettings();
+  genSets = [];
+  let trials = 0;
+  const job = genJob = {stop: false};
+  setGenBusy(true); renderGenSets();
+  const finish = msg => {
+    genJob = null; setGenBusy(false);
+    $('genStatus').textContent = msg ? msg : genSets.length < GEN_GAMES ? `${genSets.length}세트 / ${trials.toLocaleString()}회` : `${trials.toLocaleString()}회 만에 완료`;
+    renderGenSets(!genSets.length ? (msg ? '중단되었습니다.' : '조건에 맞는 조합을 찾지 못했습니다.') : '');
+  };
+  const step = () => {
+    if(job.stop) return finish('중단됨');
+    const until = Math.min(GEN_MAX_TRIALS, trials + 20000);   // 2만 번씩 끊어서 화면이 멈추지 않게
+    while(trials < until && genSets.length < GEN_GAMES){
+      trials++;
+      const s = genSample(st);
+      if(!s){ trials = GEN_MAX_TRIALS; break; }
+      const f = comboInfo(s);
+      if(st.colProb > 0 && f.cols !== 5 && Math.random() < st.colProb) continue;   // 5줄 강제
+      if(!genMatch(f, st)) continue;
+      if(genSets.some(x => x.join() === s.join())) continue;   // 같은 조합 두 번 안 나오게
+      genSets.push(s);
+    }
+    $('genStatus').textContent = `${trials.toLocaleString()}회 시도`;
+    renderGenSets();
+    if(genSets.length < GEN_GAMES && trials < GEN_MAX_TRIALS) setTimeout(step, 0);
+    else finish();
+  };
+  setTimeout(step, 0);
+}
+function genText(){
+  const now = new Date(), p2 = n => String(n).padStart(2, '0');
+  const stamp = `${now.getFullYear()}-${p2(now.getMonth() + 1)}-${p2(now.getDate())} ${p2(now.getHours())}:${p2(now.getMinutes())}:${p2(now.getSeconds())}`;
+  return [`--- 로또 생성 기록 (일반) | ${stamp} ---`, ...genSets.map((s, i) => `[일반 ${i + 1}] ${s.map(pad).join(', ')}`)].join('\n');
+}
+// 만든 5게임을 번호 입력 화면에 한 용지(A~E)로 넣음
+function genToInput(){
+  if(!genSets.length) return;
+  mainRows().forEach(r => { if(isEmptyRow(r)) r.remove(); });
+  const tk = newTk();
+  genSets.forEach((s, i) => addRow(s, {col: COLS[i], tk, ta: $('defaultTa').value}, {mode: 'auto'}));
+  renumber(); analyze();
+  toast(`${genSets.length}게임을 번호 입력에 넣었습니다.`);
+}
+
+/* ---------- 최근 당첨번호 · 통계 ---------- */
+function renderGenData(){
+  const draws = genDraws();
+  $('genDataInfo').textContent = draws.length ? `· 제 1~${draws[draws.length - 1].r}회 (${draws.length}회)` : '';
+  if(!draws.length){
+    $('genRecent').innerHTML = $('genStats').innerHTML = '<div class="empty">당첨번호 자료가 없습니다. lotto_draws.js 파일이 같은 폴더에 있는지 확인하세요.</div>';
+    return;
+  }
+  const ball = x => `<span class="ball ${ballClass(x)}">${x}</span>`;
+  $('genRecent').innerHTML = `<table class="gen-tb"><thead><tr><th>회차</th><th>당첨번호</th><th>보너스</th><th>구간</th><th>홀짝</th><th>차이</th><th>2연번</th><th>3연번</th><th>2동끝</th><th>3동끝</th></tr></thead><tbody>` +
+    draws.slice(-10).reverse().map(d => { const f = comboInfo(d.m);
+      return `<tr><td><b>${d.r}</b><small>${escapeHtml(d.d || '')}</small></td><td>${d.m.map(ball).join('')}</td><td>${isNum(d.b) ? ball(d.b) : ''}</td>` +
+        `<td>${f.rg}</td><td>${f.odd}:${6 - f.odd}</td><td>${f.diff}</td><td>${f.run2}</td><td>${f.run3}</td><td>${f.dg2}</td><td>${f.dg3}</td></tr>`; }).join('') + `</tbody></table>`;
+  // 2연번·3연번·2동끝·3동끝 개수별 회수
+  const infos = draws.map(d => comboInfo(d.m)), N = draws.length;
+  const cell = c => `<td>${c}회<small>${(c / N * 100).toFixed(1)}%</small></td>`;
+  const distRow = (label, k, max) => { const c = Array(max + 1).fill(0); infos.forEach(f => c[Math.min(max, f[k])]++); return `<tr><th>${label}</th>${c.map(cell).join('')}${'<td></td>'.repeat(3 - max)}</tr>`; };
+  const cols = Array(7).fill(0); infos.forEach(f => cols[f.cols]++);
+  // 번호별 출현 횟수 + 지금 설정으로 본 생성 가중치
+  const freq = Array(46).fill(0); draws.forEach(d => d.m.forEach(x => freq[x]++));
+  const w = genWeights(genList(genVal('gExclude'), 1, 45) || []);
+  $('genStats').innerHTML =
+    `<h3>연번 · 동끝 개수 <small class="meta-label" style="font-size:12px">한 회차 당첨번호 6개 기준</small></h3>
+    <div class="gen-scroll"><table class="gen-tb"><thead><tr><th></th><th>0개</th><th>1개</th><th>2개</th><th>3개</th></tr></thead><tbody>
+      ${distRow('2연번', 'run2', 3)}${distRow('3연번', 'run3', 2)}${distRow('2동끝', 'dg2', 3)}${distRow('3동끝', 'dg3', 2)}</tbody></table></div>
+    <h3 style="margin-top:18px">7열 기준 세로줄 점유</h3>
+    <div class="gen-scroll"><table class="gen-tb"><thead><tr>${[1, 2, 3, 4, 5, 6].map(i => `<th${i === 5 ? ' style="color:#2453b8"' : ''}>${i}줄</th>`).join('')}</tr></thead>
+      <tbody><tr>${[1, 2, 3, 4, 5, 6].map(i => cell(cols[i])).join('')}</tr></tbody></table></div>
+    <h3 style="margin-top:18px">번호별 출현 횟수 · 생성 가중치 <small class="meta-label" style="font-size:12px">파란 테 = 샘플로 가중치가 오른 번호 · 회색 = 제외 번호</small></h3>
+    <div class="slip gen-slip" style="max-width:520px">${slipHtml(n => `<div class="slip-num${w[n] <= 0 ? ' off' : w[n] > 1 ? ' up' : ''}">${pad(n)}</div>` +
+      `<div class="slip-cnt">${freq[n]}회${w[n] > 0 && w[n] !== 1 ? ` ×${w[n].toFixed(1)}` : ''}</div>`)}</div>`;
+}
+
+/* ---------- 설정 기억 · 버튼 ---------- */
+function saveGenSettings(){
+  try{ const o = {use: $('gUseSample').checked}; GEN_FIELDS.forEach(id => { o[id] = $(id).value; }); localStorage.setItem(GEN_KEY, JSON.stringify(o)); }catch(e){}
+}
+try{
+  const o = JSON.parse(localStorage.getItem(GEN_KEY) || '{}');
+  GEN_FIELDS.forEach(id => { if(typeof o[id] === 'string') $(id).value = o[id]; });
+  if(typeof o.use === 'boolean') $('gUseSample').checked = o.use;
+}catch(e){}
+$('genStart').addEventListener('click', genStart);
+$('genStop').addEventListener('click', () => { if(genJob) genJob.stop = true; });
+$('genToInput').addEventListener('click', genToInput);
+$('genCopy').addEventListener('click', async () => {
+  try{ await navigator.clipboard.writeText(genText()); toast('만든 조합을 복사했습니다.'); }catch(e){ alert('복사하지 못했습니다.'); }
+});
+$('genSave').addEventListener('click', () => {
+  const a = document.createElement('a'), now = new Date(), p2 = n => String(n).padStart(2, '0');
+  a.href = URL.createObjectURL(new Blob([genText() + '\n'], {type: 'text/plain;charset=utf-8'}));
+  a.download = `lotto_생성_${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}_${p2(now.getHours())}${p2(now.getMinutes())}${p2(now.getSeconds())}.txt`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('gExFromAn').addEventListener('click', () => {
+  if(!excluded.size){ toast('패턴 분석에 정한 제외수가 없습니다.'); return; }
+  $('gExclude').value = [...excluded].sort((a, b) => a - b).join(' ');
+  saveGenSettings(); renderGenData();
+});
+$('gSampleFromInput').addEventListener('click', () => {
+  const nums = getRows().flatMap(r => r.numbers).filter(isNum);
+  if(!nums.length){ toast('번호 입력 화면에 넣은 번호가 없습니다.'); return; }
+  $('gSample').value = nums.join(' ');
+  saveGenSettings(); renderGenData();
+  toast(`입력한 번호 ${nums.length}개를 샘플로 가져왔습니다.`);
+});
+$('gSampleClear').addEventListener('click', () => { $('gSample').value = ''; saveGenSettings(); renderGenData(); });
+GEN_FIELDS.forEach(id => $(id).addEventListener('change', saveGenSettings));
+['gExclude', 'gSample', 'gSampleW', 'gUseSample'].forEach(id => $(id).addEventListener('change', renderGenData));
+$('gUseSample').addEventListener('change', saveGenSettings);
+if(location.hash === '#gen') showPage('gen');
 </script>
 </body>
 </html>
