@@ -459,7 +459,9 @@ body.print-bw .ptk-sq{border-color:#222}
   body.print-results .card{box-shadow:none;padding:0;margin:0 0 5mm;border-radius:0;border:0}
   body.print-results .an-print-head{display:block;border-bottom:1.5px solid #333;padding-bottom:2mm;margin-bottom:3mm;font-size:10pt;color:#333}
   body.print-results .an-print-head b{font-size:13pt;color:#000;margin-right:3mm}
-  body.print-results .an-group,body.print-results .stat-box,body.print-results .dg-line,body.print-results .cnt-line,body.print-results .nb-list > div{break-inside:avoid}
+  body.print-results .an-group,body.print-results .stat-box,body.print-results .dg-line,body.print-results .cnt-line{break-inside:avoid}
+  /* 인쇄: 번호×횟수 요약만 남기고 자리별 위치 설명(회·행·위아래…)은 뺌 */
+  body.print-results .nb-list{display:none !important}
   body.print-results #statistics h2{margin-top:0}
 }
 /* 분석 화면 그대로 인쇄 (A4) */
