@@ -116,7 +116,9 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate-table{width:100%;border-collapse:collapse;font-size:13px}
 .mate-table td{padding:6px 4px;border-bottom:1px solid #eceef0;vertical-align:middle}
 .mate-table td.mn{width:46px;text-align:center}
-.mate-table tr.mate-a td:not(.mn){border-bottom:1px dashed #eceef0}
+.mate-table tr.mate-a td:not(.mn),.mate-table tr.mate-b td:not(.mn){border-bottom:1px dashed #eceef0}
+.mate-table tr.mate-c td:not(.mn){background:#f7f8fa}
+.mate-tag{display:inline-block;font-size:11px;font-weight:800;color:#6b7280;background:#e5e7eb;border-radius:5px;padding:2px 6px;margin-right:8px;vertical-align:middle}
 .mate-table td.mn .note{display:block;font-size:11px;margin-top:2px;white-space:nowrap}
 .mate-table .ball{width:28px;height:28px;font-size:12px}
 .mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
@@ -151,6 +153,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
   #matesPrint .mate-table td .note{font-size:11px}
   /* 인쇄: 15개를 줄 너비에 고르게 나눠 오른쪽 빈자리 없이 */
   #matesPrint .mate-row{display:grid;grid-template-columns:repeat(15,1fr);align-items:center}
+  #matesPrint .mate-tag{display:none}   /* 하위 15 줄은 바탕색으로만 구분 (꼬리표가 칸을 차지하지 않게) */
   #matesPrint .mate-table .ball{width:27px;height:27px;font-size:11.5px}
   #matesPrint .mate{gap:1px;margin:1px 0}
   #matesPrint .mate small{font-size:10px}
@@ -278,7 +281,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
         <div id="pickMates"></div>
       </div>
       <div class="stat-box" style="margin-top:14px">
-        <h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회부터 전체 회차, 본번호 기준 · 상위 30개)</small></h3>
+        <h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회부터 전체 회차, 본번호 기준 · 상위 30개 · 하위 15개)</small></h3>
         <div id="baseMates"></div>
         <div class="mark-rows" id="markRows">
           <div class="mark-row w"><b>당번</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="6"><span class="note">오렌지 ✕</span></div>
@@ -709,14 +712,17 @@ function renderBaseMates(){
     pool.forEach(x => { if(x.m.includes(n)){ seen++; x.m.forEach(y => { if(y !== n) c[y]++; }); } });
     const all = c.map((v, i) => [i, v]).slice(1).filter(a => a[0] !== n);
     return {n, seen,
-      top: all.filter(a => a[1]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 30)};
+      top: all.filter(a => a[1]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 30),
+      // 하위 15개: 함께 나온 횟수가 가장 적은 수부터 (0회 포함, 같으면 작은 번호부터)
+      low: all.slice().sort((a, b) => a[1] - b[1] || a[0] - b[0]).slice(0, 15)};
   });
   const mates = list => list.map(([m, v]) =>
     `<span class="mate">${ball(m, (base.m.includes(m) ? 'hit' : '') + markCls(m))}<small>${v}</small></span>`).join('');
-  // 번호마다 1~15위 줄 바로 아래 16~30위 줄
+  // 번호마다 1~15위 줄, 16~30위 줄, 그 아래 하위 15개 줄
   $('baseMates').innerHTML = `<table class="mate-table">${rows.map(r =>
-    `<tbody><tr class="mate-a"><td class="mn" rowspan="2">${ball(r.n)}<span class="note">${r.seen}회</span></td><td><div class="mate-row">${mates(r.top.slice(0, 15))}</div></td></tr>
-     <tr class="mate-b"><td><div class="mate-row">${mates(r.top.slice(15, 30))}</div></td></tr></tbody>`).join('')}</table>`;
+    `<tbody><tr class="mate-a"><td class="mn" rowspan="3">${ball(r.n)}<span class="note">${r.seen}회</span></td><td><div class="mate-row">${mates(r.top.slice(0, 15))}</div></td></tr>
+     <tr class="mate-b"><td><div class="mate-row">${mates(r.top.slice(15, 30))}</div></td></tr>
+     <tr class="mate-c"><td><div class="mate-row"><span class="mate-tag">하위 15</span>${mates(r.low)}</div></td></tr></tbody>`).join('')}</table>`;
 }
 // 당번(오렌지 ✕) · 모의 번호(보라색 ✕): 각각 7칸, 위 역대 궁합수에 표시
 const MARK_KEY = 'lottoCompatMarks';
@@ -809,7 +815,7 @@ function printMates(){
         <div><h3>🤝 함께 자주 나온 두 수</h3><div class="pair-list">${html('pairList')}</div></div>
       </div></div>
     <div class="pm-sec keep"><h3>🎯 고른 번호의 궁합수</h3>${html('pickMates')}</div>
-    <div class="pm-sec keep"><h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회~${base.r}회 본번호 기준 · 상위 30개)</small></h3>
+    <div class="pm-sec keep"><h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회~${base.r}회 본번호 기준 · 상위 30개 · 하위 15개)</small></h3>
       ${html('baseMates')}${legend('당번 (오렌지 ✕)', markSet('w'))}${legend('모의 번호 (보라색 ✕)', markSet('m'))}</div>
     <div class="pm-sec keep"><h3>⑤ 해당 회차가 ${ui.cn}개뿐인 조합의 다음 회차</h3>
       <div class="chips">${html('rareChips')}</div><div class="cnt-groups">${html('rareCnt')}</div></div>`;
