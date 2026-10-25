@@ -46,6 +46,10 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .ball.dg{outline:3px solid #7a6239;outline-offset:2px}
 .ball.pick{cursor:pointer}
 .ball.sel{box-shadow:0 0 0 3px #fff,0 0 0 5px #2f6fed}
+.pick-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.pick-col{border:1px solid #eceef0;border-radius:10px;padding:8px 10px;background:#fff}
+.pick-all{margin-top:12px;border:2px solid #2f6fed;border-radius:10px;padding:8px 10px;background:#f4f7ff}
+.pick-all .toolbar .ball{margin-right:2px}
 .plus{color:#9aa0a8;font-weight:800;margin:0 2px}
 
 /* 당첨번호 목록 */
@@ -283,7 +287,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
         </div>
       </div>
       <div class="stat-box" style="margin-top:14px">
-        <h3>🎯 고른 번호의 궁합수 <small class="note">(왼쪽 공을 누르면 바뀝니다)</small></h3>
+        <h3>🎯 고른 번호의 궁합수 <small class="note">(왼쪽 공을 최대 3개까지 누르세요 · 다시 누르면 빠집니다)</small></h3>
         <div id="pickMates"></div>
       </div>
       <div class="stat-box" style="margin-top:14px">
@@ -546,7 +550,7 @@ function search(){
     hits.push({p, next: byRound.get(p.r + 1) || null, shared: p.m.filter(n => B.has(n)), inCombo});
   });
   S = {base, hits, comboCnt: [...comboCnt.values()]};
-  comboFilter = null; hitShown = 30; pickN = null;
+  comboFilter = null; hitShown = 30; picks = [];
   renderBase(); renderResults();
   $('resultArea').hidden = false;
   saveUi();
@@ -579,7 +583,7 @@ $('comboBox').addEventListener('click', e => {
    ③ 목록 필터 (구분 · 동끝 · 조합) + ④ 통계
    ============================================================ */
 let ui = {dg: 0, dgOn: 'past', sort: 'recent', target: 'next', cn: 1};
-let comboFilter = null, hitShown = 30, pickN = null;
+let comboFilter = null, hitShown = 30, picks = [], pickCtx = null;   // picks = 고른 번호 (최대 3개)
 
 // 동끝: 끝수가 같은 번호가 n개 이상인 묶음 → 해당 번호들
 // (해당 회차 = 본번호 6개, 다음 회차 = 본번호 6개 + 보너스)
@@ -636,7 +640,7 @@ function countLines(sets, B, pickable){
   const pct = c => Math.round(c / sets.length * 100);
   const html = [...groups.keys()].sort((a, b) => b - a).map(c =>
     `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b><small>${c ? pct(c) + '%' : '없음'}</small>
-      ${groups.get(c).map(n => ball(n, (pickable ? 'pick' : '') + (B.has(n) ? ' hit' : '') + (pickable && pickN === n ? ' sel' : ''))).join('')}</div>`).join('')
+      ${groups.get(c).map(n => ball(n, (pickable ? 'pick' : '') + (B.has(n) ? ' hit' : '') + (pickable && picks.includes(n) ? ' sel' : ''))).join('')}</div>`).join('')
     + (cnt.slice(1).every(c => c) ? '<div class="cnt-line zero"><b>0회</b><small>없음</small><span class="note">1~45 모두 한 번 이상 나왔습니다</span></div>' : '');
   return {cnt, html};
 }
@@ -688,25 +692,46 @@ function renderStats(list){
       <span class="bar"><i style="width:${c / top * 100}%"></i></span><b>${c}회</b></div>`;
   }).join('') : '<div class="empty">두 번 이상 함께 나온 쌍이 없습니다.</div>';
 
-  // 고른 번호의 궁합수
-  if(pickN == null || !cnt[pickN]) pickN = cnt.indexOf(Math.max(...cnt.slice(1)));
-  const mates = Array(46).fill(0);
-  sets.filter(s => s.includes(pickN)).forEach(s => s.forEach(n => { if(n !== pickN) mates[n]++; }));
-  const mg = new Map();
-  for(let n = 1; n <= 45; n++) if(mates[n]){ if(!mg.has(mates[n])) mg.set(mates[n], []); mg.get(mates[n]).push(n); }
-  $('pickMates').innerHTML = `<div class="toolbar" style="margin-bottom:8px">${ball(pickN, 'big' + (B.has(pickN) ? ' hit' : ''))}
-      <span class="note"><b>${pad(pickN)}</b>번이 나온 ${cnt[pickN]}개 회차에서 같이 나온 수</span></div>
-    <div class="cnt-groups">${[...mg.keys()].sort((a, b) => b - a).slice(0, 6).map(c =>
-      `<div class="cnt-line"><b>${c}회</b><small></small>${mg.get(c).map(n => ball(n, B.has(n) ? 'hit' : '')).join('')}</div>`).join('')
-      || '<div class="empty">같이 나온 수가 없습니다.</div>'}</div>`;
-  // 왼쪽 횟수 목록에서 고른 공 표시 갱신
-  $('cntGroups').querySelectorAll('.ball').forEach(el => el.classList.toggle('sel', +el.dataset.n === pickN));
+  // 고른 번호의 궁합수 (최대 3개)
+  picks = picks.filter(n => cnt[n]);
+  if(!picks.length) picks = [cnt.indexOf(Math.max(...cnt.slice(1)))];
+  pickCtx = {sets, cnt, B};
+  renderPick();
   renderBaseMates();
+}
+// 고른 번호의 궁합수: 왼쪽 공을 최대 3개까지 고름 (다시 누르면 빠짐, 4개째는 가장 먼저 고른 수가 빠짐). 이 칸만 다시 그림
+function renderPick(){
+  if(!pickCtx) return;
+  const {sets, cnt, B} = pickCtx, P = new Set(picks);
+  const lines = (counts, skip) => {
+    const mg = new Map();
+    for(let n = 1; n <= 45; n++) if(counts[n] && !skip.has(n)){ if(!mg.has(counts[n])) mg.set(counts[n], []); mg.get(counts[n]).push(n); }
+    return [...mg.keys()].sort((a, b) => b - a).slice(0, 6).map(c =>
+      `<div class="cnt-line"><b>${c}회</b><small></small>${mg.get(c).map(n => ball(n, (B.has(n) ? 'hit' : '') + (P.has(n) ? ' sel' : ''))).join('')}</div>`).join('')
+      || '<div class="empty">같이 나온 수가 없습니다.</div>';
+  };
+  const mateCnt = need => { const m = Array(46).fill(0), hit = sets.filter(s => need.every(n => s.includes(n))); hit.forEach(s => s.forEach(n => m[n]++)); return {m, k: hit.length}; };
+  const one = picks.map(n => { const {m} = mateCnt([n]);
+    return `<div class="pick-col"><div class="toolbar" style="margin-bottom:6px">${ball(n, 'big' + (B.has(n) ? ' hit' : ''))}
+      <span class="note"><b>${pad(n)}</b>번이 나온 ${cnt[n]}개 회차에서 같이 나온 수</span></div>
+      <div class="cnt-groups">${lines(m, new Set([n]))}</div></div>`; }).join('');
+  let both = '';
+  if(picks.length >= 2){
+    const {m, k} = mateCnt(picks);
+    both = `<div class="pick-all"><div class="toolbar" style="margin-bottom:6px">${picks.map(n => ball(n, 'big' + (B.has(n) ? ' hit' : ''))).join('')}
+      <span class="note">고른 ${picks.length}개가 <b>모두 함께</b> 나온 회차 <b>${k}</b>개${k ? '에서 같이 나온 수' : ''}</span></div>
+      ${k ? `<div class="cnt-groups">${lines(m, P)}</div>` : ''}</div>`;
+  }
+  $('pickMates').innerHTML = `<div class="pick-cols">${one}</div>${both}`;
+  $('cntGroups').querySelectorAll('.ball').forEach(el => el.classList.toggle('sel', picks.includes(+el.dataset.n)));
 }
 $('cntGroups').addEventListener('click', e => {
   const b = e.target.closest('.ball[data-n]');
   if(!b) return;
-  pickN = +b.dataset.n; renderResults();
+  const n = +b.dataset.n;
+  if(picks.includes(n)){ if(picks.length > 1) picks = picks.filter(x => x !== n); }
+  else { picks.push(n); if(picks.length > 3) picks.shift(); }
+  renderPick();
 });
 
 // 최신 회차 번호 6개 각각: 1회부터 전체 회차에서 함께 가장 많이 나온 수 (본번호끼리)
