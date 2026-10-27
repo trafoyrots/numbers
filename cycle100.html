@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>100회귀 분석</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Malgun Gothic",sans-serif;background:#f4f6f9;color:#20242a}
+.container{max-width:1100px;margin:0 auto;padding:28px 18px 50px}
+h1{margin:0 0 8px;font-size:30px}
+.subtitle{color:#68707a;margin-bottom:25px}
+.card{background:#fff;border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 5px 20px rgba(0,0,0,.07)}
+h2{font-size:20px;margin:0 0 15px}
+h3{font-size:15px;margin:0 0 10px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.meta-input{height:40px;padding:6px 8px;border:1px solid #d4d9df;border-radius:8px;outline:none;font-size:14px;font-weight:700;background:#fff;font-family:inherit}
+.meta-input:focus{border-color:#2f6fed;box-shadow:0 0 0 3px rgba(47,111,237,.12)}
+label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-items:center;gap:6px}
+.note{font-size:13px;color:#717983;line-height:1.6}
+.empty{color:#7c848e;padding:12px 0}
+
+/* 페이지 탭 (index.html과 같은 모양, 링크로 이동) */
+.topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.tabs{display:flex;gap:6px;background:#e9edf2;padding:4px;border-radius:12px;width:fit-content;max-width:100%;flex-wrap:wrap}
+.tabs a{color:#5b636d;padding:10px 18px;border-radius:9px;font-size:15px;font-weight:700;text-decoration:none}
+.tabs a.on{background:#fff;color:#20242a;box-shadow:0 1px 5px rgba(0,0,0,.12)}
+
+/* 공 */
+.balls{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.ball{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;background:#777;flex:none}
+.ball.yellow{background:#c9a24a}.ball.blue{background:#5f86bf}.ball.red{background:#c46e6e}.ball.green{background:#5f9a7e}.ball.gray{background:#8c919a}
+.ball.big{width:42px;height:42px;font-size:16px}
+.ball.hit{box-shadow:0 0 0 3px #fff,0 0 0 5px #252a31}
+.plus{color:#9aa0a8;font-weight:800;margin:0 2px}
+
+/* 회차 목록 */
+.base-box{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 14px;background:#f6f9ff;border:1px solid #c9dafb;border-radius:12px;margin-bottom:14px}
+.base-box .rd{font-size:18px;font-weight:800}
+.base-box .dt{font-size:13px;color:#7b838d}
+.draw-list{display:flex;flex-direction:column;gap:5px}
+.draw-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 10px;border:1px solid #eceef0;border-radius:10px}
+.draw-line .rd{width:70px;font-weight:800;font-size:14px}
+.draw-line .dt{width:84px;font-size:12px;color:#7b838d}
+.draw-line .gap{width:62px;font-size:12px;color:#2f5bb5;font-weight:700}
+.draw-line .ball{width:28px;height:28px;font-size:12px}
+.bn{font-size:11px;font-weight:700;padding:3px 6px;border-radius:5px;background:#f6efdf;color:#7a5d22;white-space:nowrap}
+.draw-line .same{font-size:11px;color:#4a5160;font-weight:700}
+
+/* 횟수 */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cnt-groups{display:flex;flex-direction:column;gap:6px}
+.cnt-line{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:6px 10px;border:1px solid #eceef0;border-radius:9px;background:#fff}
+.cnt-line > b{width:44px;font-size:13px;color:#3d434c;text-align:right;margin-right:4px}
+.cnt-line .ball{width:30px;height:30px;font-size:12.5px}
+.cnt-line.zero > b{color:#b5473f}
+.box-hot{border-left:4px solid #c46e6e;padding-left:12px}
+.box-cold{border-left:4px solid #5f86bf;padding-left:12px}
+details.all{margin-top:16px}
+details.all summary{cursor:pointer;font-weight:700;font-size:14px;color:#4a5058}
+details.all .cnt-groups{margin-top:10px}
+@media(max-width:760px){
+  .container{padding:20px 12px 40px}
+  h1{font-size:24px}
+  .two{grid-template-columns:1fr}
+  .draw-line .dt{display:none}
+  .tabs a{padding:9px 12px;font-size:14px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔁 100회귀 분석</h1>
+  <div class="subtitle">최신 회차에서 100회씩 거슬러 올라간 회차(−100, −200, …)의 당첨번호를 모아, 가장 많이 나온 수와 가장 적게 나온 수를 봅니다.</div>
+
+  <div class="topbar">
+    <nav class="tabs">
+      <a href="index.html">✏️ 번호 입력</a>
+      <a href="index.html#analysis">📊 패턴 분석</a>
+      <a href="compat.html">🔗 궁합수 찾기</a>
+      <a href="cycle100.html" class="on">🔁 100회귀 분석</a>
+    </nav>
+  </div>
+
+  <div class="card">
+    <h2>① 기준 회차와 100회 차이 회차</h2>
+    <div class="toolbar" style="margin-bottom:14px">
+      <label>기준 회차 <input type="number" class="meta-input" id="baseRound" style="width:96px"></label>
+      <label>간격 <input type="number" class="meta-input" id="gap" value="100" min="1" style="width:80px"></label>
+    </div>
+    <div id="baseBox"></div>
+    <div class="draw-list" id="drawList"></div>
+    <div class="note" style="margin-top:10px">테두리 진한 공 = 기준 회차 본번호와 같은 수. 당첨번호는 <a href="compat.html">궁합수 찾기</a>와 같은 자료(<code>lotto_draws.js</code> + 이 브라우저에 추가한 회차)를 씁니다.</div>
+  </div>
+
+  <div class="card">
+    <h2>② 기본 번호 6개 — 가장 많이 나온 수 · 가장 적게 나온 수</h2>
+    <div class="note" id="cntNote" style="margin-bottom:12px"></div>
+    <div class="two">
+      <div class="box-hot"><h3>🔥 가장 많이 나온 수</h3><div class="cnt-groups" id="hot"></div></div>
+      <div class="box-cold"><h3>❄️ 가장 적게 나온 수</h3><div class="cnt-groups" id="cold"></div></div>
+    </div>
+    <details class="all"><summary>1~45 전체 횟수 보기</summary><div class="cnt-groups" id="allCnt"></div></details>
+  </div>
+
+  <div class="card">
+    <h2>③ 보너스 번호 — 따로 센 횟수</h2>
+    <div class="note" id="bnNote" style="margin-bottom:12px"></div>
+    <div class="cnt-groups" id="bnCnt"></div>
+  </div>
+</div>
+
+<script src="lotto_draws.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const isNum = n => Number.isInteger(n) && n >= 1 && n <= 45;
+function ballClass(n){
+  if(n <= 10) return 'yellow';
+  if(n <= 20) return 'blue';
+  if(n <= 30) return 'red';
+  if(n <= 40) return 'green';
+  return 'gray';
+}
+const ball = (n, cls = '') => `<span class="ball ${ballClass(n)} ${cls}">${pad(n)}</span>`;
+
+/* 당첨번호: lotto_draws.js + 궁합수 찾기에서 이 브라우저에 추가한 회차 (같은 회차면 추가분 우선) */
+const DB_KEY = 'lottoCompatDraws', UI_KEY = 'lottoCycleUi';
+const toDraw = a => ({r: a[0], d: a[1], m: a.slice(2, 8), b: a[8]});
+const validDraw = x => Number.isInteger(x.r) && x.r >= 1 && Array.isArray(x.m) && x.m.length === 6 && x.m.every(isNum)
+  && isNum(x.b) && new Set([...x.m, x.b]).size === 7;
+const byRound = new Map();
+(Array.isArray(window.LOTTO_DRAWS) ? window.LOTTO_DRAWS : []).forEach(a => { const x = toDraw(a); if(validDraw(x)) byRound.set(x.r, x); });
+try{ JSON.parse(localStorage.getItem(DB_KEY) || '[]').forEach(a => { const x = toDraw(a); if(validDraw(x)) byRound.set(x.r, x); }); }catch(e){}
+const latestRound = byRound.size ? Math.max(...byRound.keys()) : 0;
+
+function loadUi(){
+  try{ return JSON.parse(localStorage.getItem(UI_KEY) || '{}'); }catch(e){ return {}; }
+}
+function saveUi(){
+  try{ localStorage.setItem(UI_KEY, JSON.stringify({gap: +$('gap').value})); }catch(e){}
+}
+
+function render(){
+  const base = byRound.get(+$('baseRound').value);
+  const gap = Math.max(1, Math.floor(+$('gap').value) || 100);
+  if(!base){
+    $('baseBox').innerHTML = `<div class="empty">${latestRound ? '그 회차의 당첨번호가 없습니다.' : '당첨번호가 없습니다. lotto_draws.js 파일이 같은 폴더에 있는지 확인해 주세요.'}</div>`;
+    ['drawList', 'hot', 'cold', 'allCnt', 'cntNote', 'bnCnt', 'bnNote'].forEach(id => $(id).innerHTML = '');
+    return;
+  }
+  const B = new Set(base.m);
+  $('baseBox').innerHTML = `<div class="base-box"><span class="rd">제 ${base.r}회</span><span class="dt">${base.d}</span>
+    <span class="balls">${base.m.map(n => ball(n, 'big')).join('')}<span class="bn">보너스</span>${ball(base.b, 'big')}</span></div>`;
+
+  const rows = [];
+  for(let r = base.r - gap; r >= 1; r -= gap) if(byRound.has(r)) rows.push(byRound.get(r));
+  $('drawList').innerHTML = rows.length ? rows.map(x => {
+    const same = x.m.filter(n => B.has(n)).length;
+    return `<div class="draw-line"><span class="rd">${x.r}회</span><span class="dt">${x.d}</span><span class="gap">−${base.r - x.r}</span>
+      <span class="balls">${x.m.map(n => ball(n, B.has(n) ? 'hit' : '')).join('')}<span class="bn">보너스</span>${ball(x.b, B.has(x.b) ? 'hit' : '')}</span>
+      ${same ? `<span class="same">기준과 ${same}개 같음</span>` : ''}</div>`;
+  }).join('') : `<div class="empty">${gap}회 이전 회차가 없습니다.</div>`;
+
+  // 횟수: 기본 번호와 보너스는 따로 셈 (보너스는 기본 번호 횟수에 넣지 않음)
+  const cnt = Array(46).fill(0), bcnt = Array(46).fill(0);
+  rows.forEach(x => { x.m.forEach(n => cnt[n]++); bcnt[x.b]++; });
+  const groupBy = arr => {
+    const g = new Map();
+    for(let n = 1; n <= 45; n++){ if(!g.has(arr[n])) g.set(arr[n], []); g.get(arr[n]).push(n); }
+    return g;
+  };
+  const groups = groupBy(cnt), bgroups = groupBy(bcnt);
+  const keys = [...groups.keys()].sort((a, b) => b - a);
+  const lineOf = g => c => `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b>${g.get(c).map(n => ball(n, B.has(n) ? 'hit' : '')).join('')}</div>`;
+  const line = lineOf(groups);
+  // 위·아래 각 두 단계 (단계가 적으면 겹치지 않게 나눔)
+  const k = Math.min(2, Math.floor(keys.length / 2)) || 1;
+  $('hot').innerHTML = keys.slice(0, k).map(line).join('');
+  $('cold').innerHTML = keys.length > 1 ? keys.slice(-k).reverse().map(line).join('') : '<div class="empty">모든 수가 같은 횟수입니다.</div>';
+  $('allCnt').innerHTML = keys.map(line).join('');
+  const span = rows.length ? rows[rows.length - 1].r + '~' + rows[0].r + '회 중 ' + gap + '회 간격' : '-';
+  $('cntNote').innerHTML = `${rows.length}개 회차(${span})의 기본 번호 ${rows.length * 6}개만 셌습니다. 보너스 번호는 ③에서 따로 셉니다.`;
+  const bkeys = [...bgroups.keys()].filter(c => c).sort((a, b) => b - a);
+  $('bnCnt').innerHTML = bkeys.length ? bkeys.map(lineOf(bgroups)).join('') : '<div class="empty">보너스 번호가 없습니다.</div>';
+  $('bnNote').innerHTML = rows.length ? `${rows.length}개 회차의 보너스 번호 ${rows.length}개를 셌습니다. 나오지 않은 수 ${(bgroups.get(0) || []).length}개는 목록에서 뺐습니다.` : '';
+}
+
+const ui = loadUi();
+$('baseRound').value = latestRound;
+$('baseRound').max = latestRound;
+if(ui.gap > 0) $('gap').value = ui.gap;
+['baseRound', 'gap'].forEach(id => $(id).addEventListener('input', () => { saveUi(); render(); }));
+render();
+</script>
+</body>
+</html>

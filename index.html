@@ -648,6 +648,7 @@ body.print-bw .ptk-sq{border-color:#222}
     <button type="button" data-page="analysis">📊 패턴 분석<span id="tabCount" class="tab-count"></span></button>
     <button type="button" data-page="gen">🎲 번호 생성</button>
     <a href="compat.html">🔗 궁합수 찾기</a>
+    <a href="cycle100.html">🔁 100회귀 분석</a>
   </div>
   <details class="filemenu" id="fileMenu">
     <summary>📁 저장 · 불러오기 · 인쇄</summary>
@@ -666,7 +667,7 @@ body.print-bw .ptk-sq{border-color:#222}
           <button type="button" onclick="fmRun(() => printAnalysis(true), true)"><b>패턴별 인쇄 · 흑백</b><small>A4 · 용지 모양, 회색·검은 테로 표시</small></button>
         </div>
         <button type="button" onclick="fmRun(printResults, true)"><b>분석 결과 인쇄</b><small>A4 · 동끝 번호 모음부터 번호 통계까지</small></button>
-        <button type="button" onclick="fmRun(() => window.open('compat.html#print-mates'))"><b>궁합수 분석 인쇄</b><small>A4 · 최신 회차·3개 조합·번호 통계·궁합수·적은 조합 (당번·모의 번호 ✕ 표시 포함)</small></button>
+        <button type="button" onclick="fmRun(() => window.open('compat.html#print-mates'))"><b>궁합수 분석 인쇄</b><small>A4 · 최신 회차·3개 조합·번호 통계·궁합수·적은 조합과 그 다음 회차 목록 (당번·모의 번호 ✕ 표시 포함)</small></button>
       </div>
     </div>
   </details>
