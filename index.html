@@ -2361,7 +2361,7 @@ function digitCollectHtml(list, opt){
   return `<div class="an-group hot"><h3>🔥 동끝 번호 모음 <small>${DIR_LABEL[opt.dir]} · ${opt.n}개 이상${excluded.size ? ` · 제외수 ${excluded.size}개 뺌` : ''} · ×는 동끝으로 묶인 횟수</small></h3>
     <div class="dg-sum">${lines}</div></div>` + betweenHtml(list);
 }
-// 전체 적용: 동끝·연번·사각·막대에 걸린 횟수가 가장 많은 수 (한 칸이 한 패턴에 걸리면 1번)
+// 전체 적용: 동끝·연번·사각·막대에 걸린 횟수가 가장 많은 수 (한 칸이 한 패턴에 걸리면 1회)
 function mostHitHtml(list){
   const tot = {}, by = {};
   const LBL = {digit: '동끝', run: '연번', dup: '중복', sq: '사각', bar: '막대'};
@@ -2376,7 +2376,7 @@ function mostHitHtml(list){
   if(!ns.length) return '';
   const top = tot[ns[0]], shown = ns.slice(0, 12);
   const row = x => `<div class="mh-row${tot[x] === top ? ' top' : ''}">${tot[x] === top ? '<span class="starx">★</span>' : '<span class="mh-sp"></span>'}` +
-    `<span class="ball ${ballClass(x)}">${x}</span><b>${tot[x]}번</b><small>${Object.keys(LBL).filter(k => by[x][k]).map(k => `${LBL[k]} ${by[x][k]}`).join(' · ')}</small></div>`;
+    `<span class="ball ${ballClass(x)}">${x}</span><b>${tot[x]}회</b><small>${Object.keys(LBL).filter(k => by[x][k]).map(k => `${LBL[k]} ${by[x][k]}`).join(' · ')}</small></div>`;
   return `<div class="an-group most"><h3>★ 패턴에 가장 많이 걸린 수 <small>동끝·연번·중복·사각·막대에 걸린 횟수 합계 · ★ = 가장 많음 · 위 ${shown.length}개</small></h3>
     <div class="mh-list">${shown.map(row).join('')}</div></div>`;
 }
