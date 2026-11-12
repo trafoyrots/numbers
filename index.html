@@ -372,6 +372,8 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
 .an-tag.miss{background:#e6f4ea;color:#1f6e3f;font-weight:800}
 .nb-list .missx{color:#1f6e3f;border-color:#b9dfc6;background:#f1faf4}
 .zt .zn.mz{opacity:.45}
+.missl{color:#1f6e3f;font-weight:800;white-space:nowrap}.missl.x{color:#8a5a00}
+.an-tag.miss{white-space:normal}
 #pageAnalysis .an-group.missg{border-color:#cfe6d6}
 body.print-bw .pc.hl-miss{background:repeating-linear-gradient(45deg,#cfcfcf 0 .45mm,#fff .45mm 1.3mm)}
 .pc.dong span{border:.45mm solid #e58aab}
@@ -803,7 +805,7 @@ body.print-bw .ptk-sq{border-color:#222}
         <span id="anNUnit">개 이상</span></label>
       <label data-for="dup all" title="한 용지 안에서 같은 번호가 몇 번 이상 나왔는지">같은 번호 <select id="anDup" class="meta-input"><option value="3" selected>3번</option><option value="4">4번</option><option value="5">5번</option></select> 이상 중복</label>
       <label data-for="miss all" title="같은 끝수 번호 중 몇 개까지 빠진 것을 볼지">같은 끝수 중 <select id="anMiss" class="meta-input"><option value="1" selected>1개만 빠짐</option><option value="2">2개 이하 빠짐</option><option value="3">3개 이하 빠짐</option></select></label>
-      <span data-for="miss" class="meta-label" style="font-size:12px;">한 용지 A~E 5게임 · 끝수가 같은 번호(1끝 = 01·11·21·31·41, 6~9끝은 4개) 중 나온 것은 초록 칠, 빠진 번호는 위 태그와 아래 통계로</span>
+      <span data-for="miss" class="meta-label" style="font-size:12px;">한 용지 A~E 5게임 · 끝수가 같은 번호(1끝 = 01·11·21·31·41, 6~9끝은 4개) 중 나온 것은 초록 칠 · 6끝(16) = 16만 빠짐 · 6끝(X) = 6끝이 하나도 안 나옴</span>
       <label data-for="run sq bar" title="한 용지 안에 이 패턴이 몇 개 이상 있는 용지만 보기">용지당 <select id="anPer" class="meta-input"></select></label>
       <label data-for="digit run all"><select id="anDir" class="meta-input"><option value="h">가로행</option><option value="v">세로행</option><option value="hv">가로+세로</option></select></label>
       <div class="seg" id="anView">
@@ -1997,12 +1999,13 @@ function analyzeTicket(rows, type, opt){
     res.miss = [];
     for(let d = 0; d < 10; d++){
       const fam = missFamily(d), got = fam.filter(x => seen.has(x)), lack = fam.filter(x => !seen.has(x));
-      if(got.length && lack.length && lack.length <= (opt.miss || 1)) res.miss.push({digit: d, got, lack});
+      if(!got.length) res.miss.push({digit: d, got, lack, none: true});   // 그 끝수가 하나도 안 나옴 → d끝(X)
+      else if(lack.length && lack.length <= (opt.miss || 1)) res.miss.push({digit: d, got, lack});
     }
     const gotSet = new Set(res.miss.flatMap(g => g.got));
     rows.forEach((r, i) => r.numbers.forEach((x, pos) => { if(gotSet.has(x)){ res.under[i].add(pos); res.rowOn[i] = true; } }));
-    res.count = res.miss.reduce((s, g) => s + g.lack.length, 0);
-    res.miss.forEach(g => res.head.push(`<span class="an-tag miss">🔍 ${g.digit}끝 빠짐 <b>${g.lack.map(pad).join(' ')}</b> <small>(나옴 ${g.got.map(pad).join('·')})</small></span>`));
+    res.count = res.miss.reduce((s, g) => s + (g.none ? 1 : g.lack.length), 0);
+    if(res.miss.length) res.head.push(`<span class="an-tag miss">🔍 ${res.miss.map(missLabel).join(' · ')}</span>`);
   }
   if(type === 'dup'){
     // 한 용지 안에서 같은 번호가 opt.dup번 이상 나온 것
@@ -2063,35 +2066,41 @@ function ringShadow(colors){
 
 /* ---------- 빠진 끝수 ---------- */
 const missFamily = d => Array.from({length: 5}, (_, k) => k * 10 + d).filter(x => x >= 1 && x <= 45);
+// 표기: 6끝(16) = 16만 빠짐 · 6끝(16·26) = 둘 빠짐 · 6끝(X) = 6끝이 하나도 안 나옴
+const missLabel = g => `${g.digit}끝(${g.none ? 'X' : g.lack.map(pad).join('·')})`;
 function missCounts(list){
-  const cnt = {}, dcnt = {};
-  list.forEach(t => (t.res.miss || []).forEach(g => { dcnt[g.digit] = (dcnt[g.digit] || 0) + 1; g.lack.forEach(x => { cnt[x] = (cnt[x] || 0) + 1; }); }));
-  return {cnt, dcnt};
+  const cnt = {}, dcnt = {}, xcnt = {};
+  list.forEach(t => (t.res.miss || []).forEach(g => {
+    if(g.none){ xcnt[g.digit] = (xcnt[g.digit] || 0) + 1; return; }
+    dcnt[g.digit] = (dcnt[g.digit] || 0) + 1; g.lack.forEach(x => { cnt[x] = (cnt[x] || 0) + 1; });
+  }));
+  return {cnt, dcnt, xcnt};
 }
 function missSummaryHtml(list, all, opt){
   const items = list.filter(t => (t.res.miss || []).length);
   if(!items.length) return '';
-  const {cnt, dcnt} = missCounts(items), total = all.length;
+  const {cnt, dcnt, xcnt} = missCounts(items), total = all.length;
   const ns = Object.keys(cnt).map(Number).sort((a,b) => cnt[b] - cnt[a] || a - b);
   const pct = c => total ? ` <small class="an-meta">${Math.round(c / total * 100)}%</small>` : '';
-  const max = Math.max(...Object.values(cnt));
+  const max = Math.max(1, ...Object.values(cnt));
   const slip = slipHtml(n => { const c = cnt[n] || 0, a = c / max;
     return `<div class="slip-num${c ? ' heat' : ''}" style="${c ? `background:rgba(76,160,110,${(0.12 + a * 0.5).toFixed(2)})` : ''}" title="${n}번 ${c}번 빠짐">${pad(n)}</div><div class="slip-cnt${c ? '' : ' zero'}">${c}</div>`; });
   const digitRows = Array.from({length: 10}, (_, d) => (d + 1) % 10).map(d => {
-    const fam = missFamily(d), dc = dcnt[d] || 0;
+    const fam = missFamily(d), dc = dcnt[d] || 0, xc = xcnt[d] || 0;
     return `<tr><th>${d}끝</th><td>${fam.map(x => `<span class="zn ${ballClass(x)}${cnt[x] ? '' : ' mz'}">${pad(x)}${cnt[x] ? `<small>×${cnt[x]}</small>` : ''}</span>`).join(' ')}</td>` +
-      `<td class="zc"><b>${dc}</b><small>/${total}장</small></td></tr>`;
+      `<td class="zc"><b>${dc}</b><small>/${total}장</small></td><td class="zc"><b>${xc}</b><small>/${total}장</small></td></tr>`;
   }).join('');
   const lines = items.map(t => { const f = t.rows[0];
     return `<div><span class="an-meta">${f.round ? escapeHtml(f.round) + '회 ' : ''}${f.index}–${t.rows[t.rows.length-1].index}행</span> ` +
-      t.res.miss.map(g => `<b>${g.digit}끝</b> ${g.lack.map(x => `<span class="nbx missx">${pad(x)}</span>`).join(' ')} <small class="an-meta">(나옴 ${g.got.map(pad).join('·')})</small>`).join(' · ') + `</div>`; }).join('');
+      t.res.miss.map(g => `<b class="missl${g.none ? ' x' : ''}">${missLabel(g)}</b>`).join(' · ') + `</div>`; }).join('');
   const word = opt.miss === 1 ? '1개만' : opt.miss + '개 이하';
-  return `<div class="an-group missg"><h3>🔍 빠진 끝수 통계 <small>보이는 용지 ${total}장 중 ${items.length}장 · 같은 끝수 중 ${word} 빠짐 · ×는 그 번호가 빠진 용지 수 · %는 전체 용지 대비</small></h3>
-    <div class="nb-sum"><b style="font-size:12.5px;margin-right:4px">많이 빠진 순</b>${ns.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${cnt[x]}${pct(cnt[x])}</span>`).join('')}</div>
+  return `<div class="an-group missg"><h3>🔍 빠진 끝수 통계 <small>보이는 용지 ${total}장 중 ${items.length}장 · 같은 끝수 중 ${word} 빠짐 · (X) = 그 끝수가 하나도 안 나옴 · ×는 빠진 용지 수 · %는 전체 용지 대비</small></h3>
+    <div class="nb-sum"><b style="font-size:12.5px;margin-right:4px">많이 빠진 순</b>${ns.length ? ns.map(x => `<span class="nb-chip"><span class="ball ${ballClass(x)}">${x}</span>×${cnt[x]}${pct(cnt[x])}</span>`).join('') : '<span class="empty">없음</span>'}</div>
+    <div class="nb-sum"><b style="font-size:12.5px;margin-right:4px">(X) 많은 순</b>${Object.keys(xcnt).length ? Object.keys(xcnt).map(Number).sort((a,b) => xcnt[b] - xcnt[a] || a - b).map(d => `<span class="nb-chip"><b class="missl x">${d}끝(X)</b>×${xcnt[d]}${pct(xcnt[d])}</span>`).join('') : '<span class="empty">없음</span>'}</div>
     <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start">
       <div><div class="an-meta" style="margin-bottom:6px">용지 배열 · 아래 숫자 = 빠진 횟수</div><div class="slip" style="max-width:360px">${slip}</div></div>
-      <div style="flex:1;min-width:280px"><div class="an-meta" style="margin-bottom:6px">끝수별 · 오른쪽 = 그 끝수에서 빠진 번호가 있던 용지 수</div>
-        <table class="zt"><thead><tr><th>끝수</th><th>번호 (×빠진 횟수)</th><th>용지</th></tr></thead><tbody>${digitRows}</tbody></table></div>
+      <div style="flex:1;min-width:280px"><div class="an-meta" style="margin-bottom:6px">끝수별 · 빠짐 = 그 끝수에서 빠진 번호가 있던 용지 · (X) = 하나도 안 나온 용지</div>
+        <table class="zt"><thead><tr><th>끝수</th><th>번호 (×빠진 횟수)</th><th>빠짐</th><th>(X)</th></tr></thead><tbody>${digitRows}</tbody></table></div>
     </div>
     <div class="nb-list">${lines}</div></div>`;
 }
@@ -2269,7 +2278,8 @@ function analyze(){
   let patChips = [];
   if(anType === 'miss'){
     const k = hitTickets.reduce((s, t) => s + t.res.count, 0);
-    patChips = [`빠진 끝수 <b>${k}</b>개 <small>(용지 ${hitTickets.length}장 · 같은 끝수 중 ${opt.miss === 1 ? '1개만' : opt.miss + '개 이하'} 빠짐)</small>`];
+    const kx = hitTickets.reduce((s, t) => s + t.res.miss.filter(g => g.none).length, 0);
+    patChips = [`빠진 끝수 <b>${k - kx}</b>개 · (X) <b>${kx}</b>개 <small>(용지 ${hitTickets.length}장 · 같은 끝수 중 ${opt.miss === 1 ? '1개만' : opt.miss + '개 이하'} 빠짐)</small>`];
   } else if(anType === 'dup'){
     const k = hitTickets.reduce((s, t) => s + t.res.count, 0);
     patChips = [`한 용지에 ${opt.dup}번 이상 나온 번호 <b>${k}</b>개 <small>(용지 ${hitTickets.length}장)</small>`];
@@ -2281,7 +2291,7 @@ function analyze(){
     patChips = [`패턴 있는 용지 <b>${hitTickets.length}</b>장`,
       `동끝 <b>${sum('digit', r => r.count)}</b> <small>(${has('digit')}장)</small> · 연번 <b>${sum('run', r => r.count)}</b> <small>(${has('run')}장)</small>`,
       `사각 <b>${sum('sq', r => r.count)}</b> <small>(${has('sq')}장)</small> · 막대 <b>${sum('bar', r => r.count)}</b> <small>(${has('bar')}장)</small>`,
-      `중복(${opt.dup}번+) <b>${sum('dup', r => r.count)}</b> <small>(${has('dup')}장)</small> · 빠진 끝수 <b>${sum('miss', r => r.count)}</b> <small>(${has('miss')}장)</small>`];
+      `중복(${opt.dup}번+) <b>${sum('dup', r => r.count)}</b> <small>(${has('dup')}장)</small> · 빠진 끝수 <b>${sum('miss', r => r.miss.filter(g => !g.none).reduce((s, g) => s + g.lack.length, 0))}</b> · (X) <b>${sum('miss', r => r.miss.filter(g => g.none).length)}</b> <small>(${has('miss')}장)</small>`];
     if(excluded.size) patChips.push(`🚫 제외수 <b>${excluded.size}</b>개 (동끝에 적용)`);
   } else if(anType === 'digit' || anType === 'run'){
     const cnt = hitTickets.reduce((s, t) => s + t.res.count, 0);
