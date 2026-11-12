@@ -799,12 +799,12 @@ body.print-bw .ptk-sq{border-color:#222}
         <button type="button" data-type="bar">▮ 막대</button>
         <button type="button" data-type="miss" title="한 용지(5게임)에서 같은 끝수 번호(예: 1·11·21·31·41)가 거의 다 나왔는데 빠진 번호">🔍 빠진 끝수</button>
         <button type="button" data-type="zone" title="1~10 · 11~20 · 21~30 · 31~40 · 41~45 구간별로 나온 번호와 안 나온 번호">📊 구간</button>
-        <button type="button" data-type="all" title="동끝·연번·중복·사각·막대·빠진 끝수를 한 용지에 모두 표시">🧩 전체 적용</button>
+        <button type="button" data-type="all" title="동끝·연번·사각·막대를 한 용지에 모두 표시">🧩 전체 적용</button>
       </div>
       <label data-for="digit run all"><select id="anN" class="meta-input"><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select>
         <span id="anNUnit">개 이상</span></label>
       <label data-for="dup all" title="한 용지 안에서 같은 번호가 몇 번 이상 나왔는지">같은 번호 <select id="anDup" class="meta-input"><option value="3" selected>3번</option><option value="4">4번</option><option value="5">5번</option></select> 이상 중복</label>
-      <label data-for="miss all" title="같은 끝수 번호 중 몇 개까지 빠진 것을 볼지">같은 끝수 중 <select id="anMiss" class="meta-input"><option value="1" selected>1개만 빠짐</option><option value="2">2개 이하 빠짐</option><option value="3">3개 이하 빠짐</option></select></label>
+      <label data-for="miss" title="같은 끝수 번호 중 몇 개까지 빠진 것을 볼지">같은 끝수 중 <select id="anMiss" class="meta-input"><option value="1" selected>1개만 빠짐</option><option value="2">2개 이하 빠짐</option><option value="3">3개 이하 빠짐</option></select></label>
       <span data-for="miss" class="meta-label" style="font-size:12px;">한 용지 A~E 5게임 · 끝수가 같은 번호(1끝 = 01·11·21·31·41, 6~9끝은 4개) 중 나온 것은 초록 칠 · 6끝(16) = 16만 빠짐 · 6끝(X) = 6끝이 하나도 안 나옴</span>
       <label data-for="run sq bar" title="한 용지 안에 이 패턴이 몇 개 이상 있는 용지만 보기">용지당 <select id="anPer" class="meta-input"></select></label>
       <label data-for="digit run all"><select id="anDir" class="meta-input"><option value="h">가로행</option><option value="v">세로행</option><option value="hv">가로+세로</option></select></label>
@@ -819,8 +819,7 @@ body.print-bw .ptk-sq{border-color:#222}
         <i class="lgx" style="background:#e4e4e4"></i>연번
         <i class="lgx" style="background:#f8ecaa"></i>막대
         <i class="lgx" style="border:2px solid #4f7a74;border-radius:3px"></i>사각
-        <b style="color:#d23b3b;margin-left:8px">³</b>중복 횟수
-        <i class="lgx" style="background:#d7efdf;margin-left:8px"></i>빠진 끝수(나온 쪽)</span>
+        <b style="color:#d23b3b;margin-left:8px">³</b>중복 횟수</span>
       <span data-for="digit" class="meta-label" id="anHelpDigit" style="font-size:12px;"></span>
       <span data-for="run" class="meta-label" id="anHelpRun" style="font-size:12px;"></span>
       <span data-for="bar" class="meta-label" style="font-size:12px;">한 용지 A~E 5행 · 같은 자리를 위에서 아래로 본 끝수가 1~2종류</span>
@@ -2032,8 +2031,7 @@ function analyzeAll(rows, opt){
     run:   analyzeTicket(rows, 'run',   {...opt, ex: new Set()}),
     sq:    analyzeTicket(rows, 'sq',    {...opt, ex: new Set(), sqAdj: ''}),
     bar:   analyzeTicket(rows, 'bar',   {...opt, ex: new Set()}),
-    dup:   analyzeTicket(rows, 'dup',   {...opt, ex: new Set()}),   // 중복: 번호 오른쪽 위 붉은 작은 숫자
-    miss:  analyzeTicket(rows, 'miss',  {...opt, ex: new Set()})    // 빠진 끝수: 같은 끝수로 나온 번호는 초록 칠, 빠진 번호는 태그
+    dup:   analyzeTicket(rows, 'dup',   {...opt, ex: new Set()})   // 중복: 번호 오른쪽 위 붉은 작은 숫자
   };
   const res = {multi: true, sub, ring: rows.map(() => new Map()), tags: rows.map(() => []), under: rows.map(() => new Set()),
     ex: sub.digit.ex, rowOn: rows.map(() => false), dim: rows.map(() => false), rects: [], head: [], count: 0,
@@ -2267,7 +2265,6 @@ function analyze(){
     : `<div class="empty">${TYPE_LABEL[anType]}이 있는 용지가 없습니다. 조건을 바꾸거나 "전체 용지"로 보세요.</div>`;
   $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt)
     : anType === 'all' ? mostHitHtml(hitTickets) + digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt)
-      + missSummaryHtml(hitTickets.map(t => ({...t, res: t.res.sub.miss})), tickets, opt)
     : anType === 'zone' ? zoneSummaryHtml(analysisTickets)
     : anType === 'dup' ? dupSummaryHtml(hitTickets, opt)
     : anType === 'miss' ? missSummaryHtml(hitTickets, tickets, opt)
@@ -2291,7 +2288,7 @@ function analyze(){
     patChips = [`패턴 있는 용지 <b>${hitTickets.length}</b>장`,
       `동끝 <b>${sum('digit', r => r.count)}</b> <small>(${has('digit')}장)</small> · 연번 <b>${sum('run', r => r.count)}</b> <small>(${has('run')}장)</small>`,
       `사각 <b>${sum('sq', r => r.count)}</b> <small>(${has('sq')}장)</small> · 막대 <b>${sum('bar', r => r.count)}</b> <small>(${has('bar')}장)</small>`,
-      `중복(${opt.dup}번+) <b>${sum('dup', r => r.count)}</b> <small>(${has('dup')}장)</small> · 빠진 끝수 <b>${sum('miss', r => r.miss.filter(g => !g.none).reduce((s, g) => s + g.lack.length, 0))}</b> · (X) <b>${sum('miss', r => r.miss.filter(g => g.none).length)}</b> <small>(${has('miss')}장)</small>`];
+      `중복(${opt.dup}번+) <b>${sum('dup', r => r.count)}</b> <small>(${has('dup')}장)</small>`];
     if(excluded.size) patChips.push(`🚫 제외수 <b>${excluded.size}</b>개 (동끝에 적용)`);
   } else if(anType === 'digit' || anType === 'run'){
     const cnt = hitTickets.reduce((s, t) => s + t.res.count, 0);
@@ -2627,7 +2624,7 @@ function patternTitle(){
   if(anType === 'zone') return '구간 분석';
   if(anType === 'miss') return `빠진 끝수 (같은 끝수 중 ${$('anMiss').value === '1' ? '1개만' : $('anMiss').value + '개 이하'} 빠짐)`;
   if(anType === 'dup') return `중복 번호 (한 용지에 ${$('anDup').value}번 이상)`;
-  if(anType === 'all') return `전체 패턴 (동끝·연번 ${nd}${excluded.size ? ' · 동끝 제외수 뺌' : ''} · 사각 · 막대 · 빠진 끝수 ${$('anMiss').value === '1' ? '1개만' : $('anMiss').value + '개 이하'})`;
+  if(anType === 'all') return `전체 패턴 (동끝·연번 ${nd}${excluded.size ? ' · 동끝 제외수 뺌' : ''} · 사각 · 막대)`;
   return anType === 'digit' ? `동끝 ${nd}${excluded.size ? ' (제외수 뺌)' : ''}` : anType === 'run' ? `연번 ${nd}` : anType === 'sq' ? `사각 패턴${{v: ' + 세로 3동끝 인접수', d: ' + 대각 3동끝 인접수'}[$('anSqAdj').value] || ''}` : '막대 패턴';
 }
 function hotListText(){
