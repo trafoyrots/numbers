@@ -214,6 +214,17 @@ button.slip-num{cursor:pointer}
 .slip-cnt.zero{color:#b8bec6;font-weight:600}
 .slip-num.heat{color:#20242a;border-color:#e2c18a}
 .ex-panel{background:#f7f9fa;border-radius:10px;padding:10px 12px;margin:10px 0}
+.tk-memo{flex:1 1 170px;min-width:150px;max-width:280px;margin-left:auto;align-self:stretch;display:flex}
+.tk-memo textarea{width:100%;min-height:80px;resize:vertical;border:1px dashed #d3d8de;border-radius:8px;padding:6px 8px;font:inherit;font-size:13px;line-height:1.45;background:#fffdf3;color:inherit}
+.tk-memo textarea:focus{outline:none;border:1px solid #e0b84a;background:#fffbe8}
+.memo-list{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.memo-item{display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #e6e9ed;border-radius:8px;padding:7px 10px;font-size:13px}
+.memo-item.off{opacity:.45}
+.memo-item .mh{min-width:120px;color:#5b6470}
+.memo-item .mt{white-space:pre-wrap;word-break:break-word}
+.memo-item .mn{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px}
+.memo-item .mn .ball{width:24px;height:24px;font-size:11px}
+.memo-item button{flex:none}
 .ex-panel summary{cursor:pointer;font-weight:bold;font-size:14px}
 .ex-panel .toolbar{margin-top:10px}
 .nb-sum{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px;border-bottom:1px solid #f0f2f5}
@@ -485,6 +496,9 @@ body.print-bw .ptk-sq{border-color:#222}
   body.print-analysis #statistics,body.print-analysis .tk-head,body.print-analysis .tk-col,body.print-analysis .tk-notes{display:none !important}
   body.print-analysis #pageAnalysis{display:block !important}
   body.print-analysis .card{box-shadow:none;padding:0;margin:0;border:0;border-radius:0;background:none}
+  body.print-analysis .tk-memo.empty{display:none !important}
+  body.print-analysis .tk-memo textarea{border:0;background:none;resize:none}
+  body.print-analysis #memoPanel{display:none !important}
   body.print-analysis #anGroups{display:block !important;text-align:center;font-size:0;orphans:1;widows:1}
   /* 격자(grid) 대신 줄 바꿈 배치: 모든 브라우저에서 쪽이 넘어가도 마지막 용지가 빠지지 않게 */
   body.print-analysis .tk{display:inline-block;vertical-align:top;text-align:left;font-size:13px;--b:10mm;--gx:2mm;--gy:1.1mm;margin:0 3mm 2.6mm;border:0.3mm solid #d8dbe0;border-radius:2mm;overflow:visible;break-inside:avoid;page-break-inside:avoid}
@@ -791,6 +805,16 @@ body.print-bw .ptk-sq{border-color:#222}
         <button class="blue" type="button" onclick="runDigitWithExcluded()">용지별로 보기 ↓</button>
       </div>
       <div id="exResult"></div>
+    </details>
+    <details class="ex-panel" id="memoPanel">
+      <summary>📝 메모 모아 분석 <span id="memoSummary" class="meta-label" style="font-size:12px;">(없음)</span></summary>
+      <div id="memoList" class="memo-list"></div>
+      <div class="toolbar">
+        <button class="secondary" type="button" onclick="memoCheckAll(true)">모두 선택</button>
+        <button class="secondary" type="button" onclick="memoCheckAll(false)">모두 해제</button>
+        <button class="secondary" type="button" onclick="memoCopy()">메모 번호 복사</button>
+      </div>
+      <div id="memoResult"></div>
     </details>
     <div class="an-filters" id="anFilters" data-type="digit">
       <div class="seg" id="anType">
@@ -2130,6 +2154,91 @@ function zoneSummaryHtml(list){
     <div style="padding:10px 14px">${zoneTableHtml(zoneOf(rows), rows.length)}</div></div>`;
 }
 
+/* ---------- 용지 메모: 분석 화면 용지 카드 오른쪽 칸 · 메모 번호만 모아 분석 ----------
+   열쇠 = 자료·회차·발행일 + 행 글자와 번호 (번호를 고치면 새 용지로 봄 — 예전 메모는 모아 보기에 그대로 남음) */
+const MEMO_KEY = 'lottoTicketMemos';
+let memos = {};
+try{ memos = JSON.parse(localStorage.getItem(MEMO_KEY) || '{}') || {}; }catch(e){ memos = {}; }
+const saveMemos = () => { try{ localStorage.setItem(MEMO_KEY, JSON.stringify(memos)); }catch(e){} };
+function memoKeyOf(rows){
+  const f = rows[0] || {};
+  return [f.src || '', f.round || '', f.date || '', rows.map(r => (r.col || '-') + ':' + r.numbers.join('.')).join('/')].join('|');
+}
+function memoBoxHtml(rows){
+  const k = memoKeyOf(rows), t = memos[k]?.text || '';
+  return `<div class="tk-memo${t ? '' : ' empty'}"><textarea data-memo="${escapeHtml(k)}" placeholder="메모">${escapeHtml(t)}</textarea></div>`;
+}
+function memoNumbers(text){
+  const out = [];
+  String(text || '').replace(/\d+/g, m => { const n = +m; if(m.length <= 2 && isNum(n) && !out.includes(n)) out.push(n); return m; });
+  return out;
+}
+function memoOnInput(ta){
+  const k = ta.dataset.memo, text = ta.value, tk = analysisTickets.find(t => memoKeyOf(t.rows) === k);
+  ta.parentElement.classList.toggle('empty', !text.trim());
+  if(text.trim()){
+    const f = tk?.rows[0] || memos[k] || {};
+    memos[k] = {text, round: f.round || '', date: f.date || '', src: f.src || '',
+                rows: tk ? tk.rows.map(r => [r.col || '', r.numbers.slice()]) : (memos[k]?.rows || []),
+                off: memos[k]?.off || false, t: memos[k]?.t || Date.now()};
+  } else delete memos[k];
+  clearTimeout(memoOnInput.tm);
+  memoOnInput.tm = setTimeout(() => { saveMemos(); renderMemoPanel(); }, 300);
+}
+function renderMemoPanel(){
+  const list = Object.entries(memos).sort((a, b) => (+a[1].round || 0) - (+b[1].round || 0) || (a[1].t || 0) - (b[1].t || 0));
+  const on = list.filter(([, m]) => !m.off);
+  $('memoSummary').textContent = list.length ? `(메모 ${list.length}개${on.length < list.length ? ` · 분석 ${on.length}개` : ''})` : '(없음)';
+  $('memoList').innerHTML = list.length ? list.map(([k, m]) => {
+    const nums = memoNumbers(m.text);
+    const head = `${m.round ? '제 ' + escapeHtml(m.round) + '회' : '회차 없음'}${m.date ? ' ' + escapeHtml(m.date) : ''}${m.src ? '<br><small>' + escapeHtml(m.src) + '</small>' : ''}` +
+      (m.rows?.length ? `<br><small>${escapeHtml(m.rows[0][0] || '')}행 ${m.rows[0][1].map(pad).join(' ')}${m.rows.length > 1 ? ' 외 ' + (m.rows.length - 1) + '게임' : ''}</small>` : '');
+    return `<div class="memo-item${m.off ? ' off' : ''}"><input type="checkbox" ${m.off ? '' : 'checked'} onchange="memoToggle(this)" data-k="${escapeHtml(k)}" title="분석에 넣기">
+      <div class="mh">${head}</div>
+      <div style="flex:1;min-width:0"><div class="mt">${escapeHtml(m.text)}</div>
+        <div class="mn">${nums.length ? nums.map(n => `<span class="ball ${ballClass(n)}">${n}</span>`).join('') : '<small class="meta-label">번호 없음</small>'}</div></div>
+      <button type="button" class="secondary small" onclick="memoDelete(this)" data-k="${escapeHtml(k)}">삭제</button></div>`;
+  }).join('') : '<div class="empty">아직 메모가 없습니다.</div>';
+  const sets = on.map(([, m]) => memoNumbers(m.text)).filter(a => a.length);
+  if(!sets.length){ $('memoResult').innerHTML = list.length ? '<div class="empty">선택한 메모에 1~45 번호가 없습니다.</div>' : ''; return; }
+  const cnt = new Array(46).fill(0);
+  sets.forEach(a => a.forEach(n => cnt[n]++));
+  const total = sets.reduce((s, a) => s + a.length, 0), max = Math.max(...cnt), kinds = cnt.filter(Boolean).length;
+  const byCount = {};
+  for(let n = 1; n <= 45; n++) (byCount[cnt[n]] = byCount[cnt[n]] || []).push(n);
+  const groups = Object.keys(byCount).map(Number).filter(c => c > 0).sort((a, b) => b - a).map(c =>
+    `<div class="cnt-line${c ? '' : ' zero'}"><b>${c}회</b>` + byCount[c].map(n => `<span class="ball ${ballClass(n)}">${n}</span>`).join('') + `</div>`).join('');
+  const slip = slipHtml(n => {
+    const c = cnt[n], a = max ? c / max : 0;
+    return `<div class="slip-num${c ? ' heat' : ''}" style="${c ? `background:rgba(184,150,92,${(0.10 + a * 0.42).toFixed(2)})` : ''}" title="${n}번 · 메모 ${c}개">${pad(n)}</div><div class="slip-cnt${c ? '' : ' zero'}">${c}</div>`;
+  });
+  const dg = new Array(10).fill(0); for(let n = 1; n <= 45; n++) dg[n % 10] += cnt[n];
+  const odd = sets.flat().filter(n => n % 2).length;
+  $('memoResult').innerHTML = `<div class="an-group"><h3>📝 메모 번호 분석 <small>메모 ${sets.length}개 · 번호 ${total}개 (${kinds}종) · 홀 ${odd} · 짝 ${total - odd}</small></h3>
+    <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start">
+      <div><div class="an-meta" style="margin-bottom:6px">용지 배열 · 아래 숫자 = 그 번호가 적힌 메모 수</div><div class="slip" style="max-width:360px">${slip}</div></div>
+      <div style="flex:1;min-width:280px">
+        <div class="an-meta" style="margin-bottom:6px">많이 적힌 순</div><div class="cnt-groups">${groups}</div>
+        <div class="an-meta" style="margin:12px 0 6px">끝수별 개수</div>
+        <div class="nb-sum">${dg.map((c, d) => `<span class="nb-chip"><b>${d}끝</b>×${c}</span>`).join('')}</div>
+        <div class="an-meta" style="margin:12px 0 6px">구간</div>${zoneTableHtml(zoneOf(sets.map(a => ({numbers: a}))), 0)}
+      </div></div></div>`;
+}
+function memoToggle(cb){ const m = memos[cb.dataset.k]; if(m){ m.off = !cb.checked; saveMemos(); renderMemoPanel(); } }
+function memoCheckAll(on){ Object.values(memos).forEach(m => { m.off = !on; }); saveMemos(); renderMemoPanel(); }
+function memoDelete(btn){
+  const k = btn.dataset.k; if(!memos[k] || !confirm('이 메모를 지울까요?')) return;
+  delete memos[k]; saveMemos(); renderMemoPanel();
+  document.querySelectorAll('#anGroups textarea[data-memo]').forEach(ta => { if(ta.dataset.memo === k){ ta.value = ''; ta.parentElement.classList.add('empty'); } });
+}
+function memoCopy(){
+  const nums = [...new Set(Object.values(memos).filter(m => !m.off).flatMap(m => memoNumbers(m.text)))].sort((a, b) => a - b);
+  if(!nums.length){ toast('선택한 메모에 번호가 없습니다.'); return; }
+  const t = nums.join(' ');
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast(`번호 ${nums.length}개를 복사했습니다.`), () => prompt('복사하세요', t));
+}
+document.addEventListener('input', e => { if(e.target.matches && e.target.matches('#anGroups textarea[data-memo]')) memoOnInput(e.target); });
+
 function ticketHtml(tk, id, showLabel){
   const {rows, res} = tk, first = rows[0];
   // 인쇄용 꼬리표: 회차·요일·타 (같은 묶음의 첫 용지 위에만)
@@ -2177,7 +2286,7 @@ function ticketHtml(tk, id, showLabel){
   return `<div class="tk${res.count ? ' tk-hit' : ''} t-${anType}${m ? ' tkt' : ''}">${plabel}${head}
     <div class="tk-body"><div class="tk-col">${labels}</div>
       <div class="tk-grid${m ? ' tkt-grid' : ''}">${m ? ticketCells : balls + rects}</div>
-      ${side}</div>${notes && !res.zone ? `<div class="tk-notes">${notes}</div>` : ''}</div>`;
+      ${side}${memoBoxHtml(rows)}</div>${notes && !res.zone ? `<div class="tk-notes">${notes}</div>` : ''}</div>`;
 }
 function goToTicket(id, i){
   const tk = analysisTickets[id], r = tk && tk.rows[i];
@@ -2264,6 +2373,7 @@ function analyze(){
         return ticketHtml(t, id, id === 0 || key(t) !== key(analysisTickets[id - 1]));
       }).join('')
     : `<div class="empty">${TYPE_LABEL[anType]}이 있는 용지가 없습니다. 조건을 바꾸거나 "전체 용지"로 보세요.</div>`;
+  renderMemoPanel();
   $('anExtra').innerHTML = anType === 'run' ? runNeighborHtml(hitTickets, opt) : anType === 'digit' ? digitCollectHtml(hitTickets, opt)
     : anType === 'all' ? mostHitHtml(hitTickets) + digitCollectHtml(hitTickets, opt) + runNeighborHtml(hitTickets, opt)
     : anType === 'zone' ? zoneSummaryHtml(analysisTickets)
