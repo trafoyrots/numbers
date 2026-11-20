@@ -368,6 +368,7 @@ body.print-preview-mode .a4-page{box-shadow:0 2px 10px rgba(0,0,0,.12)}
   border:.3mm solid #cfd3d8;border-radius:2mm;padding:1.6mm 2.5mm 2.2mm;break-inside:avoid;page-break-inside:avoid;background:#fff;color:#111}
 .ptk-label{font-size:10pt;font-weight:600;color:#222;margin:0 0 1.2mm}
 .ptk-label b{font-weight:800}
+.ptk-memo{width:0;min-width:100%;box-sizing:border-box;margin-top:1.6mm;padding-top:1.2mm;border-top:.25mm dashed #b9bec5;font-size:9.5pt;line-height:1.3;white-space:pre-wrap;word-break:break-word;color:#222}
 .ptk-body{display:flex;gap:1.5mm}
 .ptk-left{display:grid;grid-template-columns:5mm 11mm;grid-auto-rows:var(--ch);row-gap:var(--gy);align-items:center}
 .ptk-l{font-weight:800;font-size:11.5pt}
@@ -2662,8 +2663,9 @@ function ticketPrintHtml(t, showLabel){
   }).join('')).join('');
   const sq = m.sq.map(q => `<span class="ptk-sq" style="left:calc(${q.c} * (var(--cw) + var(--gx)) - 0.7mm);top:calc(${q.r} * (var(--ch) + var(--gy)) - 0.6mm);` +
     `width:calc(2 * var(--cw) + var(--gx) + 1.4mm);height:calc(2 * var(--ch) + var(--gy) + 1.2mm)"></span>`).join('');
-  return `<div class="ptk-wrap"><div class="ptk">${label}<div class="ptk-body"><div class="ptk-left">${left}</div><div class="ptk-grid">${cells}${sq}${diagSvg(m.diag, rows.length)}</div></div></div></div>`;
+  return `<div class="ptk-wrap"><div class="ptk">${label}<div class="ptk-body"><div class="ptk-left">${left}</div><div class="ptk-grid">${cells}${sq}${diagSvg(m.diag, rows.length)}</div></div>${memoPrintHtml(rows)}</div></div>`;
 }
+function memoPrintHtml(rows){ const t = (memos[memoKeyOf(rows)]?.text || '').trim(); return t ? `<div class="ptk-memo">${escapeHtml(t)}</div>` : ''; }
 // 패턴별 인쇄 (칼라/흑백): 지금 고른 패턴과 보기(패턴 있는 용지만/전체 용지) 그대로
 // 구간 분석은 공 그림 + 구간 표를 화면 그대로 인쇄
 function printAnalysis(bw){
