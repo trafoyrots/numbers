@@ -140,6 +140,12 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate-table .ball.xw,.mate-table .ball.xm{text-shadow:0 0 3px #fff,0 0 2px #fff}
 .mate-table .ball.xp2{color:var(--p2c,#1e9a4f)}
 .mate-table .ball.xp1{color:var(--p1c,#e67700)}
+/* 직전 회차 번호는 같은 색 동그라미도 (둘 다면 바깥 1회차·안쪽 2회차), 맞춤(hit) 검은 테는 그 바깥 */
+.mate-table .ball{--ring:0 0 0 0 transparent;--hitring:0 0 0 0 transparent;box-shadow:var(--ring),var(--hitring)}
+.mate-table .ball.hit{--hitring:0 0 0 3px #fff,0 0 0 5px #252a31}
+.mate-table .ball.xp1{--ring:inset 0 0 0 2px var(--p1c,#e67700)}
+.mate-table .ball.xp2{--ring:inset 0 0 0 2px var(--p2c,#1e9a4f)}
+.mate-table .ball.xp1.xp2{--ring:inset 0 0 0 2px var(--p1c,#e67700),inset 0 0 0 4px var(--p2c,#1e9a4f)}
 .mate-sub{font-size:13px;font-weight:800;color:#3d434c;margin:12px 0 4px}
 .mate-sub:first-child{margin-top:0}
 /* 당번·모의번호 x 표시 */
@@ -173,7 +179,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
   #matesPrint .mate-table .ball{width:27px;height:27px;font-size:15px}
   #matesPrint .mate{gap:1px;margin:1px 0}
   #matesPrint .mate small{font-size:10px}
-  #matesPrint .mate-table .ball.hit{box-shadow:0 0 0 1.5px #fff,0 0 0 3px #252a31}
+  #matesPrint .mate-table .ball.hit{--hitring:0 0 0 1.5px #fff,0 0 0 3px #252a31}
   #matesPrint .mate .ball.hit{margin-right:3px}
   #matesPrint .pm-legend{break-inside:avoid}
   #matesPrint .cnt-line{padding:4px 10px}
