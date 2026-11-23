@@ -134,7 +134,9 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate small{color:#7b838d;font-weight:700}
 .mate .ball.hit{margin-right:4px}
 /* 역대 궁합수: 공색 없이 진한 검은 글자, 직전 1회차 번호는 오렌지·2회차는 녹색 글자 */
-.mate-table .ball{background-color:transparent;color:#111;font-weight:900}
+.mate-table .ball{background-color:transparent;color:#111;font-weight:900;font-size:14px}
+/* 옆 작은 숫자: 차지하는 자리는 그대로 두고 글자만 줄임 (배치·간격 안 바뀜) */
+.mate-table .mate small{display:inline-block;transform:scale(.84);transform-origin:left center}
 .mate-table .ball.xw,.mate-table .ball.xm{text-shadow:0 0 3px #fff,0 0 2px #fff}
 .mate-table .ball.xp2{color:var(--p2c,#1e9a4f)}
 .mate-table .ball.xp1{color:var(--p1c,#e67700)}
@@ -168,7 +170,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
   /* 인쇄: 15개를 줄 너비에 고르게 나눠 오른쪽 빈자리 없이 */
   #matesPrint .mate-row{display:grid;grid-template-columns:repeat(15,1fr);align-items:center}
   #matesPrint .mate-tag{display:none}   /* 하위 30 줄은 바탕색으로만 구분 (꼬리표가 칸을 차지하지 않게) */
-  #matesPrint .mate-table .ball{width:27px;height:27px;font-size:11.5px}
+  #matesPrint .mate-table .ball{width:27px;height:27px;font-size:13.5px}
   #matesPrint .mate{gap:1px;margin:1px 0}
   #matesPrint .mate small{font-size:10px}
   #matesPrint .mate-table .ball.hit{box-shadow:0 0 0 1.5px #fff,0 0 0 3px #252a31}
