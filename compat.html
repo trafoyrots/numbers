@@ -133,10 +133,11 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
 .mate small{color:#7b838d;font-weight:700}
 .mate .ball.hit{margin-right:4px}
-/* 역대 궁합수: 공색 없이 진한 검은 글자, 직전 회차 번호는 연한 회색 */
+/* 역대 궁합수: 공색 없이 진한 검은 글자, 직전 1회차 번호는 오렌지·2회차는 녹색 글자 */
 .mate-table .ball{background-color:transparent;color:#111;font-weight:900}
 .mate-table .ball.xw,.mate-table .ball.xm{text-shadow:0 0 3px #fff,0 0 2px #fff}
-.mate-table .ball.xp{color:#c8ccd2}
+.mate-table .ball.xp2{color:var(--p2c,#1e9a4f)}
+.mate-table .ball.xp1{color:var(--p1c,#e67700)}
 .mate-sub{font-size:13px;font-weight:800;color:#3d434c;margin:12px 0 4px}
 .mate-sub:first-child{margin-top:0}
 /* 당번·모의번호 x 표시 */
@@ -186,7 +187,13 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mark-row input{width:48px;height:34px;text-align:center;padding:4px}
 .mark-row.w input{border-color:#f5c48c}
 .mark-row.m input{border-color:#c9a8ef}
-.mark-row.p > b{color:#7b838d}
+.mark-row.p1 > b{color:var(--p1c,#e67700)}
+.mark-row.p2 > b{color:var(--p2c,#1e9a4f)}
+.mark-row.p1 input{border-color:color-mix(in srgb,var(--p1c,#e67700) 45%,#fff)}
+.mark-row.p2 input{border-color:color-mix(in srgb,var(--p2c,#1e9a4f) 45%,#fff)}
+.swatches{display:inline-flex;gap:6px;margin-left:6px;align-items:center}
+.swatch{width:22px;height:22px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #c9ced5;cursor:pointer;padding:0}
+.swatch.on{box-shadow:0 0 0 2px #252a31}
 @media(max-width:760px){
   .container{padding:20px 12px 40px}
   h1{font-size:24px}
@@ -303,8 +310,8 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
         <div class="mark-rows" id="markRows">
           <div class="mark-row w"><b>당번</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="6"><span class="note">오렌지 ✕</span></div>
           <div class="mark-row m"><b>모의 번호</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="6"><span class="note">보라색 ✕</span></div>
-          <div class="mark-row p"><b>직전 1회차</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="6"></div>
-          <div class="mark-row p"><b>직전 2회차</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="6">
+          <div class="mark-row p1"><b>직전 1회차</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="6"><span class="swatches" data-k="p1"></span></div>
+          <div class="mark-row p2"><b>직전 2회차</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="6"><span class="swatches" data-k="p2"></span>
             <button type="button" class="secondary small" id="btnMarkClear">지우기</button></div>
         </div>
       </div>
@@ -772,9 +779,9 @@ const emptyMarks = () => Object.fromEntries(MARK_KEYS.map(k => [k, Array(7).fill
 let marks = emptyMarks();
 try{ const o = JSON.parse(localStorage.getItem(MARK_KEY) || '{}'); MARK_KEYS.forEach(k => { if(Array.isArray(o[k])) marks[k] = o[k].slice(0, 7); }); }catch(e){}
 const markSet = k => new Set(marks[k].map(Number).filter(n => n >= 1 && n <= 45));
-// 직전 1·2회차 번호는 연한 회색 (제외수처럼)
+// 직전 1회차 번호는 오렌지, 2회차는 녹색 글자 (둘 다면 1회차 색)
 function markCls(n){ return (markSet('w').has(n) ? ' xw' : '') + (markSet('m').has(n) ? ' xm' : '')
-  + (markSet('p1').has(n) || markSet('p2').has(n) ? ' xp' : ''); }
+  + (markSet('p1').has(n) ? ' xp1' : '') + (markSet('p2').has(n) ? ' xp2' : ''); }
 function syncMarks(){
   markCells().forEach(el => { el.value = marks[el.dataset.k][+el.dataset.i] ?? ''; });
 }
@@ -837,6 +844,29 @@ $('btnMarkClear').onclick = () => {
   syncMarks(); if(S) renderBaseMates();
 };
 syncMarks();
+
+// 직전 1·2회차 글자색: 기본 오렌지·녹색, 줄 오른쪽 색 단추로 바꿈 (브라우저에 기억)
+const PREV_COLORS = ['#e67700', '#1e9a4f', '#2f6fed', '#d0312d', '#7b2fd0', '#b8bdc4'];
+const PREV_DEFAULT = {p1: '#e67700', p2: '#1e9a4f'};
+const PCOLOR_KEY = 'lottoCompatPrevColors';
+let prevColors = {...PREV_DEFAULT};
+try{ const o = JSON.parse(localStorage.getItem(PCOLOR_KEY) || '{}'); ['p1', 'p2'].forEach(k => { if(PREV_COLORS.includes(o[k])) prevColors[k] = o[k]; }); }catch(e){}
+function applyPrevColors(){
+  ['p1', 'p2'].forEach(k => {
+    document.documentElement.style.setProperty(`--${k}c`, prevColors[k]);
+    const box = document.querySelector(`.swatches[data-k="${k}"]`);
+    box.innerHTML = PREV_COLORS.map(c =>
+      `<button type="button" class="swatch${c === prevColors[k] ? ' on' : ''}" data-c="${c}" style="background:${c}"></button>`).join('');
+  });
+}
+document.querySelectorAll('.swatches').forEach(box => box.addEventListener('click', e => {
+  const b = e.target.closest('.swatch');
+  if(!b) return;
+  prevColors[box.dataset.k] = b.dataset.c;
+  try{ localStorage.setItem(PCOLOR_KEY, JSON.stringify(prevColors)); }catch(e){}
+  applyPrevColors();
+}));
+applyPrevColors();
 
 // 궁합수 분석 인쇄 (A4): 최신 회차 · 3개 조합 · 번호 통계 · 궁합수 · 적은 조합 (화면에서 고른 조건 그대로)
 function printMates(){
