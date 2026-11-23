@@ -133,6 +133,10 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mate{display:inline-flex;align-items:center;gap:3px;margin:2px 8px 2px 0}
 .mate small{color:#7b838d;font-weight:700}
 .mate .ball.hit{margin-right:4px}
+/* 역대 궁합수: 공색 없이 진한 검은 글자, 직전 회차 번호는 연한 회색 */
+.mate-table .ball{background-color:transparent;color:#111;font-weight:900}
+.mate-table .ball.xw,.mate-table .ball.xm{text-shadow:0 0 3px #fff,0 0 2px #fff}
+.mate-table .ball.xp{color:#c8ccd2}
 .mate-sub{font-size:13px;font-weight:800;color:#3d434c;margin:12px 0 4px}
 .mate-sub:first-child{margin-top:0}
 /* 당번·모의번호 x 표시 */
@@ -182,6 +186,7 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
 .mark-row input{width:48px;height:34px;text-align:center;padding:4px}
 .mark-row.w input{border-color:#f5c48c}
 .mark-row.m input{border-color:#c9a8ef}
+.mark-row.p > b{color:#7b838d}
 @media(max-width:760px){
   .container{padding:20px 12px 40px}
   h1{font-size:24px}
@@ -297,7 +302,9 @@ label{font-size:13px;color:#4a5058;font-weight:700;display:inline-flex;align-ite
         <div id="baseMates"></div>
         <div class="mark-rows" id="markRows">
           <div class="mark-row w"><b>당번</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="w" data-i="6"><span class="note">오렌지 ✕</span></div>
-          <div class="mark-row m"><b>모의 번호</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="6"><span class="note">보라색 ✕</span>
+          <div class="mark-row m"><b>모의 번호</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="m" data-i="6"><span class="note">보라색 ✕</span></div>
+          <div class="mark-row p"><b>직전 1회차</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p1" data-i="6"></div>
+          <div class="mark-row p"><b>직전 2회차</b><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="0"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="1"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="2"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="3"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="4"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="5"><input class="meta-input" type="text" inputmode="numeric" autocomplete="off" data-k="p2" data-i="6">
             <button type="button" class="secondary small" id="btnMarkClear">지우기</button></div>
         </div>
       </div>
@@ -760,10 +767,14 @@ function renderBaseMates(){
 }
 // 당번(오렌지 ✕) · 모의 번호(보라색 ✕): 각각 7칸, 위 역대 궁합수에 표시
 const MARK_KEY = 'lottoCompatMarks';
-let marks = {w: Array(7).fill(''), m: Array(7).fill('')};
-try{ const o = JSON.parse(localStorage.getItem(MARK_KEY) || '{}'); ['w', 'm'].forEach(k => { if(Array.isArray(o[k])) marks[k] = o[k].slice(0, 7); }); }catch(e){}
+const MARK_KEYS = ['w', 'm', 'p1', 'p2'];   // 당번 · 모의 번호 · 직전 1회차 · 직전 2회차
+const emptyMarks = () => Object.fromEntries(MARK_KEYS.map(k => [k, Array(7).fill('')]));
+let marks = emptyMarks();
+try{ const o = JSON.parse(localStorage.getItem(MARK_KEY) || '{}'); MARK_KEYS.forEach(k => { if(Array.isArray(o[k])) marks[k] = o[k].slice(0, 7); }); }catch(e){}
 const markSet = k => new Set(marks[k].map(Number).filter(n => n >= 1 && n <= 45));
-function markCls(n){ return (markSet('w').has(n) ? ' xw' : '') + (markSet('m').has(n) ? ' xm' : ''); }
+// 직전 1·2회차 번호는 연한 회색 (제외수처럼)
+function markCls(n){ return (markSet('w').has(n) ? ' xw' : '') + (markSet('m').has(n) ? ' xm' : '')
+  + (markSet('p1').has(n) || markSet('p2').has(n) ? ' xp' : ''); }
 function syncMarks(){
   markCells().forEach(el => { el.value = marks[el.dataset.k][+el.dataset.i] ?? ''; });
 }
@@ -821,7 +832,7 @@ $('markRows').addEventListener('focusout', e => {
   if(el){ finalizeMark(el); if(S) renderBaseMates(); }
 });
 $('btnMarkClear').onclick = () => {
-  marks = {w: Array(7).fill(''), m: Array(7).fill('')};
+  marks = emptyMarks();
   try{ localStorage.removeItem(MARK_KEY); }catch(e){}
   syncMarks(); if(S) renderBaseMates();
 };
@@ -850,7 +861,7 @@ function printMates(){
       </div></div>
     <div class="pm-sec keep"><h3>🎯 고른 번호의 궁합수</h3>${html('pickMates')}</div>
     <div class="pm-sec keep"><h3>📚 최신 회차 번호의 역대 궁합수 <small class="note">(1회~${base.r}회 본번호 기준 · 상위 30개 · 하위 30개)</small></h3>
-      ${html('baseMates')}${legend('당번 (오렌지 ✕)', markSet('w'))}${legend('모의 번호 (보라색 ✕)', markSet('m'))}</div>
+      ${html('baseMates')}${legend('당번 (오렌지 ✕)', markSet('w'))}${legend('모의 번호 (보라색 ✕)', markSet('m'))}${legend('직전 1회차', markSet('p1'))}${legend('직전 2회차', markSet('p2'))}</div>
     <div class="pm-sec"><h3>⑤ 해당 회차가 ${ui.cn}개뿐인 조합의 다음 회차</h3>
       <div class="chips">${html('rareChips')}</div>
       <h3 style="margin-top:10px">🔥 이 다음 회차들에서 나온 횟수별 번호 <small class="note">(본번호 6개 + 보너스)</small></h3>
